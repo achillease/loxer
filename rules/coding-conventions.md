@@ -14,15 +14,15 @@
 - Treat explicit `any` as allowed only where a logger API intentionally accepts arbitrary
   runtime values (`@typescript-eslint/no-explicit-any` is `"off"` in `.eslintrc.json` for this
   reason, not as a general license).
-- A change under `src/**/*.ts` is done only when `yarn lint` and `yarn test` both exit 0. A
-  change touching `tsconfig.json` or type declarations is done only when `yarn build` also
+- A change under `src/**/*.ts` is done only when `pnpm lint` and `pnpm test` both exit 0. A
+  change touching `tsconfig.json` or type declarations is done only when `pnpm build` also
   exits 0.
 
 ## Never
 
 - Never shadow a variable name — `@typescript-eslint/no-shadow` is `"error"` in
   `.eslintrc.json` (the base `no-shadow` is off in favor of this typed version).
-- Never rely on `yarn lint` to catch issues in `test/`, `*.js`, or `*.json` files —
+- Never rely on `pnpm lint` to catch issues in `test/`, `*.js`, or `*.json` files —
   `.eslintrc.json`'s `ignorePatterns` excludes `node_modules/`, `dist/`, `test/`, `*.js`, and
   `*.json`; lint only covers `src/**/*.ts`.
 - Never write code that `tsconfig.json`'s `strict`, `noImplicitAny`, or `strictNullChecks`
@@ -35,4 +35,4 @@
 
 - Lint rules: `.eslintrc.json`. Format rules: `.prettierrc.json`. Compiler options:
   `tsconfig.json`.
-- `yarn build` emits `dist/` from `src/` via `tsc`; `yarn lint` runs `eslint . --ext .ts`.
+- `pnpm build` emits `dist/` from `src/` via `tsc`; `pnpm lint` runs `eslint . --ext .ts`.

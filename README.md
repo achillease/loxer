@@ -75,7 +75,7 @@ The log messages are exactly the same, but with a litte configuration you can se
 
 > Watch this [comparison with a slider](https://cdn.knightlab.com/libs/juxtapose/latest/embed/index.html?uid=9e14a828-2f7d-11ec-abb7-b9a7ff2ee17c)
 ## Installation 
-`npm i --save loxer` or `yarn add loxer` thats it.
+`npm i --save loxer`, `pnpm add loxer`, or `yarn add loxer` thats it.
 
 ## Deps
 just [color](https://www.npmjs.com/package/color)

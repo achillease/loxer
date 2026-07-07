@@ -26,12 +26,13 @@
     "watch": "tsc --watch",
     "test": "jest --coverage",
     "lint": "eslint . --ext .ts",
-    "prepare": "yarn build",
+    "prepare": "pnpm build",
     "docs": "typedoc --options typedoc.json"
   },
+  "packageManager": "pnpm@10.27.0",
   "husky": {
     "hooks": {
-      "pre-commit": "yarn lint"
+      "pre-commit": "pnpm lint"
     }
   },
   "dependencies": {

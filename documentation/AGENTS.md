@@ -13,3 +13,6 @@ HTML in `docs/`.
   records benchmark methodology and results.
 - Do not copy generated API reference content into these guides; link to TypeDoc for exhaustive
   members and keep this folder task-oriented.
+- Renaming a file here breaks hardcoded GitHub blob links in `README.md` and in the `Loxer` class
+  JSDoc (`src/Loxer.ts`) — see `rules/documentation.md` for where to update them. TypeDoc uses
+  `README.md` as its generated front page, so those links surface there too.

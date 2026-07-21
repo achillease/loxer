@@ -71,7 +71,10 @@ export class OutputStreams {
         console.log(
           str +
             Item.of(errorLox).prettify(!this._areColorsDisabled, {
-              depth: errorLox.module.slicedName.length + errorLox.box.length,
+              // connect the item box to this log's own box column (module text width + the marker's
+              // position within the box), so it branches off the box layout rather than floating
+              // out at the message column
+              depth: errorLox.module.slicedName.length + BoxFactory.getMarkerDepth(errorLox.box),
               color: errorLox.module.color,
             })
         );
@@ -106,7 +109,10 @@ export class OutputStreams {
         console.log(
           str +
             Item.of(outputLox).prettify(!this._areColorsDisabled, {
-              depth: outputLox.module.slicedName.length + outputLox.box.length,
+              // connect the item box to this log's own box column (module text width + the marker's
+              // position within the box), so it branches off the box layout rather than floating
+              // out at the message column
+              depth: outputLox.module.slicedName.length + BoxFactory.getMarkerDepth(outputLox.box),
               color: outputLox.module.color,
             })
         );

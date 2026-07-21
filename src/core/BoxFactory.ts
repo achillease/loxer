@@ -91,6 +91,22 @@ export class BoxFactory {
   }
 
   /**
+   * The column, relative to the start of the box, at which this log's own marker sits — i.e. the
+   * edge / single segment (`openEdge`, `single` or `closeEdge`) produced by `getOpenLogBox` /
+   * `getOfLogBox` for the log itself. Everything before it is the `vertical` line of an enclosing
+   * open box; everything after it is a `cross` / `horizontal`. An item box uses this to connect to
+   * the log's box column (branching off the box layout) instead of floating out at the message.
+   *
+   * @param box the `Box` of an `OutputLox` or `ErrorLox`
+   * @returns the index of the log's marker, or `0` for a box without one (`NONE` / hidden logs)
+   */
+  static getMarkerDepth(box: Box): number {
+    const index = box.findIndex((segment) => segment !== 'empty' && segment.box !== 'vertical');
+
+    return Math.max(index, 0);
+  }
+
+  /**
    * Creates a string version of the given `*Lox` box.
    *
    * ## Single Usage

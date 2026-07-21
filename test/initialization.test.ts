@@ -1,3 +1,4 @@
+import { vi, type Mock } from 'vitest';
 import { Loxer, resetLoxer } from '../src';
 import { Loxes } from '../src/core/Loxes';
 import { Modules } from '../src/core/Modules';
@@ -7,8 +8,8 @@ import { Lox } from '../src/loxes/Lox';
 import { LoxHistory } from '../src/core/LoxHistory';
 
 // mock console
-global.console.log = jest.fn();
-global.console.error = jest.fn();
+global.console.log = vi.fn();
+global.console.error = vi.fn();
 
 let devLogs: OutputLox[] = [];
 function devLog(log: OutputLox) {
@@ -116,7 +117,7 @@ test('queueing logs', () => {
 });
 
 test('OutputStreams', () => {
-  (console.log as jest.Mock).mockClear();
+  (console.log as Mock).mockClear();
   let os = new OutputStreams({ disableColors: true, endTitleOpacity: 1 });
   const ol = new OutputLox({
     highlighted: false,
@@ -187,7 +188,7 @@ test('OutputStreams', () => {
   os.errorOut(false, el2, hy);
 
   // the no-callback stream renders to the console fallback path (which runs Item.prettify)
-  const outputs = (console.log as jest.Mock).mock.calls.map((c) => String(c[0]));
+  const outputs = (console.log as Mock).mock.calls.map((c) => String(c[0]));
   expect(outputs.length).toBeGreaterThan(0);
   // the open log's message and its string item were rendered
   expect(outputs.some((o) => o.includes('log') && o.includes("'item'"))).toBe(true);

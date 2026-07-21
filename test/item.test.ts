@@ -1,10 +1,11 @@
+import { vi, type Mock } from 'vitest';
 import { Loxer, resetLoxer } from '../src';
 import { OutputLox, ErrorLox } from '../src/loxes';
 import { ItemOptions, ItemType } from '../src/core/Item';
 
 // mock console so the default (no-callback) output stream is captured
-global.console.log = jest.fn();
-global.console.error = jest.fn();
+global.console.log = vi.fn();
+global.console.error = vi.fn();
 
 // prod callbacks only — dev/log callbacks are intentionally NOT registered so that
 // OutputStreams.devLogOut falls through to the console path that actually runs
@@ -25,12 +26,12 @@ function initItems(colored: boolean) {
     modules: { IT: { fullName: 'Item', color: '#0f0', devLevel: 1, prodLevel: 0 } },
     config: { disableColors: !colored },
   });
-  (console.log as jest.Mock).mockClear();
+  (console.log as Mock).mockClear();
 }
 
 /** the string passed to the most recent `console.log` call */
 function lastOutput(): string {
-  const calls = (console.log as jest.Mock).mock.calls;
+  const calls = (console.log as Mock).mock.calls;
   return calls.length ? calls[calls.length - 1][0] : '';
 }
 
@@ -46,7 +47,7 @@ afterEach(() => {
   prodLogs = [];
   prodErrors = [];
   resetLoxer();
-  (console.log as jest.Mock).mockClear();
+  (console.log as Mock).mockClear();
 });
 
 afterAll(() => {

@@ -2,7 +2,7 @@
   "editor.defaultFormatter": "esbenp.prettier-vscode",
   "editor.formatOnSave": true,
   "cSpell.words": ["INVALIDMOD", "INVALIDMODULE"],
-  "jest.jestCommandLine": "pnpm test",
+  "vitest.commandLine": "pnpm exec vitest",
   "npm.packageManager": "pnpm",
   "task.allowAutomaticTasks": "on",
   "vscodeTodo.showTags": false

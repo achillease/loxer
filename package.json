@@ -24,7 +24,7 @@
   "scripts": {
     "build": "tsc",
     "watch": "tsc --watch",
-    "test": "jest --coverage",
+    "test": "vitest run --coverage",
     "lint": "eslint . --ext .ts",
     "prepare": "pnpm build",
     "docs": "typedoc --options typedoc.json"
@@ -40,20 +40,19 @@
   },
   "devDependencies": {
     "@types/color": "3.0.2",
-    "@types/jest": "27.0.1",
     "@types/node": "16.9.0",
     "@typescript-eslint/eslint-plugin": "4.31.0",
     "@typescript-eslint/parser": "4.31.0",
+    "@vitest/coverage-v8": "^4.1.10",
     "eslint": "7.32.0",
     "eslint-config-prettier": "8.3.0",
     "eslint-plugin-prettier": "4.0.0",
     "husky": "7.0.2",
-    "jest": "27.1.1",
     "prettier": "2.4.0",
-    "ts-jest": "27.0.5",
     "tslib": "2.3.1",
     "typedoc": "0.21.9",
     "typedoc-neo-theme": "1.1.1",
-    "typescript": "4.4.2"
+    "typescript": "4.4.2",
+    "vitest": "^4.1.10"
   }
 }

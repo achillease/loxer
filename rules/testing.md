@@ -1,12 +1,14 @@
 # Testing rules
 
-> Runner: Jest + ts-jest, `testEnvironment: node` (`jest.config.js`). `testMatch` picks up
-> `*.test.ts` and `*.test.only.ts` (use the `.test.only.ts` suffix to run a single file in
-> isolation).
+> Runner: Vitest, `environment: 'node'`, `globals: true` (`vitest.config.ts`). `include` picks up
+> `test/**/*.test.ts` and `test/**/*.test.only.ts` (use the `.test.only.ts` suffix to run a single
+> file in isolation). Legacy TS decorators are enabled via oxc (`oxc.decorator.legacy`) so the
+> `@trace`/`@initLoxer` suites transpile. `describe`/`test`/`expect` and the lifecycle hooks are
+> global; mocking uses `vi` (imported from `vitest`), not `jest`.
 
 ## Always
 
-- Run `pnpm test` (`jest --coverage`) before treating any change to `src/` as done.
+- Run `pnpm test` (`vitest run --coverage`) before treating any change to `src/` as done.
 - If a change touches global logger state, call `resetLoxer()` in `afterEach` and re-init `Loxer`
   in `beforeEach` — see `test/boxed.test.ts` for the pattern.
 - If a change alters box layout (open/close columns, trimming, visible slots), update or add
@@ -33,8 +35,8 @@
 - Never expect `pnpm build` or `pnpm lint` to cover files under `test/` — `test/` is excluded from
   the tsconfig `include` (`tsconfig.json`) and from eslint via `ignorePatterns` (`.eslintrc`).
   Type or lint errors in `test/` will not surface there.
-- Never add a test solely to raise coverage; `pnpm test` runs with `--coverage` but the number
-  itself is not the target.
+- Never add a test solely to raise coverage; `pnpm test` runs with `--coverage`
+  (`@vitest/coverage-v8`) but the number itself is not the target.
 
 ## Reference
 

@@ -9,7 +9,7 @@ visualization for nested or async data flow.
 
 - Install with `pnpm install`.
 - Build with `pnpm build` (`tsc`, emits `dist/` from `src/`).
-- Test with `pnpm test` (`jest --coverage`).
+- Test with `pnpm test` (`vitest run --coverage`).
 - Lint with `pnpm lint` (`eslint . --ext .ts`).
 - Regenerate API HTML with `pnpm docs` (`typedoc --options typedoc.json`, writes `docs/`).
 
@@ -19,7 +19,7 @@ TypeScript 4.4, `strict: true`, target ES5, module commonjs, declarations emitte
 `experimentalDecorators: true`. The published package's `engines.node` is `>=10` (the compiled
 ES5 output), but local development uses pnpm (pinned via `packageManager: pnpm@10.27.0` in
 `package.json`), which requires Node `>=18`. Sole runtime dependency is `color` (`<4`). Tests run
-on Jest + ts-jest; lint runs eslint + `@typescript-eslint` + prettier. A husky pre-commit hook
+on Vitest; lint runs eslint + `@typescript-eslint` + prettier. A husky pre-commit hook
 runs `pnpm lint`.
 
 ## Layout

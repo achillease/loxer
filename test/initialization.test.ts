@@ -104,10 +104,19 @@ test('queueing logs', () => {
 
   expect(devLogs.length).toBe(4);
   expect(devErrors.length).toBe(1);
+
+  // the queued logs replay in order, after the init log; the error replays to devError
+  expect(devLogs.map((l) => l.message)).toEqual([
+    'Loxer initialized',
+    'disabled log which is queued',
+    'add',
+    'close',
+  ]);
+  expect(devErrors[0].message).toBe('error');
 });
 
-// TODO
 test('OutputStreams', () => {
+  (console.log as jest.Mock).mockClear();
   let os = new OutputStreams({ disableColors: true, endTitleOpacity: 1 });
   const ol = new OutputLox({
     highlighted: false,
@@ -176,25 +185,40 @@ test('OutputStreams', () => {
   os.logOut(false, cl);
   os.errorOut(true, el2, hy);
   os.errorOut(false, el2, hy);
+
+  // the no-callback stream renders to the console fallback path (which runs Item.prettify)
+  const outputs = (console.log as jest.Mock).mock.calls.map((c) => String(c[0]));
+  expect(outputs.length).toBeGreaterThan(0);
+  // the open log's message and its string item were rendered
+  expect(outputs.some((o) => o.includes('log') && o.includes("'item'"))).toBe(true);
+  // the highlighted error (el2) renders its stack: 'errorText2' appears ONLY via the
+  // concatenated Error.stack (OutputStreams.ts:61), so this fails if stack rendering breaks
+  expect(outputs.some((o) => o.includes('errorText2'))).toBe(true);
+  // the non-highlighted error (el) does NOT get its stack rendered — only its message
+  expect(outputs.some((o) => o.includes('errorText') && !o.includes('errorText2'))).toBe(false);
+  // both error messages themselves were rendered
+  expect(outputs.some((o) => o.includes('error2'))).toBe(true);
 });
 
-// TODO
 test('Rest', () => {
   Loxer.init({ dev: false, config: { historyCacheSize: 1 }, callbacks: { devLog, devError } });
   const l = new Loxes();
-  l.findOpenLox(Number('wrong'));
+  // an unfindable id (NaN) resolves to no open lox
+  expect(l.findOpenLox(Number('wrong'))).toBeUndefined();
 
   const m = new Modules();
-  m.getText(
-    new Lox({
-      highlighted: false,
-      id: 0,
-      item: undefined,
-      itemOptions: undefined,
-      level: 1,
-      message: 'm',
-      moduleId: 'wrong',
-      type: 'single',
-    })
-  );
+  const lox = new Lox({
+    highlighted: false,
+    id: 0,
+    item: undefined,
+    itemOptions: undefined,
+    level: 1,
+    message: 'm',
+    moduleId: 'wrong',
+    type: 'single',
+  });
+  // an unregistered moduleId falls back to the INVALID module text and rewrites the moduleId
+  const text = m.getText(lox);
+  expect(text).toContain('INVALID');
+  expect(lox.moduleId).toBe('INVALID');
 });

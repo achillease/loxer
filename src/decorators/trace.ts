@@ -79,7 +79,7 @@ export function trace(options?: TraceOptions | string) {
       : className;
     descriptor.value = function (...args: any[]) {
       let moduleId;
-      let o;
+      let o: TraceOptions | undefined;
       if (is(options) && typeof options === 'string') {
         moduleId = options;
       } else if (is(options)) {
@@ -103,20 +103,23 @@ export function trace(options?: TraceOptions | string) {
       // call the function
       const result = original.call(this, ...args);
 
-      // close message
-      const closeMessage = getCloseMessage(o, propertyKey, result, fixedName);
-      const resultItem = o?.resultAsItem ? result : undefined;
-
       if (result && typeof result.then === 'function') {
         return result.then((payload: any) => {
-          // close the lox
+          // close the lox with the resolved payload (not the still-pending promise)
           Loxer.h(h === 'all' || h === 'close')
             .of(loxId)
-            .close(closeMessage, resultItem);
+            .close(
+              getCloseMessage(o, propertyKey, payload, fixedName),
+              o?.resultAsItem ? payload : undefined
+            );
 
           return payload;
         });
       }
+
+      // close message
+      const closeMessage = getCloseMessage(o, propertyKey, result, fixedName);
+      const resultItem = o?.resultAsItem ? result : undefined;
 
       // close the lox
       Loxer.h(h === 'all' || h === 'close')

@@ -280,7 +280,13 @@ test('leveling', () => {
   expect(devLogs.length).toBe(3);
   expect(devErrors.length).toBe(1);
 
-  /* 
+  // hidden (leveled-out) logs must not enter history; only init, open, error and close remain
+  expect(Loxer.history.length).toBe(4);
+  for (const hidden of ['open2', 'add2', 'close2', 'add']) {
+    expect(Loxer.history.some((l) => l.message === hidden)).toBe(false);
+  }
+
+  /*
   ╭← open
 //│╭← open2        [UNLEVELLED]
 //│├─ add2         [UNLEVELLED automatically]

@@ -56,6 +56,8 @@ export class Item {
   private _keys: string[] | undefined;
   /** @internal */
   private _shortenObjects?: boolean;
+  /** @internal the objects/arrays currently on the recursion path, used to detect cycles */
+  private _seen: WeakSet<any> = new WeakSet();
 
   /**
    * @internal
@@ -146,37 +148,21 @@ export class Item {
         : `\n${Array(depth).fill(' ').join('')}┃ item> `;
       post = colored ? ANSIFormat.colorize(' <item', color) : ' <item';
     } else {
+      // clamp to 0 so a zero-depth column (e.g. the NONE module) does not pass a negative
+      // length to `Array(...)`, which would throw `RangeError: Invalid array length`
+      const horizontal = Array(Math.max(0, depth - 1))
+        .fill('─')
+        .join('');
+
       const preEnd = end ? '┘ item>\n' : '\n';
       pre = colored
-        ? ANSIFormat.colorize(
-            '\n┌' +
-              Array(depth - 1)
-                .fill('─')
-                .join('') +
-              preEnd,
-            color
-          )
-        : '\n┌' +
-          Array(depth - 1)
-            .fill('─')
-            .join('') +
-          preEnd;
+        ? ANSIFormat.colorize('\n┌' + horizontal + preEnd, color)
+        : '\n┌' + horizontal + preEnd;
 
       const postEnd = end ? '┐ <item' : '';
       post = colored
-        ? ANSIFormat.colorize(
-            '\n└' +
-              Array(depth - 1)
-                .fill('─')
-                .join('') +
-              postEnd,
-            color
-          )
-        : '\n└' +
-          Array(depth - 1)
-            .fill('─')
-            .join('') +
-          postEnd;
+        ? ANSIFormat.colorize('\n└' + horizontal + postEnd, color)
+        : '\n└' + horizontal + postEnd;
     }
 
     return { pre, post };
@@ -197,7 +183,7 @@ export class Item {
         return [ANSIFormat.fgUndefined(`[${item.length} elements]`), `[${item.length} elements]`];
       }
 
-      return this.printArray(item, depth, save);
+      return this.guarded(item, () => this.printArray(item, depth, save));
     }
 
     switch (typeof item) {
@@ -225,7 +211,7 @@ export class Item {
           }
           if (depth === 0) {
             const prefix = `[Class: ${item.constructor.name}] = `;
-            const content = this.printObject(item, depth, save);
+            const content = this.guarded(item, () => this.printObject(item, depth, save));
 
             return [ANSIFormat.fgFunction(prefix) + content[0], prefix + content[1]];
           }
@@ -237,10 +223,35 @@ export class Item {
           ];
         }
 
-        return this.printObject(item, depth, save);
+        return this.guarded(item, () => this.printObject(item, depth, save));
       default:
         return this.printDefault(item);
     }
+  }
+
+  /** @internal marks `item` as an ancestor on the recursion path while `produce` runs, so a
+   * self-reference encountered deeper in the tree renders as `[Circular]` instead of recursing
+   * until the stack overflows. The mark is removed on unwind, so a repeated (non-cyclic)
+   * reference among siblings is still printed in full. */
+  private guarded(
+    item: any,
+    produce: () => [colored: string, plain: string]
+  ): [colored: string, plain: string] {
+    if (this._seen.has(item)) {
+      return this.printCircular();
+    }
+    this._seen.add(item);
+    const result = produce();
+    this._seen.delete(item);
+
+    return result;
+  }
+
+  /** @internal */
+  private printCircular(): [colored: string, plain: string] {
+    const value = '[Circular]';
+
+    return [ANSIFormat.fgUndefined(value), value];
   }
 
   /** @internal */

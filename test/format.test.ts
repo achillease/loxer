@@ -66,6 +66,10 @@ test('BoxLayout', () => {
   const bs0 = BoxFactory.getBoxString(boxx, true);
   const bs1 = BoxFactory.getBoxString(boxx, false);
   const bs2 = BoxFactory.getBoxString(box1, false);
+  // colored variant wraps the same glyph as the plain one in ANSI color codes
+  expect(bs0).toContain('│');
+  expect(bs0).toContain('\x1b[');
+  expect(bs0).not.toBe(bs1);
   expect(bs1).toBe(' │ ');
   expect(bs2).toBe('');
 });

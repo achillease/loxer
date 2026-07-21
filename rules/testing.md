@@ -14,6 +14,14 @@
   terminal glyphs.
 - If a change alters `@initLoxer`/`@trace` decorator-generated messages, async/promise handling,
   or item capture, update `test/decorators.test.ts`.
+- To exercise `Item`/`prettify` (rich item printing) in a test, init `Loxer` without
+  `devLog`/`devError` callbacks — or call `Item.of(lox).prettify(...)` directly. A registered
+  `devLog`/`devError` callback receives the raw lox and bypasses the console fallback in
+  `src/core/OutputStreams.ts`, which is the only path that calls `Item.prettify`; registering it
+  makes a suite assert nothing about item output. Use `config: { disableColors: true }` on init
+  for plain (un-ANSI'd) strings and mock `global.console.log` to capture output — see
+  `test/item.test.ts`. Falsy items (`false`, `0`, `''`, `null`, `undefined`) never reach this path
+  (`if (outputLox.item)` gate).
 - A task touching `src/` is done only when `pnpm test` passes AND, for a box-layout or decorator
   change, the corresponding test file above was updated.
 

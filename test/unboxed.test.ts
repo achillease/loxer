@@ -36,6 +36,7 @@ beforeEach(() => {
     },
     modules: {
       TEST: { color: '#ff0', devLevel: 1, prodLevel: 0, fullName: 'TestModule' },
+      MUTE: { color: '#f0f', devLevel: 0, prodLevel: 0, fullName: 'Muted' },
     },
     config: {
       moduleTextSlice: 10,
@@ -202,5 +203,37 @@ test('history', () => {
   expect(histories.length).toBe(2);
   expect(histories[0].length).toBeGreaterThanOrEqual(4);
   expect(histories[1].length).toBeGreaterThanOrEqual(7);
-  expect(histories[0][0].equals(histories[0][1])).toBeFalsy();
+
+  // history is newest-first: the most recent log is index 0, the init log is last
+  expect(Loxer.history[0].message).toBe('error log 2');
+  expect(Loxer.history[Loxer.history.length - 1].message).toBe('Loxer initialized');
+  // the hidden (leveled-out) log must not enter history
+  expect(Loxer.history.some((l) => l.message === 'hidden level log')).toBe(false);
+});
+
+test('one-shot modifiers reset after each log', () => {
+  // DEFAULT module (devLevel 2) so the level-2 modified log is visible
+  Loxer.h().m().l(2).log('modified');
+  const modified = devLogs[devLogs.length - 1];
+  expect(modified.message).toBe('modified');
+  expect(modified.highlighted).toBe(true);
+  expect(modified.moduleId).toBe('DEFAULT');
+  expect(modified.level).toBe(2);
+
+  // the next bare log must fall back to the defaults, proving the modifiers were reset
+  Loxer.log('plain');
+  const plain = devLogs[devLogs.length - 1];
+  expect(plain.message).toBe('plain');
+  expect(plain.highlighted).toBe(false);
+  expect(plain.moduleId).toBe('NONE');
+  expect(plain.level).toBe(1);
+});
+
+test('a module with devLevel 0 is fully muted', () => {
+  Loxer.m('MUTE').log('hidden 1');
+  Loxer.m('MUTE').l(1).log('hidden 2');
+  // only the init log made it through; the MUTE logs are fully suppressed
+  expect(devLogs.length).toBe(1);
+  expect(devLogs.some((l) => l.moduleId === 'MUTE')).toBe(false);
+  expect(Loxer.history.some((l) => l.moduleId === 'MUTE')).toBe(false);
 });

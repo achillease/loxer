@@ -1,7 +1,7 @@
-import { BoxLayoutStyle } from '.';
-import { is } from '../Helpers';
-import { Lox } from '../loxes/Lox';
-import { LevelType, LoxerModules, LoxerOptions, Module } from '../types';
+import { BoxLayoutStyle } from './index.js';
+import { is } from '../Helpers.js';
+import { Lox } from '../loxes/Lox.js';
+import { LevelType, LoxerModules, LoxerOptions, Module } from '../types.js';
 
 interface ModulesProps {
   isDev: boolean;

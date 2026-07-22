@@ -1,7 +1,7 @@
-import { filterDef, isNumber } from '../Helpers';
-import { OutputLox } from '../loxes/OutputLox';
-import { Lox } from '../loxes/Lox';
-import { ExtendedModule } from './Modules';
+import { filterDef, isNumber } from '../Helpers.js';
+import { OutputLox } from '../loxes/OutputLox.js';
+import { Lox } from '../loxes/Lox.js';
+import { ExtendedModule } from './Modules.js';
 
 type OpenBoxType = { id: number; module: ExtendedModule };
 

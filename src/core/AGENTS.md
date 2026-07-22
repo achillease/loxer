@@ -23,6 +23,11 @@ small and behavior-preserving; most public contracts are asserted from `test/box
 - `LoxHistory` is newest-first. A configured size of `1` currently disables stored history.
 - `Item` handles arbitrary runtime values; avoid recursive changes that would loop on class graphs
   or cyclic structures.
+- `src/core/color/` is vendored, not an npm dependency: it ports `color-string@1.6.0` (parsing),
+  `color-name@1.1.4` (the named-color table), and `color-convert@1.9.3` (`hsl`/`hwb` -> rgb), and
+  keeps their MIT copyright headers. Loxer ships zero runtime dependencies — never reintroduce
+  `color`/`color-string`/`color-name`/`color-convert` as a dependency; edit `src/core/color/` in
+  place instead and keep the copyright headers intact.
 
 ## Change Guidance
 
@@ -30,3 +35,7 @@ small and behavior-preserving; most public contracts are asserted from `test/box
   the visible column behavior without relying on terminal glyphs.
 - When changing item rendering, cover colored and plain output shape where relevant.
 - When changing output streams, verify both callback paths and default console fallback behavior.
+- When changing `src/core/color/parseColor.ts`, keep `getRgb()`'s named-color branch returning a
+  copy of the matched `COLOR_NAMES` entry, not the shared array — returning the shared reference
+  reintroduces a `color-string@1.6.0` mutation bug the vendoring fixed. Keep `Color()` throwing on
+  an unparseable string; `ANSIFormat.colorHighlight`/`colorize` rely on that throw.

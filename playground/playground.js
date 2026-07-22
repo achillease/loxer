@@ -1,4 +1,4 @@
-const { Loxer, NamedError } = require('../dist');
+import { Loxer, NamedError } from '../dist/index.js';
 
 Loxer.init({ dev: true });
 Loxer.highlight().log('it works!', '...very well');

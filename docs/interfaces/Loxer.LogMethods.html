@@ -1,453 +1,245 @@
-<!doctype html>
-<html class="default no-js">
-<head>
-	<meta charset="utf-8">
-	<meta http-equiv="X-UA-Compatible" content="IE=edge">
-	<title>LogMethods | Loxer - v1.1.1</title>
-	<meta name="description" content="">
-	<meta name="viewport" content="width=device-width, initial-scale=1">
-	<link rel="stylesheet" href="../assets/css/main.css">
-	<script async src="../assets/js/search.js" id="search-script"></script>
-</head>
-<body>
-<header>
-	<div class="tsd-page-toolbar">
-		<div class="container">
-			<div class="table-wrap">
-				<div class="table-cell" id="tsd-search" data-index="../assets/js/search.json" data-base="..">
-					<div class="field">
-						<label for="tsd-search-field" class="tsd-widget search no-caption">Search</label>
-						<input id="tsd-search-field" type="text" />
-					</div>
-					<ul class="results">
-						<li class="state loading">Preparing search index...</li>
-						<li class="state failure">The search index is not available</li>
-					</ul>
-					<ul class="results-priority" style="display:none">
-					</ul>
-					<a href="../index.html" class="title">Loxer - v1.1.1</a>
-				</div>
-				<div class="table-cell" id="tsd-widgets">
-					<div id="tsd-filter">
-						<a href="#" class="tsd-widget options no-caption" data-toggle="options">Options</a>
-						<div class="tsd-filter-group">
-							<div class="tsd-select" id="tsd-filter-visibility">
-								<span class="tsd-select-label">All</span>
-								<ul class="tsd-select-list">
-									<li data-value="public">Public</li>
-									<li data-value="protected">Public/Protected</li>
-									<li data-value="private" class="selected">All</li>
-								</ul>
-							</div>
-							<input type="checkbox" id="tsd-filter-inherited" checked />
-							<label class="tsd-widget" for="tsd-filter-inherited">Inherited</label>
-							<input type="checkbox" id="tsd-filter-externals" checked />
-							<label class="tsd-widget" for="tsd-filter-externals">Externals</label>
-							<input type="checkbox" id="tsd-filter-only-exported" />
-							<label class="tsd-widget" for="tsd-filter-only-exported">Only exported</label>
-						</div>
-					</div>
-					<a href="#" class="tsd-widget menu no-caption" data-toggle="menu">Menu</a>
-				</div>
-			</div>
-		</div>
-	</div>
-	<div class="tsd-page-title">
-		<div class="container">
-			<ul class="tsd-breadcrumb">
-				<li>
-					<a href="../modules/Loxer.html">Loxer</a>
-				</li>
-				<li>
-					<a href="Loxer.LogMethods.html">LogMethods</a>
-				</li>
-			</ul>
-		</div>
-	</div>
-</header>
+<!DOCTYPE html><html class="default" lang="en" data-base="../"><head><meta charset="utf-8"/><meta http-equiv="x-ua-compatible" content="IE=edge"/><title>LogMethods | Loxer - v3.0.0</title><meta name="description" content="Documentation for Loxer"/><meta name="viewport" content="width=device-width, initial-scale=1"/><link rel="stylesheet" href="../assets/style.css"/><link rel="stylesheet" href="../assets/highlight.css"/><script defer src="../assets/main.js"></script><script async src="../assets/icons.js" id="tsd-icons-script"></script><script async src="../assets/search.js" id="tsd-search-script"></script><script async src="../assets/navigation.js" id="tsd-nav-script"></script><script async src="../assets/hierarchy.js" id="tsd-hierarchy-script"></script></head><body><script>document.documentElement.dataset.theme = localStorage.getItem("tsd-theme") || "os";document.body.style.display="none";setTimeout(() => window.app?app.showPage():document.body.style.removeProperty("display"),500)</script><header class="tsd-page-toolbar">
+<div class="tsd-toolbar-contents container"><a href="../index.html" class="title">Loxer - v3.0.0</a>
+<div id="tsd-toolbar-links"></div><button id="tsd-search-trigger" class="tsd-widget" aria-label="Search"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><use href="../assets/icons.svg#icon-search"></use></svg></button><dialog id="tsd-search" aria-label="Search"><input role="combobox" id="tsd-search-input" aria-controls="tsd-search-results" aria-autocomplete="list" aria-expanded="true" autocapitalize="off" autocomplete="off" placeholder="Search the docs" maxLength="100"/>
+<ul role="listbox" id="tsd-search-results"></ul>
+<div id="tsd-search-status" aria-live="polite" aria-atomic="true">
+<div>Preparing search index...</div></div></dialog><a href="#" class="tsd-widget menu" id="tsd-toolbar-menu-trigger" data-toggle="menu" aria-label="Menu"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><use href="../assets/icons.svg#icon-menu"></use></svg></a></div></header>
 <div class="container container-main">
-	<div class="row">
-		<div class="col-3 col-menu menu-sticky-wrap menu-highlight">
-			<nav class="tsd-navigation primary">
-				<ul>
-					<li class=" ">
-						<a href="../modules.html">Modules</a>
-					</li>
-					<li class=" tsd-kind-module">
-						<a href="../modules/Decorators.html">Decorators</a>
-					</li>
-					<li class=" tsd-kind-module">
-						<a href="../modules/Error.html">Error</a>
-					</li>
-					<li class=" tsd-kind-module">
-						<a href="../modules/Formatting.html">Formatting</a>
-					</li>
-					<li class=" tsd-kind-module">
-						<a href="../modules/Logs.html">Logs</a>
-					</li>
-					<li class="current tsd-kind-module">
-						<a href="../modules/Loxer.html">Loxer</a>
-					</li>
-				</ul>
-			</nav>
-		</div>
-		<div class="col-7 offset-3 col-content">
-			<h1>Interface LogMethods</h1>
-			<section class="tsd-panel tsd-hierarchy">
-				<h3>Hierarchy</h3>
-				<ul class="tsd-hierarchy">
-					<li>
-						<span class="target">LogMethods</span>
-					</li>
-				</ul>
-			</section>
-			<section class="tsd-panel-group tsd-index-group">
-				<section class="tsd-panel tsd-index-panel">
-					<div class="tsd-index-content">
-						<section class="tsd-index-section ">
-							<h3>Methods</h3>
-							<ul class="tsd-index-list">
-								<li class="tsd-kind-method tsd-parent-kind-interface"><a href="Loxer.LogMethods.html#log" class="tsd-kind-icon">log</a></li>
-								<li class="tsd-kind-method tsd-parent-kind-interface"><a href="Loxer.LogMethods.html#error" class="tsd-kind-icon">error</a></li>
-								<li class="tsd-kind-method tsd-parent-kind-interface"><a href="Loxer.LogMethods.html#open" class="tsd-kind-icon">open</a></li>
-								<li class="tsd-kind-method tsd-parent-kind-interface"><a href="Loxer.LogMethods.html#of" class="tsd-kind-icon">of</a></li>
-							</ul>
-						</section>
-					</div>
-				</section>
-			</section>
-			<section class="tsd-panel-group tsd-member-group ">
-				<h2>Methods</h2>
-				<section class="tsd-panel tsd-member tsd-kind-method tsd-parent-kind-interface">
-					<a name="log" class="tsd-anchor"></a>
-					<h3>log</h3>
-					<ul class="tsd-signatures tsd-kind-method tsd-parent-kind-interface">
-						<li class="tsd-signature tsd-kind-icon">log<span class="tsd-signature-symbol">(</span>message<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">string</span>, item<span class="tsd-signature-symbol">?: </span><a href="../modules/Formatting.html#ItemType" class="tsd-signature-type">ItemType</a>, itemOptions<span class="tsd-signature-symbol">?: </span><a href="Formatting.ItemOptions.html" class="tsd-signature-type">ItemOptions</a><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">void</span></li>
-					</ul>
-					<ul class="tsd-descriptions">
-						<li class="tsd-description">
-							<aside class="tsd-sources">
-							</aside>
-							<div class="tsd-comment tsd-typography tsd-comment-shorttext">
-								<div class="lead">
-									<a href="#simple-log" id="simple-log" style="color: inherit; text-decoration: none;">
-										<h2>Simple Log</h2>
-									</a>
-								</div>
-								</div><div class="tsd-comment tsd-typography tsd-comment-text">
-								<pre><code class="language-typescript"><span style="color: #000000">    </span><span style="color: #001080">Loxer</span><span style="color: #000000">.</span><span style="color: #795E26">log</span><span style="color: #000000">(</span><span style="color: #A31515">&#039;Hello World&#039;</span><span style="color: #000000">);</span>
-</code></pre>
-								<a href="#works-similar-to-consolelog-but" id="works-similar-to-consolelog-but" style="color: inherit; text-decoration: none;">
-									<h4>Works similar to <code>console.log()</code>, but:</h4>
-								</a>
-								<ul>
-									<li>it is cached until the logger is initialized</li>
-									<li>it won&#39;t proceed any output if Loxer is disabled</li>
-									<li>the output will be streamed out to the <a href="Loxer.LoxerOptions.html#callbacks">LoxerOptions.callbacks</a> declared in <code>Loxer.init(options)</code></li>
-									<li>if no callbacks are given at the initialization, all logs will be logged with <code>console.log(message, item)</code>,
-									but only in development mode</li>
-									<li>can be chained with <code>.highlight().log(...)</code> or <code>.h().log(...)</code> to highlight the log</li>
-									<li>can be chained with <code>.level().log(...)</code> or <code>.l().log(...)</code> to set a level to the log - otherwise it&#39;s <code>1</code> (high)</li>
-									<li>can be chained with <code>.module().log(...)</code> or <code>.m().log(...)</code> to assign a module to the log - otherwise it&#39;s <code>NONE</code></li>
-									<li>all functions can be chained in combination and different order like: <code>Loxer.h().l(2).m(&#39;Account&#39;).log(...)</code></li>
-								</ul>
-								<hr>
-							</div>
-							<h4 class="tsd-parameters-title">Parameters</h4>
-							<ul class="tsd-parameters">
-								<li>
-									<h5>message: <span class="tsd-signature-type">string</span></h5>
-									<div class="tsd-comment tsd-typography tsd-comment-text">
-										<p>to log</p>
-									</div>
-								</li>
-								<li>
-									<h5><span class="tsd-flag ts-flagOptional">Optional</span> item: <a href="../modules/Formatting.html#ItemType" class="tsd-signature-type">ItemType</a></h5>
-									<div class="tsd-comment tsd-typography tsd-comment-text">
-										<p>to append</p>
-									</div>
-								</li>
-								<li>
-									<h5><span class="tsd-flag ts-flagOptional">Optional</span> itemOptions: <a href="Formatting.ItemOptions.html" class="tsd-signature-type">ItemOptions</a></h5>
-									<div class="tsd-comment tsd-typography tsd-comment-text">
-										<p>to configure the (default) output of the item</p>
-									</div>
-								</li>
-							</ul>
-							<h4 class="tsd-returns-title">Returns <span class="tsd-signature-type">void</span></h4>
-						</li>
-					</ul>
-				</section>
-				<section class="tsd-panel tsd-member tsd-kind-method tsd-parent-kind-interface">
-					<a name="error" class="tsd-anchor"></a>
-					<h3>error</h3>
-					<ul class="tsd-signatures tsd-kind-method tsd-parent-kind-interface">
-						<li class="tsd-signature tsd-kind-icon">error<span class="tsd-signature-symbol">(</span>error<span class="tsd-signature-symbol">: </span><a href="../modules/Loxer.html#ErrorType" class="tsd-signature-type">ErrorType</a>, item<span class="tsd-signature-symbol">?: </span><a href="../modules/Formatting.html#ItemType" class="tsd-signature-type">ItemType</a>, itemOptions<span class="tsd-signature-symbol">?: </span><a href="Formatting.ItemOptions.html" class="tsd-signature-type">ItemOptions</a><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">void</span></li>
-					</ul>
-					<ul class="tsd-descriptions">
-						<li class="tsd-description">
-							<aside class="tsd-sources">
-							</aside>
-							<div class="tsd-comment tsd-typography tsd-comment-shorttext">
-								<div class="lead">
-									<a href="#advanced-error-log" id="advanced-error-log" style="color: inherit; text-decoration: none;">
-										<h2>Advanced error Log</h2>
-									</a>
-								</div>
-								</div><div class="tsd-comment tsd-typography tsd-comment-text">
-								<pre><code class="language-typescript"><span style="color: #000000">    </span><span style="color: #001080">Loxer</span><span style="color: #000000">.</span><span style="color: #795E26">error</span><span style="color: #000000">(</span><span style="color: #0000FF">new</span><span style="color: #000000"> </span><span style="color: #267F99">Error</span><span style="color: #000000">(</span><span style="color: #A31515">&#039;Goodbye World!&#039;</span><span style="color: #000000">));</span>
-</code></pre>
-								<a href="#works-similar-to-consoleerror-but" id="works-similar-to-consoleerror-but" style="color: inherit; text-decoration: none;">
-									<h4>Works similar to <code>console.error()</code>, but:</h4>
-								</a>
-								<ul>
-									<li>it is cached until the logger is initialized</li>
-									<li>it won&#39;t proceed any output if Loxer is disabled</li>
-									<li>the errors will be streamed out to the <a href="Loxer.LoxerOptions.html#callbacks">LoxerOptions.callbacks</a> declared in <code>Loxer.init(options)</code></li>
-									<li>if no callbacks are given at the initialization, all errors will be logged with <code>console.log(error)</code>,
-									but only in development mode</li>
-									<li>the given <code>Error</code> will be appended to the output error</li>
-									<li>if the message is of type <code>string</code> | <code>number</code> | <code>boolean</code> | <code>object</code>, then a <code>new Error(message.toString())</code>
-									will be created and appended</li>
-									<li>all opened logs that were not closed until the error occurred will be appended to the error outputLog</li>
-									<li>a history of logs will be appended if enabled</li>
-									<li>can be chained with <code>.module().error(...)</code> or <code>.m().error(...)</code> to assign a module to the error - otherwise
-									it&#39;s <code>NONE</code></li>
-									<li>chaining with <code>.highlight().error(...)</code> or <code>.h().error(...)</code> does not color the message differently but append
-									the stack to the default console output</li>
-									<li>chaining with <code>.level().error(...)</code> or <code>.l().error(...)</code> will
-									not take any effect on the error log (except that <code>level</code> will be a property of the output)</li>
-								</ul>
-								<hr>
-							</div>
-							<h4 class="tsd-parameters-title">Parameters</h4>
-							<ul class="tsd-parameters">
-								<li>
-									<h5>error: <a href="../modules/Loxer.html#ErrorType" class="tsd-signature-type">ErrorType</a></h5>
-									<div class="tsd-comment tsd-typography tsd-comment-text">
-										<p>an <code>Error</code> or <code>string</code> | <code>number</code>| <code>boolean</code> | <code>object</code> (converted to an Error)</p>
-									</div>
-								</li>
-								<li>
-									<h5><span class="tsd-flag ts-flagOptional">Optional</span> item: <a href="../modules/Formatting.html#ItemType" class="tsd-signature-type">ItemType</a></h5>
-									<div class="tsd-comment tsd-typography tsd-comment-text">
-										<p>to append</p>
-									</div>
-								</li>
-								<li>
-									<h5><span class="tsd-flag ts-flagOptional">Optional</span> itemOptions: <a href="Formatting.ItemOptions.html" class="tsd-signature-type">ItemOptions</a></h5>
-									<div class="tsd-comment tsd-typography tsd-comment-text">
-										<p>to configure the (default) output of the item</p>
-									</div>
-								</li>
-							</ul>
-							<h4 class="tsd-returns-title">Returns <span class="tsd-signature-type">void</span></h4>
-						</li>
-					</ul>
-				</section>
-				<section class="tsd-panel tsd-member tsd-kind-method tsd-parent-kind-interface">
-					<a name="open" class="tsd-anchor"></a>
-					<h3>open</h3>
-					<ul class="tsd-signatures tsd-kind-method tsd-parent-kind-interface">
-						<li class="tsd-signature tsd-kind-icon">open<span class="tsd-signature-symbol">(</span>message<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">string</span>, item<span class="tsd-signature-symbol">?: </span><a href="../modules/Formatting.html#ItemType" class="tsd-signature-type">ItemType</a>, itemOptions<span class="tsd-signature-symbol">?: </span><a href="Formatting.ItemOptions.html" class="tsd-signature-type">ItemOptions</a><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">: </span><a href="Loxer.OpenedLox.html" class="tsd-signature-type">OpenedLox</a></li>
-					</ul>
-					<ul class="tsd-descriptions">
-						<li class="tsd-description">
-							<aside class="tsd-sources">
-							</aside>
-							<div class="tsd-comment tsd-typography tsd-comment-shorttext">
-								<div class="lead">
-									<a href="#open-a-boxed-log" id="open-a-boxed-log" style="color: inherit; text-decoration: none;">
-										<h2>Open a boxed Log</h2>
-									</a>
-								</div>
-								</div><div class="tsd-comment tsd-typography tsd-comment-text">
-								<pre><code class="language-typescript"><span style="color: #000000">    </span><span style="color: #0000FF">const</span><span style="color: #000000"> </span><span style="color: #0070C1">loxId</span><span style="color: #000000"> = </span><span style="color: #001080">Loxer</span><span style="color: #000000">.</span><span style="color: #795E26">open</span><span style="color: #000000">(</span><span style="color: #A31515">&#039;Open World!&#039;</span><span style="color: #000000">)</span>
-</code></pre>
-								<a href="#opens-a-boxed-log-to-assign-other-logs--errors-to-it" id="opens-a-boxed-log-to-assign-other-logs--errors-to-it" style="color: inherit; text-decoration: none;">
-									<h4>Opens a boxed log to assign other logs / errors to it.</h4>
-								</a>
-								<ul>
-									<li>the log will get a box layout.</li>
-									<li>it returns an id (<code>typeof number</code>) that can be used with <code>Loxer.of(id)</code> to assign other logs to it</li>
-									<li>it is cached until the logger is initialized</li>
-									<li>it won&#39;t proceed any output if Loxer is disabled</li>
-									<li>the output will be streamed out to the <a href="Loxer.LoxerOptions.html#callbacks">LoxerOptions.callbacks</a> declared in <code>Loxer.init(options)</code></li>
-									<li>if no callbacks are given at the initialization, all logs will be logged with <code>console.log(message, item)</code>,
-									but only in development mode</li>
-									<li>can be chained with <code>.highlight().open(...)</code> or <code>.h().open(...)</code> to highlight the log</li>
-									<li>can be chained with <code>.level().open(...)</code> or <code>.l().open(...)</code> to set a level to the log - otherwise it&#39;s <code>1</code> (high)</li>
-									<li>can be chained with <code>.module().open(...)</code> or <code>.m().open(...)</code> to assign a module to the log - otherwise it&#39;s <code>NONE</code></li>
-									<li>all functions can be chained in combination and different order like: <code>Loxer.h().l(2).m(&#39;Account&#39;).open(...)</code></li>
-								</ul>
-								<hr>
-							</div>
-							<h4 class="tsd-parameters-title">Parameters</h4>
-							<ul class="tsd-parameters">
-								<li>
-									<h5>message: <span class="tsd-signature-type">string</span></h5>
-									<div class="tsd-comment tsd-typography tsd-comment-text">
-										<p>to log</p>
-									</div>
-								</li>
-								<li>
-									<h5><span class="tsd-flag ts-flagOptional">Optional</span> item: <a href="../modules/Formatting.html#ItemType" class="tsd-signature-type">ItemType</a></h5>
-									<div class="tsd-comment tsd-typography tsd-comment-text">
-										<p>to append</p>
-									</div>
-								</li>
-								<li>
-									<h5><span class="tsd-flag ts-flagOptional">Optional</span> itemOptions: <a href="Formatting.ItemOptions.html" class="tsd-signature-type">ItemOptions</a></h5>
-									<div class="tsd-comment tsd-typography tsd-comment-text">
-										<p>to configure the (default) output of the item</p>
-									</div>
-								</li>
-							</ul>
-							<h4 class="tsd-returns-title">Returns <a href="Loxer.OpenedLox.html" class="tsd-signature-type">OpenedLox</a></h4>
-						</li>
-					</ul>
-				</section>
-				<section class="tsd-panel tsd-member tsd-kind-method tsd-parent-kind-interface">
-					<a name="of" class="tsd-anchor"></a>
-					<h3>of</h3>
-					<ul class="tsd-signatures tsd-kind-method tsd-parent-kind-interface">
-						<li class="tsd-signature tsd-kind-icon">of<span class="tsd-signature-symbol">(</span>id<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">number</span><span class="tsd-signature-symbol"> | </span><a href="Loxer.OpenedLox.html" class="tsd-signature-type">OpenedLox</a><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">: </span><a href="Loxer.OfLoxes.html" class="tsd-signature-type">OfLoxes</a></li>
-					</ul>
-					<ul class="tsd-descriptions">
-						<li class="tsd-description">
-							<aside class="tsd-sources">
-							</aside>
-							<div class="tsd-comment tsd-typography tsd-comment-shorttext">
-								<div class="lead">
-									<a href="#assign-logs--errors-to-an-opened-log" id="assign-logs--errors-to-an-opened-log" style="color: inherit; text-decoration: none;">
-										<h2>Assign logs / errors to an opened Log</h2>
-									</a>
-								</div>
-								</div><div class="tsd-comment tsd-typography tsd-comment-text">
-								<pre><code class="language-typescript"><span style="color: #000000">    </span><span style="color: #008000">// this has to be done before:</span>
-<span style="color: #000000">    </span><span style="color: #0000FF">const</span><span style="color: #000000"> </span><span style="color: #0070C1">id</span><span style="color: #000000"> = </span><span style="color: #001080">Loxer</span><span style="color: #000000">.</span><span style="color: #795E26">open</span><span style="color: #000000">(</span><span style="color: #A31515">&#039;opening message&#039;</span><span style="color: #000000">);</span>
-<span style="color: #000000">    </span><span style="color: #008000">// assign a log:</span>
-<span style="color: #000000">    </span><span style="color: #001080">Loxer</span><span style="color: #000000">.</span><span style="color: #795E26">of</span><span style="color: #000000">(</span><span style="color: #001080">id</span><span style="color: #000000">).</span><span style="color: #795E26">add</span><span style="color: #000000">(</span><span style="color: #A31515">&#039;next step is reached&#039;</span><span style="color: #000000">);</span>
-<span style="color: #000000">    </span><span style="color: #008000">// assign an error:</span>
-<span style="color: #000000">    </span><span style="color: #001080">Loxer</span><span style="color: #000000">.</span><span style="color: #795E26">of</span><span style="color: #000000">(</span><span style="color: #001080">id</span><span style="color: #000000">).</span><span style="color: #795E26">error</span><span style="color: #000000">(</span><span style="color: #A31515">&#039;something went wrong&#039;</span><span style="color: #000000">);</span>
-<span style="color: #000000">    </span><span style="color: #008000">// close the log box:</span>
-<span style="color: #000000">    </span><span style="color: #001080">Loxer</span><span style="color: #000000">.</span><span style="color: #795E26">of</span><span style="color: #000000">(</span><span style="color: #001080">id</span><span style="color: #000000">).</span><span style="color: #795E26">close</span><span style="color: #000000">(</span><span style="color: #A31515">&#039;closing message&#039;</span><span style="color: #000000">);</span>
-</code></pre>
-								<a href="#provides-chained-methods-to-add-logs--errors-and-close-the-box-of-the-given-id39s-opened-log" id="provides-chained-methods-to-add-logs--errors-and-close-the-box-of-the-given-id39s-opened-log" style="color: inherit; text-decoration: none;">
-									<h4>Provides chained methods to add logs / errors and close the box of the given <code>id</code>&#39;s opened log.</h4>
-								</a>
-								<ul>
-									<li>assigned logs / errors will receive a time consumption since the box was opened</li>
-									<li>it won&#39;t proceed any output if Loxer is disabled</li>
-									<li>can be chained with <code>.highlight().log(...)</code> or <code>.h().log(...)</code> to highlight the log
-									TODO level changes</li>
-									<li>can be chained with <code>.level().of(...)</code> or <code>.l().of(...)</code> to set a level to the logs - otherwise it&#39;s <code>1</code> (high)</li>
-									<li>chaining with <code>.module().of(...)</code> or <code>.m().of(...)</code> to assign modules will take no effect though assigned
-									modules will always adapt the module of the opening log</li>
-									<li>all functions can be chained in combination and different order like: <code>Loxer.h().l(2).m(&#39;Account&#39;).log(...)</code></li>
-								</ul>
-								<a href="#returned-functions" id="returned-functions" style="color: inherit; text-decoration: none;">
-									<h3>Returned functions</h3>
-								</a>
-								<ul>
-									<li><code>add: (message: string, item?: any)</code> - assigns a single log to the box</li>
-									<li><code>error: (error?: Error | string)</code> - assigns an error log to the box</li>
-									<li><code>close: (message: string, item?: any)</code> - assigns a log to the box, that also closes the box (and its box layout)</li>
-									<li><strong>ATTENTION</strong>: calling <code>add()</code>, <code>error()</code> or <code>close()</code> after closing the box, the log will not be appended to the box but
-									logged anyways with a Warning</li>
-								</ul>
-								<hr>
-							</div>
-							<h4 class="tsd-parameters-title">Parameters</h4>
-							<ul class="tsd-parameters">
-								<li>
-									<h5>id: <span class="tsd-signature-type">number</span><span class="tsd-signature-symbol"> | </span><a href="Loxer.OpenedLox.html" class="tsd-signature-type">OpenedLox</a></h5>
-									<div class="tsd-comment tsd-typography tsd-comment-text">
-										<p>the id returned from <code>Loxer.open()</code> to reference this log to</p>
-									</div>
-								</li>
-							</ul>
-							<h4 class="tsd-returns-title">Returns <a href="Loxer.OfLoxes.html" class="tsd-signature-type">OfLoxes</a></h4>
-						</li>
-					</ul>
-				</section>
-			</section>
-			<!--{&quot;options&quot;:&quot;C:\\dev\\loxer\\typedoc.json&quot;,&quot;tsconfig&quot;:&quot;C:\\dev\\loxer&quot;,&quot;packages&quot;:[],&quot;entryPoints&quot;:[&quot;C:\\dev\\loxer\\src\\types.ts&quot;,&quot;C:\\dev\\loxer\\src\\decorators\\index.ts&quot;,&quot;C:\\dev\\loxer\\src\\loxes\\index.ts&quot;,&quot;C:\\dev\\loxer\\src\\core\\index.ts&quot;,&quot;C:\\dev\\loxer\\src\\core\\Error.ts&quot;],&quot;exclude&quot;:[],&quot;externalPattern&quot;:[&quot;**/node_modules/**&quot;],&quot;excludeExternals&quot;:false,&quot;excludeNotDocumented&quot;:false,&quot;excludeInternal&quot;:true,&quot;excludePrivate&quot;:false,&quot;excludeProtected&quot;:false,&quot;disableSources&quot;:true,&quot;includes&quot;:&quot;C:\\dev\\loxer\\assets&quot;,&quot;media&quot;:&quot;&quot;,&quot;watch&quot;:false,&quot;preserveWatchOutput&quot;:false,&quot;emit&quot;:false,&quot;out&quot;:&quot;C:\\dev\\loxer\\docs&quot;,&quot;json&quot;:&quot;&quot;,&quot;pretty&quot;:true,&quot;theme&quot;:&quot;./node_modules/typedoc-neo-theme/bin/default&quot;,&quot;highlightTheme&quot;:&quot;light-plus&quot;,&quot;name&quot;:&quot;Loxer&quot;,&quot;includeVersion&quot;:true,&quot;excludeTags&quot;:[],&quot;readme&quot;:&quot;&quot;,&quot;defaultCategory&quot;:&quot;Other&quot;,&quot;categoryOrder&quot;:[],&quot;categorizeByGroup&quot;:true,&quot;sort&quot;:[&quot;instance-first&quot;,&quot;source-order&quot;],&quot;gitRevision&quot;:&quot;&quot;,&quot;gitRemote&quot;:&quot;origin&quot;,&quot;gaID&quot;:&quot;&quot;,&quot;gaSite&quot;:&quot;auto&quot;,&quot;hideGenerator&quot;:false,&quot;toc&quot;:[],&quot;disableOutputCheck&quot;:false,&quot;help&quot;:false,&quot;version&quot;:false,&quot;showConfig&quot;:false,&quot;plugin&quot;:[],&quot;logger&quot;:&quot;console&quot;,&quot;logLevel&quot;:1,&quot;treatWarningsAsErrors&quot;:false,&quot;listInvalidSymbolLinks&quot;:false}-->
-		</div>
-		<div class="col-2 col-menu secondary-menu">
-			<nav class="tsd-navigation secondary menu-sticky">
-				<ul class="before-current">
-					<li class=" tsd-kind-type-alias tsd-parent-kind-module root">
-						<a href="../modules/Loxer.html#Loxer-1" class="tsd-kind-icon">Loxer</a>
-					</li>
-					<li class=" tsd-kind-interface tsd-parent-kind-module root">
-						<a href="Loxer.LoxerCore.html" class="tsd-kind-icon">Loxer<wbr>Core</a>
-					</li>
-					<li class=" tsd-kind-interface tsd-parent-kind-module root">
-						<a href="Loxer.LoxerOptions.html" class="tsd-kind-icon">Loxer<wbr>Options</a>
-					</li>
-					<li class=" tsd-kind-type-alias tsd-parent-kind-module root">
-						<a href="../modules/Loxer.html#LoxerModules" class="tsd-kind-icon">Loxer<wbr>Modules</a>
-					</li>
-					<li class=" tsd-kind-interface tsd-parent-kind-module root">
-						<a href="Loxer.Module.html" class="tsd-kind-icon">Module</a>
-					</li>
-					<li class=" tsd-kind-type-alias tsd-parent-kind-module root">
-						<a href="../modules/Loxer.html#LevelType" class="tsd-kind-icon">Level<wbr>Type</a>
-					</li>
-					<li class=" tsd-kind-interface tsd-parent-kind-module root">
-						<a href="Loxer.LoxerCallbacks.html" class="tsd-kind-icon">Loxer<wbr>Callbacks</a>
-					</li>
-					<li class=" tsd-kind-interface tsd-parent-kind-module root">
-						<a href="Loxer.LoxerConfig.html" class="tsd-kind-icon">Loxer<wbr>Config</a>
-					</li>
-				</ul>
-				<ul class="current">
-					<li class="current tsd-kind-interface tsd-parent-kind-module root">
-						<a href="Loxer.LogMethods.html" class="tsd-kind-icon">Log<wbr>Methods</a>
-						<ul>
-							<li class=" tsd-kind-method tsd-parent-kind-interface">
-								<a href="Loxer.LogMethods.html#log" class="tsd-kind-icon">log</a>
-							</li>
-							<li class=" tsd-kind-method tsd-parent-kind-interface">
-								<a href="Loxer.LogMethods.html#error" class="tsd-kind-icon">error</a>
-							</li>
-							<li class=" tsd-kind-method tsd-parent-kind-interface">
-								<a href="Loxer.LogMethods.html#open" class="tsd-kind-icon">open</a>
-							</li>
-							<li class=" tsd-kind-method tsd-parent-kind-interface">
-								<a href="Loxer.LogMethods.html#of" class="tsd-kind-icon">of</a>
-							</li>
-						</ul>
-					</li>
-				</ul>
-				<ul class="after-current">
-					<li class=" tsd-kind-type-alias tsd-parent-kind-module root">
-						<a href="../modules/Loxer.html#ErrorType" class="tsd-kind-icon">Error<wbr>Type</a>
-					</li>
-					<li class=" tsd-kind-interface tsd-parent-kind-module root">
-						<a href="Loxer.OfLoxes.html" class="tsd-kind-icon">Of<wbr>Loxes</a>
-					</li>
-					<li class=" tsd-kind-interface tsd-parent-kind-module root">
-						<a href="Loxer.OpenedLox.html" class="tsd-kind-icon">Opened<wbr>Lox</a>
-					</li>
-					<li class=" tsd-kind-interface tsd-parent-kind-module tsd-has-type-parameter root">
-						<a href="Loxer.Modifiers.html" class="tsd-kind-icon">Modifiers</a>
-					</li>
-					<li class=" tsd-kind-type-alias tsd-parent-kind-module root">
-						<a href="../modules/Loxer.html#LogLevelType" class="tsd-kind-icon">Log<wbr>Level<wbr>Type</a>
-					</li>
-				</ul>
-			</nav>
-		</div>
-	</div>
+<div class="col-content">
+<div class="tsd-page-title">
+<ul class="tsd-breadcrumb" aria-label="Breadcrumb">
+<li><a href="../modules/Loxer.html">Loxer</a></li>
+<li><a href="" aria-current="page">LogMethods</a></li></ul>
+<h1>Interface LogMethods</h1></div>
+<div class="tsd-signature"><span class="tsd-signature-keyword">interface</span> <span class="tsd-kind-interface">LogMethods</span> <span class="tsd-signature-symbol">{</span><br/>    <a class="tsd-kind-call-signature" href="#log-1">log</a><span class="tsd-signature-symbol">(</span><span class="tsd-kind-parameter">message</span><span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">string</span><span class="tsd-signature-symbol">,</span> <span class="tsd-kind-parameter">item</span><span class="tsd-signature-symbol">?:</span> <a href="../types/Formatting.ItemType.html" class="tsd-signature-type tsd-kind-type-alias">ItemType</a><span class="tsd-signature-symbol">,</span> <span class="tsd-kind-parameter">itemOptions</span><span class="tsd-signature-symbol">?:</span> <a href="Formatting.ItemOptions.html" class="tsd-signature-type tsd-kind-interface">ItemOptions</a><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">void</span><span class="tsd-signature-symbol">;</span><br/>    <a class="tsd-kind-call-signature" href="#error-1">error</a><span class="tsd-signature-symbol">(</span><span class="tsd-kind-parameter">error</span><span class="tsd-signature-symbol">:</span> <a href="../types/Loxer.ErrorType.html" class="tsd-signature-type tsd-kind-type-alias">ErrorType</a><span class="tsd-signature-symbol">,</span> <span class="tsd-kind-parameter">item</span><span class="tsd-signature-symbol">?:</span> <a href="../types/Formatting.ItemType.html" class="tsd-signature-type tsd-kind-type-alias">ItemType</a><span class="tsd-signature-symbol">,</span> <span class="tsd-kind-parameter">itemOptions</span><span class="tsd-signature-symbol">?:</span> <a href="Formatting.ItemOptions.html" class="tsd-signature-type tsd-kind-interface">ItemOptions</a><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">void</span><span class="tsd-signature-symbol">;</span><br/>    <a class="tsd-kind-call-signature" href="#open-1">open</a><span class="tsd-signature-symbol">(</span><br/>        <span class="tsd-kind-parameter">message</span><span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">string</span><span class="tsd-signature-symbol">,</span><br/>        <span class="tsd-kind-parameter">item</span><span class="tsd-signature-symbol">?:</span> <a href="../types/Formatting.ItemType.html" class="tsd-signature-type tsd-kind-type-alias">ItemType</a><span class="tsd-signature-symbol">,</span><br/>        <span class="tsd-kind-parameter">itemOptions</span><span class="tsd-signature-symbol">?:</span> <a href="Formatting.ItemOptions.html" class="tsd-signature-type tsd-kind-interface">ItemOptions</a><span class="tsd-signature-symbol">,</span><br/>    <span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">:</span> <a href="Loxer.OpenedLox.html" class="tsd-signature-type tsd-kind-interface">OpenedLox</a><span class="tsd-signature-symbol">;</span><br/>    <a class="tsd-kind-call-signature" href="#of-1">of</a><span class="tsd-signature-symbol">(</span><span class="tsd-kind-parameter">id</span><span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">number</span> <span class="tsd-signature-symbol">|</span> <a href="Loxer.OpenedLox.html" class="tsd-signature-type tsd-kind-interface">OpenedLox</a><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">:</span> <a href="Loxer.OfLoxes.html" class="tsd-signature-type tsd-kind-interface">OfLoxes</a><span class="tsd-signature-symbol">;</span><br/><span class="tsd-signature-symbol">}</span></div>
+<section class="tsd-panel-group tsd-index-group">
+<section class="tsd-panel tsd-index-panel">
+<details class="tsd-index-content tsd-accordion" open><summary class="tsd-accordion-summary tsd-index-summary"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true"><use href="../assets/icons.svg#icon-chevronDown"></use></svg>
+<h5 class="tsd-index-heading uppercase">Index</h5></summary>
+<div class="tsd-accordion-details">
+<section class="tsd-index-section">
+<h3 class="tsd-index-heading tsd-anchor-link" id="methods">Methods<a href="#methods" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
+<div class="tsd-index-list"><a href="#log" class="tsd-index-link"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="Method"><use href="../assets/icons.svg#icon-2048"></use></svg><span>log</span></a>
+<a href="#error" class="tsd-index-link"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="Method"><use href="../assets/icons.svg#icon-2048"></use></svg><span>error</span></a>
+<a href="#open" class="tsd-index-link"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="Method"><use href="../assets/icons.svg#icon-2048"></use></svg><span>open</span></a>
+<a href="#of" class="tsd-index-link"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="Method"><use href="../assets/icons.svg#icon-2048"></use></svg><span>of</span></a>
+</div></section></div></details></section></section>
+<details class="tsd-panel-group tsd-member-group tsd-accordion" open><summary class="tsd-accordion-summary" data-key="section-Methods"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true"><use href="../assets/icons.svg#icon-chevronDown"></use></svg>
+<h2 class="tsd-anchor-link" id="methods-1">Methods<a href="#methods-1" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h2></summary>
+<section>
+<section class="tsd-panel tsd-member">
+<h3 class="tsd-anchor-link" id="log"><span>log</span><a href="#log" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
+<ul class="tsd-signatures">
+<li class="">
+<div class="tsd-signature tsd-anchor-link" id="log-1"><span class="tsd-kind-call-signature">log</span><span class="tsd-signature-symbol">(</span><span class="tsd-kind-parameter">message</span><span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">string</span><span class="tsd-signature-symbol">,</span> <span class="tsd-kind-parameter">item</span><span class="tsd-signature-symbol">?:</span> <a href="../types/Formatting.ItemType.html" class="tsd-signature-type tsd-kind-type-alias">ItemType</a><span class="tsd-signature-symbol">,</span> <span class="tsd-kind-parameter">itemOptions</span><span class="tsd-signature-symbol">?:</span> <a href="Formatting.ItemOptions.html" class="tsd-signature-type tsd-kind-interface">ItemOptions</a><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">void</span><a href="#log-1" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></div>
+<div class="tsd-description">
+<div class="tsd-comment tsd-typography"><h2 id="simple-log" class="tsd-anchor-link">Simple Log<a href="#simple-log" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h2>
+<pre><code class="typescript"><span class="hl-2">    </span><span class="hl-1">Loxer</span><span class="hl-2">.</span><span class="hl-3">log</span><span class="hl-2">(</span><span class="hl-4">&#39;Hello World&#39;</span><span class="hl-2">);</span>
+</code><button type="button">Copy</button></pre>
+
+<h4 id="works-similar-to-but" class="tsd-anchor-link">Works similar to <code>console.log()</code>, but:<a href="#works-similar-to-but" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h4>
+<ul>
+<li>it is cached until the logger is initialized</li>
+<li>it won't proceed any output if Loxer is disabled</li>
+<li>the output will be streamed out to the <a href="Loxer.LoxerOptions.html#callbacks" class="tsd-kind-property">LoxerOptions.callbacks</a> declared in <code>Loxer.init(options)</code></li>
+<li>if no callbacks are given at the initialization, all logs will be logged with <code>console.log(message, item)</code>,
+but only in development mode</li>
+<li>can be chained with <code>.highlight().log(...)</code> or <code>.h().log(...)</code> to highlight the log</li>
+<li>can be chained with <code>.level().log(...)</code> or <code>.l().log(...)</code> to set a level to the log - otherwise it's <code>1</code> (high)</li>
+<li>can be chained with <code>.module().log(...)</code> or <code>.m().log(...)</code> to assign a module to the log - otherwise it's <code>NONE</code></li>
+<li>all functions can be chained in combination and different order like: <code>Loxer.h().l(2).m('Account').log(...)</code></li>
+</ul>
+<hr>
 </div>
-<footer class="with-border-bottom">
-</footer>
-<div class="container tsd-generator">
-	<p>Generated using <a href="http://typedoc.org/" target="_blank">TypeDoc</a></p>
+<div class="tsd-parameters">
+<h4 class="tsd-parameters-title">Parameters</h4>
+<ul class="tsd-parameter-list">
+<li><span><span class="tsd-kind-parameter">message</span>: <span class="tsd-signature-type">string</span></span>
+<div class="tsd-comment tsd-typography"><p>to log</p>
+</div></li>
+<li><span><code class="tsd-tag">Optional</code><span class="tsd-kind-parameter">item</span>: <a href="../types/Formatting.ItemType.html" class="tsd-signature-type tsd-kind-type-alias">ItemType</a></span>
+<div class="tsd-comment tsd-typography"><p>to append</p>
+</div></li>
+<li><span><code class="tsd-tag">Optional</code><span class="tsd-kind-parameter">itemOptions</span>: <a href="Formatting.ItemOptions.html" class="tsd-signature-type tsd-kind-interface">ItemOptions</a></span>
+<div class="tsd-comment tsd-typography"><p>to configure the (default) output of the item</p>
+</div></li></ul></div>
+<h4 class="tsd-returns-title">Returns <span class="tsd-signature-type">void</span></h4></div></li></ul></section>
+<section class="tsd-panel tsd-member">
+<h3 class="tsd-anchor-link" id="error"><span>error</span><a href="#error" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
+<ul class="tsd-signatures">
+<li class="">
+<div class="tsd-signature tsd-anchor-link" id="error-1"><span class="tsd-kind-call-signature">error</span><span class="tsd-signature-symbol">(</span><span class="tsd-kind-parameter">error</span><span class="tsd-signature-symbol">:</span> <a href="../types/Loxer.ErrorType.html" class="tsd-signature-type tsd-kind-type-alias">ErrorType</a><span class="tsd-signature-symbol">,</span> <span class="tsd-kind-parameter">item</span><span class="tsd-signature-symbol">?:</span> <a href="../types/Formatting.ItemType.html" class="tsd-signature-type tsd-kind-type-alias">ItemType</a><span class="tsd-signature-symbol">,</span> <span class="tsd-kind-parameter">itemOptions</span><span class="tsd-signature-symbol">?:</span> <a href="Formatting.ItemOptions.html" class="tsd-signature-type tsd-kind-interface">ItemOptions</a><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">void</span><a href="#error-1" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></div>
+<div class="tsd-description">
+<div class="tsd-comment tsd-typography"><h2 id="advanced-error-log" class="tsd-anchor-link">Advanced error Log<a href="#advanced-error-log" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h2>
+<pre><code class="typescript"><span class="hl-2">    </span><span class="hl-1">Loxer</span><span class="hl-2">.</span><span class="hl-3">error</span><span class="hl-2">(</span><span class="hl-6">new</span><span class="hl-2"> </span><span class="hl-3">Error</span><span class="hl-2">(</span><span class="hl-4">&#39;Goodbye World!&#39;</span><span class="hl-2">));</span>
+</code><button type="button">Copy</button></pre>
+
+<h4 id="works-similar-to-but-1" class="tsd-anchor-link">Works similar to <code>console.error()</code>, but:<a href="#works-similar-to-but-1" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h4>
+<ul>
+<li>it is cached until the logger is initialized</li>
+<li>it won't proceed any output if Loxer is disabled</li>
+<li>the errors will be streamed out to the <a href="Loxer.LoxerOptions.html#callbacks" class="tsd-kind-property">LoxerOptions.callbacks</a> declared in <code>Loxer.init(options)</code></li>
+<li>if no callbacks are given at the initialization, all errors will be logged with <code>console.log(error)</code>,
+but only in development mode</li>
+<li>the given <code>Error</code> will be appended to the output error</li>
+<li>if the message is of type <code>string</code> | <code>number</code> | <code>boolean</code> | <code>object</code>, then a <code>new Error(message.toString())</code>
+will be created and appended</li>
+<li>all opened logs that were not closed until the error occurred will be appended to the error outputLog</li>
+<li>a history of logs will be appended if enabled</li>
+<li>can be chained with <code>.module().error(...)</code> or <code>.m().error(...)</code> to assign a module to the error - otherwise
+it's <code>NONE</code></li>
+<li>chaining with <code>.highlight().error(...)</code> or <code>.h().error(...)</code> does not color the message differently but append
+the stack to the default console output</li>
+<li>chaining with <code>.level().error(...)</code> or <code>.l().error(...)</code> will
+not take any effect on the error log (except that <code>level</code> will be a property of the output)</li>
+</ul>
+<hr>
 </div>
-<div class="overlay"></div>
-<script src="../assets/js/main.js"></script>
-</body>
-</html>
+<div class="tsd-parameters">
+<h4 class="tsd-parameters-title">Parameters</h4>
+<ul class="tsd-parameter-list">
+<li><span><span class="tsd-kind-parameter">error</span>: <a href="../types/Loxer.ErrorType.html" class="tsd-signature-type tsd-kind-type-alias">ErrorType</a></span>
+<div class="tsd-comment tsd-typography"><p>an <code>Error</code> or <code>string</code> | <code>number</code>| <code>boolean</code> | <code>object</code> (converted to an Error)</p>
+</div></li>
+<li><span><code class="tsd-tag">Optional</code><span class="tsd-kind-parameter">item</span>: <a href="../types/Formatting.ItemType.html" class="tsd-signature-type tsd-kind-type-alias">ItemType</a></span>
+<div class="tsd-comment tsd-typography"><p>to append</p>
+</div></li>
+<li><span><code class="tsd-tag">Optional</code><span class="tsd-kind-parameter">itemOptions</span>: <a href="Formatting.ItemOptions.html" class="tsd-signature-type tsd-kind-interface">ItemOptions</a></span>
+<div class="tsd-comment tsd-typography"><p>to configure the (default) output of the item</p>
+</div></li></ul></div>
+<h4 class="tsd-returns-title">Returns <span class="tsd-signature-type">void</span></h4></div></li></ul></section>
+<section class="tsd-panel tsd-member">
+<h3 class="tsd-anchor-link" id="open"><span>open</span><a href="#open" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
+<ul class="tsd-signatures">
+<li class="">
+<div class="tsd-signature tsd-anchor-link" id="open-1"><span class="tsd-kind-call-signature">open</span><span class="tsd-signature-symbol">(</span><span class="tsd-kind-parameter">message</span><span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">string</span><span class="tsd-signature-symbol">,</span> <span class="tsd-kind-parameter">item</span><span class="tsd-signature-symbol">?:</span> <a href="../types/Formatting.ItemType.html" class="tsd-signature-type tsd-kind-type-alias">ItemType</a><span class="tsd-signature-symbol">,</span> <span class="tsd-kind-parameter">itemOptions</span><span class="tsd-signature-symbol">?:</span> <a href="Formatting.ItemOptions.html" class="tsd-signature-type tsd-kind-interface">ItemOptions</a><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">:</span> <a href="Loxer.OpenedLox.html" class="tsd-signature-type tsd-kind-interface">OpenedLox</a><a href="#open-1" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></div>
+<div class="tsd-description">
+<div class="tsd-comment tsd-typography"><h2 id="open-a-boxed-log" class="tsd-anchor-link">Open a boxed Log<a href="#open-a-boxed-log" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h2>
+<pre><code class="typescript"><span class="hl-2">    </span><span class="hl-6">const</span><span class="hl-2"> </span><span class="hl-7">loxId</span><span class="hl-2"> = </span><span class="hl-1">Loxer</span><span class="hl-2">.</span><span class="hl-3">open</span><span class="hl-2">(</span><span class="hl-4">&#39;Open World!&#39;</span><span class="hl-2">)</span>
+</code><button type="button">Copy</button></pre>
+
+<h4 id="opens-a-boxed-log-to-assign-other-logs-errors-to-it" class="tsd-anchor-link">Opens a boxed log to assign other logs / errors to it.<a href="#opens-a-boxed-log-to-assign-other-logs-errors-to-it" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h4>
+<ul>
+<li>the log will get a box layout.</li>
+<li>it returns an id (<code>typeof number</code>) that can be used with <code>Loxer.of(id)</code> to assign other logs to it</li>
+<li>it is cached until the logger is initialized</li>
+<li>it won't proceed any output if Loxer is disabled</li>
+<li>the output will be streamed out to the <a href="Loxer.LoxerOptions.html#callbacks" class="tsd-kind-property">LoxerOptions.callbacks</a> declared in <code>Loxer.init(options)</code></li>
+<li>if no callbacks are given at the initialization, all logs will be logged with <code>console.log(message, item)</code>,
+but only in development mode</li>
+<li>can be chained with <code>.highlight().open(...)</code> or <code>.h().open(...)</code> to highlight the log</li>
+<li>can be chained with <code>.level().open(...)</code> or <code>.l().open(...)</code> to set a level to the log - otherwise it's <code>1</code> (high)</li>
+<li>can be chained with <code>.module().open(...)</code> or <code>.m().open(...)</code> to assign a module to the log - otherwise it's <code>NONE</code></li>
+<li>all functions can be chained in combination and different order like: <code>Loxer.h().l(2).m('Account').open(...)</code></li>
+</ul>
+<hr>
+</div>
+<div class="tsd-parameters">
+<h4 class="tsd-parameters-title">Parameters</h4>
+<ul class="tsd-parameter-list">
+<li><span><span class="tsd-kind-parameter">message</span>: <span class="tsd-signature-type">string</span></span>
+<div class="tsd-comment tsd-typography"><p>to log</p>
+</div></li>
+<li><span><code class="tsd-tag">Optional</code><span class="tsd-kind-parameter">item</span>: <a href="../types/Formatting.ItemType.html" class="tsd-signature-type tsd-kind-type-alias">ItemType</a></span>
+<div class="tsd-comment tsd-typography"><p>to append</p>
+</div></li>
+<li><span><code class="tsd-tag">Optional</code><span class="tsd-kind-parameter">itemOptions</span>: <a href="Formatting.ItemOptions.html" class="tsd-signature-type tsd-kind-interface">ItemOptions</a></span>
+<div class="tsd-comment tsd-typography"><p>to configure the (default) output of the item</p>
+</div></li></ul></div>
+<h4 class="tsd-returns-title">Returns <a href="Loxer.OpenedLox.html" class="tsd-signature-type tsd-kind-interface">OpenedLox</a></h4></div></li></ul></section>
+<section class="tsd-panel tsd-member">
+<h3 class="tsd-anchor-link" id="of"><span>of</span><a href="#of" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
+<ul class="tsd-signatures">
+<li class="">
+<div class="tsd-signature tsd-anchor-link" id="of-1"><span class="tsd-kind-call-signature">of</span><span class="tsd-signature-symbol">(</span><span class="tsd-kind-parameter">id</span><span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">number</span> <span class="tsd-signature-symbol">|</span> <a href="Loxer.OpenedLox.html" class="tsd-signature-type tsd-kind-interface">OpenedLox</a><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">:</span> <a href="Loxer.OfLoxes.html" class="tsd-signature-type tsd-kind-interface">OfLoxes</a><a href="#of-1" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></div>
+<div class="tsd-description">
+<div class="tsd-comment tsd-typography"><h2 id="assign-logs-errors-to-an-opened-log" class="tsd-anchor-link">Assign logs / errors to an opened Log<a href="#assign-logs-errors-to-an-opened-log" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h2>
+<pre><code class="typescript"><span class="hl-2">    </span><span class="hl-0">// this has to be done before:</span><br/><span class="hl-2">    </span><span class="hl-6">const</span><span class="hl-2"> </span><span class="hl-7">id</span><span class="hl-2"> = </span><span class="hl-1">Loxer</span><span class="hl-2">.</span><span class="hl-3">open</span><span class="hl-2">(</span><span class="hl-4">&#39;opening message&#39;</span><span class="hl-2">);</span><br/><span class="hl-2">    </span><span class="hl-0">// assign a log:</span><br/><span class="hl-2">    </span><span class="hl-1">Loxer</span><span class="hl-2">.</span><span class="hl-3">of</span><span class="hl-2">(</span><span class="hl-1">id</span><span class="hl-2">).</span><span class="hl-3">add</span><span class="hl-2">(</span><span class="hl-4">&#39;next step is reached&#39;</span><span class="hl-2">);</span><br/><span class="hl-2">    </span><span class="hl-0">// assign an error:</span><br/><span class="hl-2">    </span><span class="hl-1">Loxer</span><span class="hl-2">.</span><span class="hl-3">of</span><span class="hl-2">(</span><span class="hl-1">id</span><span class="hl-2">).</span><span class="hl-3">error</span><span class="hl-2">(</span><span class="hl-4">&#39;something went wrong&#39;</span><span class="hl-2">);</span><br/><span class="hl-2">    </span><span class="hl-0">// close the log box:</span><br/><span class="hl-2">    </span><span class="hl-1">Loxer</span><span class="hl-2">.</span><span class="hl-3">of</span><span class="hl-2">(</span><span class="hl-1">id</span><span class="hl-2">).</span><span class="hl-3">close</span><span class="hl-2">(</span><span class="hl-4">&#39;closing message&#39;</span><span class="hl-2">);</span>
+</code><button type="button">Copy</button></pre>
+
+<h4 id="provides-chained-methods-to-add-logs-errors-and-close-the-box-of-the-given-s-opened-log" class="tsd-anchor-link">Provides chained methods to add logs / errors and close the box of the given <code>id</code>'s opened log.<a href="#provides-chained-methods-to-add-logs-errors-and-close-the-box-of-the-given-s-opened-log" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h4>
+<ul>
+<li>assigned logs / errors will receive a time consumption since the box was opened</li>
+<li>it won't proceed any output if Loxer is disabled</li>
+<li>can be chained with <code>.highlight().log(...)</code> or <code>.h().log(...)</code> to highlight the log
+TODO level changes</li>
+<li>can be chained with <code>.level().of(...)</code> or <code>.l().of(...)</code> to set a level to the logs - otherwise it's <code>1</code> (high)</li>
+<li>chaining with <code>.module().of(...)</code> or <code>.m().of(...)</code> to assign modules will take no effect though assigned
+modules will always adapt the module of the opening log</li>
+<li>all functions can be chained in combination and different order like: <code>Loxer.h().l(2).m('Account').log(...)</code></li>
+</ul>
+<h3 id="returned-functions" class="tsd-anchor-link">Returned functions<a href="#returned-functions" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
+<ul>
+<li><code>add: (message: string, item?: any)</code> - assigns a single log to the box</li>
+<li><code>error: (error?: Error | string)</code> - assigns an error log to the box</li>
+<li><code>close: (message: string, item?: any)</code> - assigns a log to the box, that also closes the box (and its box layout)</li>
+<li><strong>ATTENTION</strong>: calling <code>add()</code>, <code>error()</code> or <code>close()</code> after closing the box, the log will not be appended to the box but
+logged anyways with a Warning</li>
+</ul>
+<hr>
+</div>
+<div class="tsd-parameters">
+<h4 class="tsd-parameters-title">Parameters</h4>
+<ul class="tsd-parameter-list">
+<li><span><span class="tsd-kind-parameter">id</span>: <span class="tsd-signature-type">number</span> <span class="tsd-signature-symbol">|</span> <a href="Loxer.OpenedLox.html" class="tsd-signature-type tsd-kind-interface">OpenedLox</a></span>
+<div class="tsd-comment tsd-typography"><p>the id returned from <code>Loxer.open()</code> to reference this log to</p>
+</div></li></ul></div>
+<h4 class="tsd-returns-title">Returns <a href="Loxer.OfLoxes.html" class="tsd-signature-type tsd-kind-interface">OfLoxes</a></h4></div></li></ul></section></section></details></div>
+<div class="col-sidebar">
+<div class="page-menu">
+<div class="tsd-navigation settings">
+<details class="tsd-accordion"><summary class="tsd-accordion-summary"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true"><use href="../assets/icons.svg#icon-chevronDown"></use></svg>
+<h3>Settings</h3></summary>
+<div class="tsd-accordion-details">
+<div class="tsd-filter-visibility"><span class="settings-label">Member Visibility</span>
+<ul id="tsd-filter-options">
+<li class="tsd-filter-item"><label class="tsd-filter-input"><input type="checkbox" id="tsd-filter-protected" name="protected"/><svg width="32" height="32" viewBox="0 0 32 32" aria-hidden="true"><rect class="tsd-checkbox-background" width="30" height="30" x="1" y="1" rx="6" fill="none"></rect><path class="tsd-checkbox-checkmark" d="M8.35422 16.8214L13.2143 21.75L24.6458 10.25" stroke="none" stroke-width="3.5" stroke-linejoin="round" fill="none"></path></svg><span>Protected</span></label></li>
+<li class="tsd-filter-item"><label class="tsd-filter-input"><input type="checkbox" id="tsd-filter-inherited" name="inherited" checked/><svg width="32" height="32" viewBox="0 0 32 32" aria-hidden="true"><rect class="tsd-checkbox-background" width="30" height="30" x="1" y="1" rx="6" fill="none"></rect><path class="tsd-checkbox-checkmark" d="M8.35422 16.8214L13.2143 21.75L24.6458 10.25" stroke="none" stroke-width="3.5" stroke-linejoin="round" fill="none"></path></svg><span>Inherited</span></label></li>
+<li class="tsd-filter-item"><label class="tsd-filter-input"><input type="checkbox" id="tsd-filter-external" name="external"/><svg width="32" height="32" viewBox="0 0 32 32" aria-hidden="true"><rect class="tsd-checkbox-background" width="30" height="30" x="1" y="1" rx="6" fill="none"></rect><path class="tsd-checkbox-checkmark" d="M8.35422 16.8214L13.2143 21.75L24.6458 10.25" stroke="none" stroke-width="3.5" stroke-linejoin="round" fill="none"></path></svg><span>External</span></label></li></ul></div>
+<div class="tsd-theme-toggle"><label class="settings-label" for="tsd-theme">Theme</label><select id="tsd-theme"><option value="os">OS</option><option value="light">Light</option><option value="dark">Dark</option></select></div></div></details></div>
+<details open class="tsd-accordion tsd-page-navigation"><summary class="tsd-accordion-summary"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true"><use href="../assets/icons.svg#icon-chevronDown"></use></svg>
+<h3>On This Page</h3></summary>
+<div class="tsd-accordion-details">
+<details open class="tsd-accordion tsd-page-navigation-section"><summary class="tsd-accordion-summary" data-key="section-Methods"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true"><use href="../assets/icons.svg#icon-chevronDown"></use></svg>Methods</summary>
+<div><a href="#log"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="Method"><use href="../assets/icons.svg#icon-2048"></use></svg><span>log</span></a>
+<ul>
+<li>
+<ul>
+<li><a href="#simple-log"><span>Simple <wbr/>Log</span></a></li>
+<li>
+<ul>
+<li>
+<ul>
+<li><a href="#works-similar-to-but"><span>Works similar to , but:</span></a></li></ul></li></ul></li></ul></li></ul><a href="#error"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="Method"><use href="../assets/icons.svg#icon-2048"></use></svg><span>error</span></a>
+<ul>
+<li>
+<ul>
+<li><a href="#advanced-error-log"><span>Advanced error <wbr/>Log</span></a></li>
+<li>
+<ul>
+<li>
+<ul>
+<li><a href="#works-similar-to-but-1"><span>Works similar to , but:</span></a></li></ul></li></ul></li></ul></li></ul><a href="#open"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="Method"><use href="../assets/icons.svg#icon-2048"></use></svg><span>open</span></a>
+<ul>
+<li>
+<ul>
+<li><a href="#open-a-boxed-log"><span>Open a boxed <wbr/>Log</span></a></li>
+<li>
+<ul>
+<li>
+<ul>
+<li><a href="#opens-a-boxed-log-to-assign-other-logs-errors-to-it"><span>Opens a boxed log to assign other logs / errors to it.</span></a></li></ul></li></ul></li></ul></li></ul><a href="#of"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="Method"><use href="../assets/icons.svg#icon-2048"></use></svg><span>of</span></a>
+<ul>
+<li><a href="#assign-logs-errors-to-an-opened-log"><span>Assign logs / errors to an opened <wbr/>Log</span></a></li>
+<li>
+<ul>
+<li>
+<ul>
+<li><a href="#provides-chained-methods-to-add-logs-errors-and-close-the-box-of-the-given-s-opened-log"><span>Provides chained methods to add logs / errors and close the box of the given &#39;s opened log.</span></a></li></ul></li>
+<li><a href="#returned-functions"><span>Returned functions</span></a></li></ul></li></ul></div></details></div></details></div>
+<div class="site-menu">
+<nav class="tsd-navigation"><a href="../modules.html">Loxer - v3.0.0</a>
+<ul class="tsd-small-nested-navigation" id="tsd-nav-container">
+<li>Loading...</li></ul></nav></div></div></div><footer>
+<p class="tsd-generator">Generated using <a href="https://typedoc.org/" target="_blank">TypeDoc</a></p></footer>
+<div class="overlay"></div></body></html>

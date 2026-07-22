@@ -10,8 +10,6 @@
   "includeVersion": true,
   "disableSources": true,
   "out": "docs",
-  "includes": "assets",
   "sort": ["instance-first", "source-order"],
-  "excludeInternal": true,
-  "theme": "./node_modules/typedoc-neo-theme/bin/default"
+  "excludeInternal": true
 }

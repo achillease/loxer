@@ -1,6 +1,6 @@
 {
   "name": "loxer",
-  "version": "2.0.0",
+  "version": "3.0.0",
   "description": "Logger, Tracer, Error detector, dataflow visualizer",
   "author": "Christian Prinz",
   "license": "MIT",
@@ -13,46 +13,42 @@
     "log level",
     "box"
   ],
-  "main": "dist/index.js",
-  "types": "dist/index.d.ts",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    },
+    "./package.json": "./package.json"
+  },
   "files": [
     "dist"
   ],
   "engines": {
-    "node": ">=10"
+    "node": ">=20"
   },
   "scripts": {
     "build": "tsc",
     "watch": "tsc --watch",
     "test": "vitest run --coverage",
-    "lint": "eslint . --ext .ts",
-    "prepare": "pnpm build",
+    "lint": "eslint .",
+    "prepare": "husky && pnpm build",
     "docs": "typedoc --options typedoc.json"
   },
   "packageManager": "pnpm@10.27.0",
-  "husky": {
-    "hooks": {
-      "pre-commit": "pnpm lint"
-    }
-  },
-  "dependencies": {
-    "color": "<4"
-  },
   "devDependencies": {
-    "@types/color": "3.0.2",
-    "@types/node": "16.9.0",
-    "@typescript-eslint/eslint-plugin": "4.31.0",
-    "@typescript-eslint/parser": "4.31.0",
+    "@types/node": "20.19.43",
     "@vitest/coverage-v8": "^4.1.10",
-    "eslint": "7.32.0",
-    "eslint-config-prettier": "8.3.0",
-    "eslint-plugin-prettier": "4.0.0",
-    "husky": "7.0.2",
-    "prettier": "2.4.0",
-    "tslib": "2.3.1",
-    "typedoc": "0.21.9",
-    "typedoc-neo-theme": "1.1.1",
-    "typescript": "4.4.2",
+    "eslint": "10.7.0",
+    "eslint-config-prettier": "10.1.8",
+    "eslint-plugin-prettier": "5.5.6",
+    "husky": "9.1.7",
+    "prettier": "3.9.6",
+    "typedoc": "0.28.20",
+    "typescript": "6.0.3",
+    "typescript-eslint": "^8.65.0",
     "vitest": "^4.1.10"
   }
 }

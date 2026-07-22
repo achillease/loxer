@@ -1,8 +1,6 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
-/* eslint-disable @typescript-eslint/explicit-module-boundary-types */
-import { is } from '../Helpers';
-import { Loxer } from '../Loxer';
-import { LogLevelType } from '../types';
+import { is } from '../Helpers.js';
+import { Loxer } from '../Loxer.js';
+import { LogLevelType } from '../types.js';
 
 /**
  * The Options for the `@trace(options: TracerOptions | string)` decorator
@@ -25,11 +23,7 @@ export interface TraceOptions {
    * - defaults to `'functionName'`
    */
   openMessage?:
-    | ((args: any[]) => string)
-    | 'functionName'
-    | 'className.functionName'
-    | 'types'
-    | 'args';
+    ((args: any[]) => string) | 'functionName' | 'className.functionName' | 'types' | 'args';
   /** how should the opening message be styled. for example if `MyServiceClass.myFunction(a: number, b: string)`
    * returns `{val: "test", count: 5}`:
    * - `'functionName'`: prints `"myFunction done"`

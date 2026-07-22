@@ -1,5 +1,5 @@
 /** @internal is not undefined or null */
-export function is<T extends any>(arg: T | undefined | null): arg is T {
+export function is<T>(arg: T | undefined | null): arg is T {
   return arg != null;
 }
 
@@ -18,7 +18,7 @@ export function isNumber(arg: unknown): arg is number {
   return is(arg) && typeof arg === 'number' && !isNaN(arg);
 }
 /** @internal filters a list after it's defined values (typed) */
-export function filterDef<T extends any>(list: (T | undefined)[]): T[] {
+export function filterDef<T>(list: (T | undefined)[]): T[] {
   return list.filter((element) => is(element)) as T[];
 }
 

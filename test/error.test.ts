@@ -51,3 +51,20 @@ test('LoxerError carries its dedicated name', () => {
   expect(le.name).toBe('LoxerError');
   expect(le.message).toBe('internal failure');
 });
+
+// Under the old ES5 `tsconfig` target, subclassing the built-in `Error` broke
+// `instanceof` (`super(message)` did not correctly wire up the subclass prototype
+// chain when downleveled to ES5). The target was switched to ES2022 (native
+// classes) specifically to fix this - lock in both `instanceof` checks so a
+// regression to ES5-style emit is caught here.
+test('NamedError is a correct instanceof NamedError and Error (native ES2022 class emit)', () => {
+  const plain = new NamedError('TestError', 'no wrapped error');
+  expect(plain instanceof NamedError).toBe(true);
+  expect(plain instanceof Error).toBe(true);
+});
+
+test('NamedError is a correct instanceof NamedError and Error when wrapping an existing error', () => {
+  const wrapped = new NamedError('TestError', 'wraps an error', new RangeError('range'));
+  expect(wrapped instanceof NamedError).toBe(true);
+  expect(wrapped instanceof Error).toBe(true);
+});

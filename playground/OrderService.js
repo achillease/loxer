@@ -20,7 +20,7 @@
 //  Run it with:  node playground/OrderService.js
 // ---------------------------------------------------------------------------------------------
 
-const { Loxer, NamedError, resetLoxer } = require('../dist');
+import { Loxer, NamedError, resetLoxer } from '../dist/index.js';
 
 // --- tiny helpers ----------------------------------------------------------------------------
 

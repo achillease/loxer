@@ -1,7 +1,7 @@
-import Color from 'color';
-import { safeNumber } from '../Helpers';
-import { ErrorLox } from '../loxes/ErrorLox';
-import { OutputLox } from '../loxes/OutputLox';
+import { Color } from './color/index.js';
+import { safeNumber } from '../Helpers.js';
+import { ErrorLox } from '../loxes/ErrorLox.js';
+import { OutputLox } from '../loxes/OutputLox.js';
 
 export class ANSIFormat {
   /** @internal */

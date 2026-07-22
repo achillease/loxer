@@ -1,7 +1,7 @@
-import { OutputLox } from '../loxes/OutputLox';
-import { ANSIFormat } from './ANSIFormat';
-import { BoxLayouts, BoxLayoutStyle, BoxSymbols } from './BoxFormat';
-import { Loxes } from './Loxes';
+import { OutputLox } from '../loxes/OutputLox.js';
+import { ANSIFormat } from './ANSIFormat.js';
+import { BoxLayouts, BoxLayoutStyle, BoxSymbols } from './BoxFormat.js';
+import { Loxes } from './Loxes.js';
 
 export type Box = (BoxSegment | 'empty')[];
 

@@ -7,7 +7,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        node: ['18.x', '20.x', '22.x']
+        node: ['20.x', '22.x', '24.x']
         os: [windows-latest, ubuntu-latest, macOS-latest]
 
     steps:
@@ -26,11 +26,14 @@ jobs:
       - name: Install deps
         run: pnpm install --frozen-lockfile
 
+      - name: Audit (production deps)
+        run: pnpm audit --prod
+
       - name: Lint
         run: pnpm lint
 
       - name: Test
-        run: pnpm test --ci --coverage --maxWorkers=2
+        run: pnpm test
 
       - name: Build
         run: pnpm build

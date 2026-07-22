@@ -1,10 +1,10 @@
-import { ErrorLox } from '../loxes/ErrorLox';
-import { OutputLox } from '../loxes/OutputLox';
-import { LoxerCallbacks } from '../types';
-import { ANSIFormat } from './ANSIFormat';
-import { BoxFactory } from './BoxFactory';
-import { Item } from './Item';
-import { LoxHistory } from './LoxHistory';
+import { ErrorLox } from '../loxes/ErrorLox.js';
+import { OutputLox } from '../loxes/OutputLox.js';
+import { LoxerCallbacks } from '../types.js';
+import { ANSIFormat } from './ANSIFormat.js';
+import { BoxFactory } from './BoxFactory.js';
+import { Item } from './Item.js';
+import { LoxHistory } from './LoxHistory.js';
 
 interface OutputStreamsProps {
   callbacks?: LoxerCallbacks;

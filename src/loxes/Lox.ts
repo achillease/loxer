@@ -1,6 +1,6 @@
-import { ItemOptions, ItemType } from '../core/Item';
-import { is } from '../Helpers';
-import { LevelType } from '../types';
+import { ItemOptions, ItemType } from '../core/Item.js';
+import { is } from '../Helpers.js';
+import { LevelType } from '../types.js';
 /** @module Lox */
 
 export type LoxType = 'single' | 'open' | 'close' | 'error';

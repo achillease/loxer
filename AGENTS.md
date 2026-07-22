@@ -10,24 +10,30 @@ visualization for nested or async data flow.
 - Install with `pnpm install`.
 - Build with `pnpm build` (`tsc`, emits `dist/` from `src/`).
 - Test with `pnpm test` (`vitest run --coverage`).
-- Lint with `pnpm lint` (`eslint . --ext .ts`).
+- Lint with `pnpm lint` (`eslint .`, flat config `eslint.config.mjs`).
 - Regenerate API HTML with `pnpm docs` (`typedoc --options typedoc.json`, writes `docs/`).
 
 ## Stack
 
-TypeScript 4.4, `strict: true`, target ES5, module commonjs, declarations emitted,
-`experimentalDecorators: true`. The published package's `engines.node` is `>=10` (the compiled
-ES5 output), but local development uses pnpm (pinned via `packageManager: pnpm@10.27.0` in
-`package.json`), which requires Node `>=18`. Sole runtime dependency is `color` (`<4`). Tests run
-on Vitest; lint runs eslint + `@typescript-eslint` + prettier. A husky pre-commit hook
-runs `pnpm lint`.
+TypeScript ~6.0, `strict: true`, target ES2022, declarations emitted,
+`experimentalDecorators: true`. The package is ESM-only: `package.json` sets `"type": "module"`,
+and the single `tsconfig.json` sets `module`/`moduleResolution` to `"nodenext"`, emitting one
+ES-module tree to `dist/` — there is no CommonJS build. Consumers import it as ESM; a CJS
+consumer on Node 22+ can still `require()` it via Node's `require(esm)` interop, but on the Node
+20 floor must use dynamic `import()`. The published package's `engines.node` is now `>=20`
+(itself EOL, an accepted tradeoff) — up from `>=10`. `packageManager: pnpm@10.27.0` pins the
+package manager for local development. There are zero runtime dependencies: the former `color`
+dependency was removed and its parsing logic vendored into `src/core/color/`. Tests run on
+Vitest; lint runs eslint 10 (flat config) + `typescript-eslint` 8 + prettier 3. A husky
+pre-commit hook (`.husky/pre-commit`) runs `pnpm lint`.
 
 ## Layout
 
 - `src/` is the package source. `src/index.ts` is the public export surface.
 - `src/Loxer.ts` owns the singleton logger, chaining state, initialization, queueing, level
   checks, history, and output dispatch.
-- `src/core/` contains the formatting, module, history, output, box, item, and error helpers.
+- `src/core/` contains the formatting, module, history, output, box, item, and error helpers,
+  plus `src/core/color/` (vendored color parsing, replacing the former `color` dependency).
 - `src/loxes/` contains the `Lox`, `OutputLox`, and `ErrorLox` value classes.
 - `src/decorators/` contains the `@initLoxer` and `@trace` decorators.
 - `test/` covers observable logger behavior and low-level formatting helpers; excluded from the
@@ -36,6 +42,11 @@ runs `pnpm lint`.
 - `docs/` is generated TypeDoc HTML and may be wiped entirely by `pnpm docs` (`cleanOutputDir`);
   never put hand-written files there. Steering docs live in `rules/` instead, indexed below.
 - `___src/` is outside `tsconfig.json`'s `include` and is not part of the package build.
+- `playground/` holds hand-written, runnable usage examples (`playground.js`, `items.js`,
+  `docs.js`, `Logo.js`, `Speedtest.js`, `OrderService.js`) that import the built package from
+  `../dist/index.js` — not covered by the tsconfig build, lint, or test config, so nothing in CI
+  catches when they break. After `pnpm build`, run one with `node playground/<file>.js` and keep
+  its imports in sync with the package's module format and public export surface.
 
 ## Behavior
 

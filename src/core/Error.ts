@@ -1,6 +1,6 @@
 /** @module Error */
-import { eraseBeginningLines, isError } from '../Helpers';
-import { ErrorType } from '../types';
+import { eraseBeginningLines, isError } from '../Helpers.js';
+import { ErrorType } from '../types.js';
 
 /** A customizable Error, that may be created from an existing Error */
 export class NamedError extends Error {

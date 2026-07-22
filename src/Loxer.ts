@@ -1,14 +1,14 @@
-import { BoxFactory } from './core/BoxFactory';
-import { castError, LoxerError, NamedError } from './core/Error';
-import { ItemType, ItemOptions } from './core/Item';
-import { Loxes } from './core/Loxes';
-import { LoxHistory } from './core/LoxHistory';
-import { Modules } from './core/Modules';
-import { OutputStreams } from './core/OutputStreams';
-import { is, isError, isNES } from './Helpers';
-import { ErrorLox } from './loxes/ErrorLox';
-import { Lox, LoxType } from './loxes/Lox';
-import { OutputLox } from './loxes/OutputLox';
+import { BoxFactory } from './core/BoxFactory.js';
+import { castError, LoxerError, NamedError } from './core/Error.js';
+import { ItemType, ItemOptions } from './core/Item.js';
+import { Loxes } from './core/Loxes.js';
+import { LoxHistory } from './core/LoxHistory.js';
+import { Modules } from './core/Modules.js';
+import { OutputStreams } from './core/OutputStreams.js';
+import { is, isError, isNES } from './Helpers.js';
+import { ErrorLox } from './loxes/ErrorLox.js';
+import { Lox, LoxType } from './loxes/Lox.js';
+import { OutputLox } from './loxes/OutputLox.js';
 import {
   ErrorType,
   LogLevelType,
@@ -16,7 +16,7 @@ import {
   LoxerOptions,
   OfLoxes,
   OpenedLox,
-} from './types';
+} from './types.js';
 
 /**
  * This is the main class of Loxer. It works "static" because it's a singleton instance though you

@@ -1,5 +1,5 @@
-import { Loxer } from '../Loxer';
-import { LoxerOptions } from '../types';
+import { Loxer } from '../Loxer.js';
+import { LoxerOptions } from '../types.js';
 
 /**
  * This class decorator initializes the Loxer immediately when the before the class is used.

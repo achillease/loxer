@@ -14,6 +14,9 @@
   Markdown meant to render outside the repo (README, npm page).
 - Regenerate the API reference with `pnpm docs` (`typedoc --options typedoc.json`) after a JSDoc
   change. A documentation task touching JSDoc is done only when `pnpm docs` exits 0.
+- Keep workflow plan folders and worklogs at repo-root `plans/<date>-<slug>/`, never under
+  `docs/plans/`. `docs/` is the TypeDoc `out` dir, so `pnpm docs` wipes anything living there (see
+  the `docs/` Never below); untracked plan folders would be destroyed on the next run.
 - When renaming or moving a file under `documentation/`, update the matching
   `https://github.com/pcprinz/loxer/blob/master/documentation/...` links in `README.md` and in the
   JSDoc comments on the `Loxer` class in `src/Loxer.ts`. `typedoc.json` sets no `readme` option, so
@@ -23,8 +26,14 @@
 
 ## Never
 
-- Never hand-edit anything under `docs/` — it is generated output and `pnpm docs` may wipe it.
-  Edit source JSDoc or `typedoc.json` instead, then regenerate.
+- Never hand-edit anything under `docs/`, and never place hand-written files (workflow plan
+  folders included) there — it is generated output, and `pnpm docs` wipes the **entire** `docs/`
+  tree on every run (`cleanOutputDir` defaults to `true`). Edit source JSDoc or `typedoc.json`
+  instead, then regenerate.
+- Never add `readme: "none"` to `typedoc.json`, or otherwise suppress the README front page —
+  `docs/index.html` is intentionally the rendered `README.md`, not the API module index. If the
+  generated docs look wrong (e.g. a stale version in the title), regenerate with `pnpm docs`; do
+  not change the landing page.
 - Never copy generated API reference content (member lists, generated signatures) into
   `documentation/`; link to the TypeDoc output for exhaustive members and keep `documentation/`
   task-oriented.

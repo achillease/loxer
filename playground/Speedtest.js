@@ -1,5 +1,4 @@
-const { Loxer } = require('../dist');
-const { resetLoxer } = require('../dist');
+import { Loxer, resetLoxer } from '../dist/index.js';
 
 let logResult = '';
 

@@ -1,3 +1,3 @@
 /** @module Decorators */
-export * from './initLoxer';
-export * from './trace';
+export * from './initLoxer.js';
+export * from './trace.js';

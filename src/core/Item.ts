@@ -1,5 +1,5 @@
-import { Lox } from '../loxes/Lox';
-import { ANSIFormat } from './ANSIFormat';
+import { Lox } from '../loxes/Lox.js';
+import { ANSIFormat } from './ANSIFormat.js';
 
 /** any primitive and non primitive type that an `Item`can be composed of */
 export type ItemType =
@@ -8,7 +8,7 @@ export type ItemType =
   | symbol
   | string
   | boolean
-  // eslint-disable-next-line @typescript-eslint/ban-types
+  // eslint-disable-next-line @typescript-eslint/no-wrapper-object-types
   | Object
   | any[]
   | (() => any)
@@ -311,7 +311,7 @@ export class Item {
   }
 
   /** @internal */
-  // eslint-disable-next-line @typescript-eslint/ban-types
+  // eslint-disable-next-line @typescript-eslint/no-unsafe-function-type
   private printFunction(item: Function | (() => any)): [colored: string, plain: string] {
     const fText = item.name ? `: ${item.name}` : ' (anonymous)';
     const value = this._printFunction ? item.toString() : `[Function${fText}]`;

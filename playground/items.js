@@ -1,4 +1,4 @@
-const { Loxer, BoxLayouts, BoxFactory } = require('../dist');
+import { Loxer } from '../dist/index.js';
 
 Loxer.init({
   dev: true,

@@ -1,352 +1,157 @@
-<!doctype html>
-<html class="default no-js">
-<head>
-	<meta charset="utf-8">
-	<meta http-equiv="X-UA-Compatible" content="IE=edge">
-	<title>LoxerOptions | Loxer - v1.1.1</title>
-	<meta name="description" content="">
-	<meta name="viewport" content="width=device-width, initial-scale=1">
-	<link rel="stylesheet" href="../assets/css/main.css">
-	<script async src="../assets/js/search.js" id="search-script"></script>
-</head>
-<body>
-<header>
-	<div class="tsd-page-toolbar">
-		<div class="container">
-			<div class="table-wrap">
-				<div class="table-cell" id="tsd-search" data-index="../assets/js/search.json" data-base="..">
-					<div class="field">
-						<label for="tsd-search-field" class="tsd-widget search no-caption">Search</label>
-						<input id="tsd-search-field" type="text" />
-					</div>
-					<ul class="results">
-						<li class="state loading">Preparing search index...</li>
-						<li class="state failure">The search index is not available</li>
-					</ul>
-					<ul class="results-priority" style="display:none">
-					</ul>
-					<a href="../index.html" class="title">Loxer - v1.1.1</a>
-				</div>
-				<div class="table-cell" id="tsd-widgets">
-					<div id="tsd-filter">
-						<a href="#" class="tsd-widget options no-caption" data-toggle="options">Options</a>
-						<div class="tsd-filter-group">
-							<div class="tsd-select" id="tsd-filter-visibility">
-								<span class="tsd-select-label">All</span>
-								<ul class="tsd-select-list">
-									<li data-value="public">Public</li>
-									<li data-value="protected">Public/Protected</li>
-									<li data-value="private" class="selected">All</li>
-								</ul>
-							</div>
-							<input type="checkbox" id="tsd-filter-inherited" checked />
-							<label class="tsd-widget" for="tsd-filter-inherited">Inherited</label>
-							<input type="checkbox" id="tsd-filter-externals" checked />
-							<label class="tsd-widget" for="tsd-filter-externals">Externals</label>
-							<input type="checkbox" id="tsd-filter-only-exported" />
-							<label class="tsd-widget" for="tsd-filter-only-exported">Only exported</label>
-						</div>
-					</div>
-					<a href="#" class="tsd-widget menu no-caption" data-toggle="menu">Menu</a>
-				</div>
-			</div>
-		</div>
-	</div>
-	<div class="tsd-page-title">
-		<div class="container">
-			<ul class="tsd-breadcrumb">
-				<li>
-					<a href="../modules/Loxer.html">Loxer</a>
-				</li>
-				<li>
-					<a href="Loxer.LoxerOptions.html">LoxerOptions</a>
-				</li>
-			</ul>
-		</div>
-	</div>
-</header>
+<!DOCTYPE html><html class="default" lang="en" data-base="../"><head><meta charset="utf-8"/><meta http-equiv="x-ua-compatible" content="IE=edge"/><title>LoxerOptions | Loxer - v3.0.0</title><meta name="description" content="Documentation for Loxer"/><meta name="viewport" content="width=device-width, initial-scale=1"/><link rel="stylesheet" href="../assets/style.css"/><link rel="stylesheet" href="../assets/highlight.css"/><script defer src="../assets/main.js"></script><script async src="../assets/icons.js" id="tsd-icons-script"></script><script async src="../assets/search.js" id="tsd-search-script"></script><script async src="../assets/navigation.js" id="tsd-nav-script"></script><script async src="../assets/hierarchy.js" id="tsd-hierarchy-script"></script></head><body><script>document.documentElement.dataset.theme = localStorage.getItem("tsd-theme") || "os";document.body.style.display="none";setTimeout(() => window.app?app.showPage():document.body.style.removeProperty("display"),500)</script><header class="tsd-page-toolbar">
+<div class="tsd-toolbar-contents container"><a href="../index.html" class="title">Loxer - v3.0.0</a>
+<div id="tsd-toolbar-links"></div><button id="tsd-search-trigger" class="tsd-widget" aria-label="Search"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><use href="../assets/icons.svg#icon-search"></use></svg></button><dialog id="tsd-search" aria-label="Search"><input role="combobox" id="tsd-search-input" aria-controls="tsd-search-results" aria-autocomplete="list" aria-expanded="true" autocapitalize="off" autocomplete="off" placeholder="Search the docs" maxLength="100"/>
+<ul role="listbox" id="tsd-search-results"></ul>
+<div id="tsd-search-status" aria-live="polite" aria-atomic="true">
+<div>Preparing search index...</div></div></dialog><a href="#" class="tsd-widget menu" id="tsd-toolbar-menu-trigger" data-toggle="menu" aria-label="Menu"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><use href="../assets/icons.svg#icon-menu"></use></svg></a></div></header>
 <div class="container container-main">
-	<div class="row">
-		<div class="col-3 col-menu menu-sticky-wrap menu-highlight">
-			<nav class="tsd-navigation primary">
-				<ul>
-					<li class=" ">
-						<a href="../modules.html">Modules</a>
-					</li>
-					<li class=" tsd-kind-module">
-						<a href="../modules/Decorators.html">Decorators</a>
-					</li>
-					<li class=" tsd-kind-module">
-						<a href="../modules/Error.html">Error</a>
-					</li>
-					<li class=" tsd-kind-module">
-						<a href="../modules/Formatting.html">Formatting</a>
-					</li>
-					<li class=" tsd-kind-module">
-						<a href="../modules/Logs.html">Logs</a>
-					</li>
-					<li class="current tsd-kind-module">
-						<a href="../modules/Loxer.html">Loxer</a>
-					</li>
-				</ul>
-			</nav>
-		</div>
-		<div class="col-7 offset-3 col-content">
-			<h1>Interface LoxerOptions</h1>
-			<section class="tsd-panel tsd-comment"><div class="tsd-comment tsd-typography tsd-comment-shorttext">
-					<div class="lead">
-						<p>Options for the {@link Loxer.init} method</p>
-					</div>
-			</div></section>
-			<section class="tsd-panel tsd-hierarchy">
-				<h3>Hierarchy</h3>
-				<ul class="tsd-hierarchy">
-					<li>
-						<span class="target">LoxerOptions</span>
-					</li>
-				</ul>
-			</section>
-			<section class="tsd-panel-group tsd-index-group">
-				<section class="tsd-panel tsd-index-panel">
-					<div class="tsd-index-content">
-						<section class="tsd-index-section ">
-							<h3>Properties</h3>
-							<ul class="tsd-index-list">
-								<li class="tsd-kind-property tsd-parent-kind-interface"><a href="Loxer.LoxerOptions.html#modules" class="tsd-kind-icon">modules</a></li>
-								<li class="tsd-kind-property tsd-parent-kind-interface"><a href="Loxer.LoxerOptions.html#dev" class="tsd-kind-icon">dev</a></li>
-								<li class="tsd-kind-property tsd-parent-kind-interface"><a href="Loxer.LoxerOptions.html#callbacks" class="tsd-kind-icon">callbacks</a></li>
-								<li class="tsd-kind-property tsd-parent-kind-interface"><a href="Loxer.LoxerOptions.html#config" class="tsd-kind-icon">config</a></li>
-								<li class="tsd-kind-property tsd-parent-kind-interface"><a href="Loxer.LoxerOptions.html#defaultLevels" class="tsd-kind-icon">default<wbr>Levels</a></li>
-							</ul>
-						</section>
-					</div>
-				</section>
-			</section>
-			<section class="tsd-panel-group tsd-member-group ">
-				<h2>Properties</h2>
-				<section class="tsd-panel tsd-member tsd-kind-property tsd-parent-kind-interface">
-					<a name="modules" class="tsd-anchor"></a>
-					<h3><span class="tsd-flag ts-flagOptional">Optional</span> modules</h3>
-					<div class="tsd-signature tsd-kind-icon">modules<span class="tsd-signature-symbol">:</span> <a href="../modules/Loxer.html#LoxerModules" class="tsd-signature-type">LoxerModules</a></div>
-					<aside class="tsd-sources">
-					</aside>
-					<div class="tsd-comment tsd-typography tsd-comment-shorttext">
-						<div class="lead">
-							<a href="#an-object-containing-all-loggable-modules" id="an-object-containing-all-loggable-modules" style="color: inherit; text-decoration: none;">
-								<h2>An object containing all loggable modules</h2>
-							</a>
-							<p>an exemplary module &quot;Persons&quot; would look like this:</p>
-						</div>
-						</div><div class="tsd-comment tsd-typography tsd-comment-text">
-						<pre><code class="language-typescript"><span style="color: #000000">  PERS: { fullName: </span><span style="color: #A31515">&#039;Persons&#039;</span><span style="color: #000000">, color: </span><span style="color: #A31515">&#039;#0ff&#039;</span><span style="color: #000000">, devLevel: </span><span style="color: #098658">3</span><span style="color: #000000">, prodLevel: </span><span style="color: #098658">1</span><span style="color: #000000"> }</span>
-</code></pre>
-						<ul>
-							<li>the key <code>PERS</code> will be used to reference the module in the logs and is kept short for laziness</li>
-							<li>the fullName will be (possibly sliced - see <a href="Loxer.LoxerConfig.html#moduleTextSlice">LoxerConfig.moduleTextSlice</a>) displayed as the very first
-							string at the output</li>
-							<li>the color will be applied to the module name and its box layout</li>
-							<li>the levels are activation boundaries for the specified logs. All logs that have a level higher than the current
-							module level will therefore not be logged.</li>
-						</ul>
-						<a href="#given-default-modules" id="given-default-modules" style="color: inherit; text-decoration: none;">
-							<h2>Given Default Modules</h2>
-						</a>
-						<p>Some default modules will be set and can be overwritten here:</p>
-						<a href="#the-none-module" id="the-none-module" style="color: inherit; text-decoration: none;">
-							<h3>The NONE module</h3>
-						</a>
-						<p>will be automatically set when there is no <code>.module(...)</code> chained on <code>Loxer.log()</code>, <code>Loxer.open()</code> or <code>Loxer.of()</code>
-						when the opening log had no module too. The default is defined as:</p>
-						<pre><code class="language-typescript"><span style="color: #000000">  NONE: { fullName: </span><span style="color: #A31515">&#039;&#039;</span><span style="color: #000000">, color: </span><span style="color: #A31515">&#039;#fff&#039;</span><span style="color: #000000">, devLevel: </span><span style="color: #098658">1</span><span style="color: #000000">, prodLevel: </span><span style="color: #098658">1</span><span style="color: #000000"> }</span>
-</code></pre>
-						<p>This module will not have a module name or a box layout at the output.</p>
-						<a href="#the-default-module" id="the-default-module" style="color: inherit; text-decoration: none;">
-							<h3>The DEFAULT module</h3>
-						</a>
-						<p>will be automatically set when <code>Loxer.log()</code> or <code>Loxer.open()</code> logs are chained with an empty <code>.module()</code>.
-						The default is defined as:</p>
-						<pre><code class="language-typescript"><span style="color: #000000">  DEFAULT: { fullName: </span><span style="color: #A31515">&#039;&#039;</span><span style="color: #000000">, color: </span><span style="color: #A31515">&#039;#fff&#039;</span><span style="color: #000000">, devLevel: </span><span style="color: #098658">1</span><span style="color: #000000">, prodLevel: </span><span style="color: #098658">1</span><span style="color: #000000"> }</span>
-</code></pre>
-						<p>This module will have an empty module name, but a box layout at the output.</p>
-						<a href="#the-invalid-module" id="the-invalid-module" style="color: inherit; text-decoration: none;">
-							<h3>The INVALID module</h3>
-						</a>
-						<p>will be automatically set when any given module does not exist (as a key) in the given <a href="Loxer.LoxerOptions.html#modules">LoxerOptions.modules</a> in the
-							<code>Loxer.init(options)</code>. This module is a visual indicator for misspelled or missing moduleIds. <strong>Additionally this
-							module is serves as a fallback mechanism and should therefore never be overwritten with <code>undefined</code>!</strong>
-						The default is defined as:</p>
-						<pre><code class="language-typescript"><span style="color: #000000">  INVALID: { fullName: </span><span style="color: #A31515">&#039;INVALIDMODULE&#039;</span><span style="color: #000000">, color: </span><span style="color: #A31515">&#039;#f00&#039;</span><span style="color: #000000">, devLevel: </span><span style="color: #098658">1</span><span style="color: #000000">, prodLevel: </span><span style="color: #098658">0</span><span style="color: #000000"> }</span>
-</code></pre>
-						<p>This module will have a moduleName (<code>INVALIDMODULE</code>), but no box layout at the output.</p>
-					</div>
-				</section>
-				<section class="tsd-panel tsd-member tsd-kind-property tsd-parent-kind-interface">
-					<a name="dev" class="tsd-anchor"></a>
-					<h3><span class="tsd-flag ts-flagOptional">Optional</span> dev</h3>
-					<div class="tsd-signature tsd-kind-icon">dev<span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">boolean</span></div>
-					<aside class="tsd-sources">
-					</aside>
-					<div class="tsd-comment tsd-typography tsd-comment-shorttext">
-						<div class="lead">
-							<p>determines if Loxer is running in a development or production environment.</p>
-							<ul>
-								<li>you can pass any boolean expression here</li>
-								<li><code>process.env.NODE_ENV === &#39;development&#39;</code> is common for <em>NodeJS</em></li>
-								<li><code>__DEV__</code> is common for <em>react-native</em></li>
-								<li>defaults to <code>process.env.NODE_ENV === &#39;development&#39;</code></li>
-							</ul>
-						</div>
-					</div>
-				</section>
-				<section class="tsd-panel tsd-member tsd-kind-property tsd-parent-kind-interface">
-					<a name="callbacks" class="tsd-anchor"></a>
-					<h3><span class="tsd-flag ts-flagOptional">Optional</span> callbacks</h3>
-					<div class="tsd-signature tsd-kind-icon">callbacks<span class="tsd-signature-symbol">:</span> <a href="Loxer.LoxerCallbacks.html" class="tsd-signature-type">LoxerCallbacks</a></div>
-					<aside class="tsd-sources">
-					</aside>
-					<div class="tsd-comment tsd-typography tsd-comment-shorttext">
-						<div class="lead">
-							<p>Functions called as an output stream for Loxer..
-							The output stream is divided into 4 different streams, depending on the environment and the type of log:</p>
-							<ul>
-								<li><code>devLog</code>: logs occurring in development environment</li>
-								<li><code>prodLog</code>: logs occurring in production environment</li>
-								<li><code>devError</code>: errors occurring in development environment</li>
-								<li><code>prodError</code>: errors occurring in production environment</li>
-							</ul>
-						</div>
-					</div>
-				</section>
-				<section class="tsd-panel tsd-member tsd-kind-property tsd-parent-kind-interface">
-					<a name="config" class="tsd-anchor"></a>
-					<h3><span class="tsd-flag ts-flagOptional">Optional</span> config</h3>
-					<div class="tsd-signature tsd-kind-icon">config<span class="tsd-signature-symbol">:</span> <a href="Loxer.LoxerConfig.html" class="tsd-signature-type">LoxerConfig</a></div>
-					<aside class="tsd-sources">
-					</aside>
-					<div class="tsd-comment tsd-typography tsd-comment-shorttext">
-						<div class="lead">
-							<p>The <a href="Loxer.LoxerConfig.html">Configuration</a> of Loxer.</p>
-						</div>
-					</div>
-				</section>
-				<section class="tsd-panel tsd-member tsd-kind-property tsd-parent-kind-interface">
-					<a name="defaultLevels" class="tsd-anchor"></a>
-					<h3><span class="tsd-flag ts-flagOptional">Optional</span> default<wbr>Levels</h3>
-					<div class="tsd-signature tsd-kind-icon">default<wbr>Levels<span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">object</span></div>
-					<aside class="tsd-sources">
-					</aside>
-					<div class="tsd-comment tsd-typography tsd-comment-shorttext">
-						<div class="lead">
-							<p>The default levels to show logs in production or development. These will automatically be adapted to the default
-								module <code>NONE</code> and <code>DEFAULT</code>. If you want to set them differently, then you have to override them in the <code>modules</code>
-							option.</p>
-							<ul>
-								<li>both default to <code>devLevel: 1</code> and <code>prodLevel: 0</code></li>
-							</ul>
-						</div>
-					</div>
-					<div class="tsd-type-declaration">
-						<h4>Type declaration</h4>
-						<ul class="tsd-parameters">
-							<li class="tsd-parameter">
-								<h5>dev<wbr>Level<span class="tsd-signature-symbol">: </span><a href="../modules/Loxer.html#LevelType" class="tsd-signature-type">LevelType</a></h5>
-								<div class="tsd-comment tsd-typography tsd-comment-shorttext">
-									<div class="lead">
-										<p>the actual level to show logs in development mode</p>
-									</div>
-								</div>
-							</li>
-							<li class="tsd-parameter">
-								<h5>prod<wbr>Level<span class="tsd-signature-symbol">: </span><a href="../modules/Loxer.html#LevelType" class="tsd-signature-type">LevelType</a></h5>
-								<div class="tsd-comment tsd-typography tsd-comment-shorttext">
-									<div class="lead">
-										<p>the actual level to show logs in production mode</p>
-									</div>
-								</div>
-							</li>
-						</ul>
-					</div>
-				</section>
-			</section>
-			<!--{&quot;options&quot;:&quot;C:\\dev\\loxer\\typedoc.json&quot;,&quot;tsconfig&quot;:&quot;C:\\dev\\loxer&quot;,&quot;packages&quot;:[],&quot;entryPoints&quot;:[&quot;C:\\dev\\loxer\\src\\types.ts&quot;,&quot;C:\\dev\\loxer\\src\\decorators\\index.ts&quot;,&quot;C:\\dev\\loxer\\src\\loxes\\index.ts&quot;,&quot;C:\\dev\\loxer\\src\\core\\index.ts&quot;,&quot;C:\\dev\\loxer\\src\\core\\Error.ts&quot;],&quot;exclude&quot;:[],&quot;externalPattern&quot;:[&quot;**/node_modules/**&quot;],&quot;excludeExternals&quot;:false,&quot;excludeNotDocumented&quot;:false,&quot;excludeInternal&quot;:true,&quot;excludePrivate&quot;:false,&quot;excludeProtected&quot;:false,&quot;disableSources&quot;:true,&quot;includes&quot;:&quot;C:\\dev\\loxer\\assets&quot;,&quot;media&quot;:&quot;&quot;,&quot;watch&quot;:false,&quot;preserveWatchOutput&quot;:false,&quot;emit&quot;:false,&quot;out&quot;:&quot;C:\\dev\\loxer\\docs&quot;,&quot;json&quot;:&quot;&quot;,&quot;pretty&quot;:true,&quot;theme&quot;:&quot;./node_modules/typedoc-neo-theme/bin/default&quot;,&quot;highlightTheme&quot;:&quot;light-plus&quot;,&quot;name&quot;:&quot;Loxer&quot;,&quot;includeVersion&quot;:true,&quot;excludeTags&quot;:[],&quot;readme&quot;:&quot;&quot;,&quot;defaultCategory&quot;:&quot;Other&quot;,&quot;categoryOrder&quot;:[],&quot;categorizeByGroup&quot;:true,&quot;sort&quot;:[&quot;instance-first&quot;,&quot;source-order&quot;],&quot;gitRevision&quot;:&quot;&quot;,&quot;gitRemote&quot;:&quot;origin&quot;,&quot;gaID&quot;:&quot;&quot;,&quot;gaSite&quot;:&quot;auto&quot;,&quot;hideGenerator&quot;:false,&quot;toc&quot;:[],&quot;disableOutputCheck&quot;:false,&quot;help&quot;:false,&quot;version&quot;:false,&quot;showConfig&quot;:false,&quot;plugin&quot;:[],&quot;logger&quot;:&quot;console&quot;,&quot;logLevel&quot;:1,&quot;treatWarningsAsErrors&quot;:false,&quot;listInvalidSymbolLinks&quot;:false}-->
-		</div>
-		<div class="col-2 col-menu secondary-menu">
-			<nav class="tsd-navigation secondary menu-sticky">
-				<ul class="before-current">
-					<li class=" tsd-kind-type-alias tsd-parent-kind-module root">
-						<a href="../modules/Loxer.html#Loxer-1" class="tsd-kind-icon">Loxer</a>
-					</li>
-					<li class=" tsd-kind-interface tsd-parent-kind-module root">
-						<a href="Loxer.LoxerCore.html" class="tsd-kind-icon">Loxer<wbr>Core</a>
-					</li>
-				</ul>
-				<ul class="current">
-					<li class="current tsd-kind-interface tsd-parent-kind-module root">
-						<a href="Loxer.LoxerOptions.html" class="tsd-kind-icon">Loxer<wbr>Options</a>
-						<ul>
-							<li class=" tsd-kind-property tsd-parent-kind-interface">
-								<a href="Loxer.LoxerOptions.html#modules" class="tsd-kind-icon">modules</a>
-							</li>
-							<li class=" tsd-kind-property tsd-parent-kind-interface">
-								<a href="Loxer.LoxerOptions.html#dev" class="tsd-kind-icon">dev</a>
-							</li>
-							<li class=" tsd-kind-property tsd-parent-kind-interface">
-								<a href="Loxer.LoxerOptions.html#callbacks" class="tsd-kind-icon">callbacks</a>
-							</li>
-							<li class=" tsd-kind-property tsd-parent-kind-interface">
-								<a href="Loxer.LoxerOptions.html#config" class="tsd-kind-icon">config</a>
-							</li>
-							<li class=" tsd-kind-property tsd-parent-kind-interface">
-								<a href="Loxer.LoxerOptions.html#defaultLevels" class="tsd-kind-icon">default<wbr>Levels</a>
-							</li>
-						</ul>
-					</li>
-				</ul>
-				<ul class="after-current">
-					<li class=" tsd-kind-type-alias tsd-parent-kind-module root">
-						<a href="../modules/Loxer.html#LoxerModules" class="tsd-kind-icon">Loxer<wbr>Modules</a>
-					</li>
-					<li class=" tsd-kind-interface tsd-parent-kind-module root">
-						<a href="Loxer.Module.html" class="tsd-kind-icon">Module</a>
-					</li>
-					<li class=" tsd-kind-type-alias tsd-parent-kind-module root">
-						<a href="../modules/Loxer.html#LevelType" class="tsd-kind-icon">Level<wbr>Type</a>
-					</li>
-					<li class=" tsd-kind-interface tsd-parent-kind-module root">
-						<a href="Loxer.LoxerCallbacks.html" class="tsd-kind-icon">Loxer<wbr>Callbacks</a>
-					</li>
-					<li class=" tsd-kind-interface tsd-parent-kind-module root">
-						<a href="Loxer.LoxerConfig.html" class="tsd-kind-icon">Loxer<wbr>Config</a>
-					</li>
-					<li class=" tsd-kind-interface tsd-parent-kind-module root">
-						<a href="Loxer.LogMethods.html" class="tsd-kind-icon">Log<wbr>Methods</a>
-					</li>
-					<li class=" tsd-kind-type-alias tsd-parent-kind-module root">
-						<a href="../modules/Loxer.html#ErrorType" class="tsd-kind-icon">Error<wbr>Type</a>
-					</li>
-					<li class=" tsd-kind-interface tsd-parent-kind-module root">
-						<a href="Loxer.OfLoxes.html" class="tsd-kind-icon">Of<wbr>Loxes</a>
-					</li>
-					<li class=" tsd-kind-interface tsd-parent-kind-module root">
-						<a href="Loxer.OpenedLox.html" class="tsd-kind-icon">Opened<wbr>Lox</a>
-					</li>
-					<li class=" tsd-kind-interface tsd-parent-kind-module tsd-has-type-parameter root">
-						<a href="Loxer.Modifiers.html" class="tsd-kind-icon">Modifiers</a>
-					</li>
-					<li class=" tsd-kind-type-alias tsd-parent-kind-module root">
-						<a href="../modules/Loxer.html#LogLevelType" class="tsd-kind-icon">Log<wbr>Level<wbr>Type</a>
-					</li>
-				</ul>
-			</nav>
-		</div>
-	</div>
+<div class="col-content">
+<div class="tsd-page-title">
+<ul class="tsd-breadcrumb" aria-label="Breadcrumb">
+<li><a href="../modules/Loxer.html">Loxer</a></li>
+<li><a href="" aria-current="page">LoxerOptions</a></li></ul>
+<h1>Interface LoxerOptions</h1></div>
+<section class="tsd-panel tsd-comment">
+<div class="tsd-comment tsd-typography"><p>Options for the <a href="Loxer.LoxerCore.html#init" class="tsd-kind-method">Loxer.init</a> method</p>
+</div></section>
+<div class="tsd-signature"><span class="tsd-signature-keyword">interface</span> <span class="tsd-kind-interface">LoxerOptions</span> <span class="tsd-signature-symbol">{</span><br/>    <a class="tsd-kind-property" href="#modules">modules</a><span class="tsd-signature-symbol">?:</span> <a href="../types/Loxer.LoxerModules.html" class="tsd-signature-type tsd-kind-type-alias">LoxerModules</a><span class="tsd-signature-symbol">;</span><br/>    <a class="tsd-kind-property" href="#dev">dev</a><span class="tsd-signature-symbol">?:</span> <span class="tsd-signature-type">boolean</span><span class="tsd-signature-symbol">;</span><br/>    <a class="tsd-kind-property" href="#callbacks">callbacks</a><span class="tsd-signature-symbol">?:</span> <a href="Loxer.LoxerCallbacks.html" class="tsd-signature-type tsd-kind-interface">LoxerCallbacks</a><span class="tsd-signature-symbol">;</span><br/>    <a class="tsd-kind-property" href="#config">config</a><span class="tsd-signature-symbol">?:</span> <a href="Loxer.LoxerConfig.html" class="tsd-signature-type tsd-kind-interface">LoxerConfig</a><span class="tsd-signature-symbol">;</span><br/>    <a class="tsd-kind-property" href="#defaultlevels">defaultLevels</a><span class="tsd-signature-symbol">?:</span> <span class="tsd-signature-symbol">{</span> <span class="tsd-kind-property">devLevel</span><span class="tsd-signature-symbol">:</span> <a href="../types/Loxer.LevelType.html" class="tsd-signature-type tsd-kind-type-alias">LevelType</a><span class="tsd-signature-symbol">;</span> <span class="tsd-kind-property">prodLevel</span><span class="tsd-signature-symbol">:</span> <a href="../types/Loxer.LevelType.html" class="tsd-signature-type tsd-kind-type-alias">LevelType</a> <span class="tsd-signature-symbol">}</span><span class="tsd-signature-symbol">;</span><br/><span class="tsd-signature-symbol">}</span></div>
+<section class="tsd-panel-group tsd-index-group">
+<section class="tsd-panel tsd-index-panel">
+<details class="tsd-index-content tsd-accordion" open><summary class="tsd-accordion-summary tsd-index-summary"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true"><use href="../assets/icons.svg#icon-chevronDown"></use></svg>
+<h5 class="tsd-index-heading uppercase">Index</h5></summary>
+<div class="tsd-accordion-details">
+<section class="tsd-index-section">
+<h3 class="tsd-index-heading tsd-anchor-link" id="properties">Properties<a href="#properties" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
+<div class="tsd-index-list"><a href="#modules" class="tsd-index-link"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="Property"><use href="../assets/icons.svg#icon-1024"></use></svg><span>modules?</span></a>
+<a href="#dev" class="tsd-index-link"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="Property"><use href="../assets/icons.svg#icon-1024"></use></svg><span>dev?</span></a>
+<a href="#callbacks" class="tsd-index-link"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="Property"><use href="../assets/icons.svg#icon-1024"></use></svg><span>callbacks?</span></a>
+<a href="#config" class="tsd-index-link"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="Property"><use href="../assets/icons.svg#icon-1024"></use></svg><span>config?</span></a>
+<a href="#defaultlevels" class="tsd-index-link"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="Property"><use href="../assets/icons.svg#icon-1024"></use></svg><span>default<wbr/>Levels?</span></a>
+</div></section></div></details></section></section>
+<details class="tsd-panel-group tsd-member-group tsd-accordion" open><summary class="tsd-accordion-summary" data-key="section-Properties"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true"><use href="../assets/icons.svg#icon-chevronDown"></use></svg>
+<h2 class="tsd-anchor-link" id="properties-1">Properties<a href="#properties-1" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h2></summary>
+<section>
+<section class="tsd-panel tsd-member">
+<h3 class="tsd-anchor-link" id="modules"><code class="tsd-tag">Optional</code><span>modules</span><a href="#modules" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
+<div class="tsd-signature"><span class="tsd-kind-property">modules</span><span class="tsd-signature-symbol">?:</span> <a href="../types/Loxer.LoxerModules.html" class="tsd-signature-type tsd-kind-type-alias">LoxerModules</a></div>
+<div class="tsd-comment tsd-typography"><h2 id="an-object-containing-all-loggable-modules" class="tsd-anchor-link">An object containing all loggable modules<a href="#an-object-containing-all-loggable-modules" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h2>
+<p>an exemplary module &quot;Persons&quot; would look like this:</p>
+<pre><code class="typescript"><span class="hl-2">  </span><span class="hl-10">PERS</span><span class="hl-2">: { </span><span class="hl-10">fullName</span><span class="hl-2">: </span><span class="hl-4">&#39;Persons&#39;</span><span class="hl-2">, </span><span class="hl-10">color</span><span class="hl-2">: </span><span class="hl-4">&#39;#0ff&#39;</span><span class="hl-2">, </span><span class="hl-10">devLevel</span><span class="hl-2">: </span><span class="hl-5">3</span><span class="hl-2">, </span><span class="hl-10">prodLevel</span><span class="hl-2">: </span><span class="hl-5">1</span><span class="hl-2"> }</span>
+</code><button type="button">Copy</button></pre>
+
+<ul>
+<li>the key <code>PERS</code> will be used to reference the module in the logs and is kept short for laziness</li>
+<li>the fullName will be (possibly sliced - see <a href="Loxer.LoxerConfig.html#moduletextslice" class="tsd-kind-property">LoxerConfig.moduleTextSlice</a>) displayed as the very first
+string at the output</li>
+<li>the color will be applied to the module name and its box layout</li>
+<li>the levels are activation boundaries for the specified logs. All logs that have a level higher than the current
+module level will therefore not be logged.</li>
+</ul>
+<h2 id="given-default-modules" class="tsd-anchor-link">Given Default Modules<a href="#given-default-modules" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h2>
+<p>Some default modules will be set and can be overwritten here:</p>
+<h3 id="the-none-module" class="tsd-anchor-link">The NONE module<a href="#the-none-module" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
+<p>will be automatically set when there is no <code>.module(...)</code> chained on <code>Loxer.log()</code>, <code>Loxer.open()</code> or <code>Loxer.of()</code>
+when the opening log had no module too. The default is defined as:</p>
+<pre><code class="typescript"><span class="hl-2">  </span><span class="hl-10">NONE</span><span class="hl-2">: { </span><span class="hl-10">fullName</span><span class="hl-2">: </span><span class="hl-4">&#39;&#39;</span><span class="hl-2">, </span><span class="hl-10">color</span><span class="hl-2">: </span><span class="hl-4">&#39;#fff&#39;</span><span class="hl-2">, </span><span class="hl-10">devLevel</span><span class="hl-2">: </span><span class="hl-5">1</span><span class="hl-2">, </span><span class="hl-10">prodLevel</span><span class="hl-2">: </span><span class="hl-5">1</span><span class="hl-2"> }</span>
+</code><button type="button">Copy</button></pre>
+
+<p>This module will not have a module name or a box layout at the output.</p>
+<h3 id="the-default-module" class="tsd-anchor-link">The DEFAULT module<a href="#the-default-module" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
+<p>will be automatically set when <code>Loxer.log()</code> or <code>Loxer.open()</code> logs are chained with an empty <code>.module()</code>.
+The default is defined as:</p>
+<pre><code class="typescript"><span class="hl-2">  </span><span class="hl-10">DEFAULT</span><span class="hl-2">: { </span><span class="hl-10">fullName</span><span class="hl-2">: </span><span class="hl-4">&#39;&#39;</span><span class="hl-2">, </span><span class="hl-10">color</span><span class="hl-2">: </span><span class="hl-4">&#39;#fff&#39;</span><span class="hl-2">, </span><span class="hl-10">devLevel</span><span class="hl-2">: </span><span class="hl-5">1</span><span class="hl-2">, </span><span class="hl-10">prodLevel</span><span class="hl-2">: </span><span class="hl-5">1</span><span class="hl-2"> }</span>
+</code><button type="button">Copy</button></pre>
+
+<p>This module will have an empty module name, but a box layout at the output.</p>
+<h3 id="the-invalid-module" class="tsd-anchor-link">The INVALID module<a href="#the-invalid-module" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
+<p>will be automatically set when any given module does not exist (as a key) in the given <a href="#modules" class="tsd-kind-property">LoxerOptions.modules</a> in the
+<code>Loxer.init(options)</code>. This module is a visual indicator for misspelled or missing moduleIds. <strong>Additionally this
+module is serves as a fallback mechanism and should therefore never be overwritten with <code>undefined</code>!</strong>
+The default is defined as:</p>
+<pre><code class="typescript"><span class="hl-2">  </span><span class="hl-10">INVALID</span><span class="hl-2">: { </span><span class="hl-10">fullName</span><span class="hl-2">: </span><span class="hl-4">&#39;INVALIDMODULE&#39;</span><span class="hl-2">, </span><span class="hl-10">color</span><span class="hl-2">: </span><span class="hl-4">&#39;#f00&#39;</span><span class="hl-2">, </span><span class="hl-10">devLevel</span><span class="hl-2">: </span><span class="hl-5">1</span><span class="hl-2">, </span><span class="hl-10">prodLevel</span><span class="hl-2">: </span><span class="hl-5">0</span><span class="hl-2"> }</span>
+</code><button type="button">Copy</button></pre>
+
+<p>This module will have a moduleName (<code>INVALIDMODULE</code>), but no box layout at the output.</p>
+</div></section>
+<section class="tsd-panel tsd-member">
+<h3 class="tsd-anchor-link" id="dev"><code class="tsd-tag">Optional</code><span>dev</span><a href="#dev" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
+<div class="tsd-signature"><span class="tsd-kind-property">dev</span><span class="tsd-signature-symbol">?:</span> <span class="tsd-signature-type">boolean</span></div>
+<div class="tsd-comment tsd-typography"><p>determines if Loxer is running in a development or production environment.</p>
+<ul>
+<li>you can pass any boolean expression here</li>
+<li><code>process.env.NODE_ENV === 'development'</code> is common for <em>NodeJS</em></li>
+<li><code>__DEV__</code> is common for <em>react-native</em></li>
+<li>defaults to <code>process.env.NODE_ENV === 'development'</code></li>
+</ul>
+</div></section>
+<section class="tsd-panel tsd-member">
+<h3 class="tsd-anchor-link" id="callbacks"><code class="tsd-tag">Optional</code><span>callbacks</span><a href="#callbacks" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
+<div class="tsd-signature"><span class="tsd-kind-property">callbacks</span><span class="tsd-signature-symbol">?:</span> <a href="Loxer.LoxerCallbacks.html" class="tsd-signature-type tsd-kind-interface">LoxerCallbacks</a></div>
+<div class="tsd-comment tsd-typography"><p>Functions called as an output stream for Loxer..
+The output stream is divided into 4 different streams, depending on the environment and the type of log:</p>
+<ul>
+<li><code>devLog</code>: logs occurring in development environment</li>
+<li><code>prodLog</code>: logs occurring in production environment</li>
+<li><code>devError</code>: errors occurring in development environment</li>
+<li><code>prodError</code>: errors occurring in production environment</li>
+</ul>
+</div></section>
+<section class="tsd-panel tsd-member">
+<h3 class="tsd-anchor-link" id="config"><code class="tsd-tag">Optional</code><span>config</span><a href="#config" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
+<div class="tsd-signature"><span class="tsd-kind-property">config</span><span class="tsd-signature-symbol">?:</span> <a href="Loxer.LoxerConfig.html" class="tsd-signature-type tsd-kind-interface">LoxerConfig</a></div>
+<div class="tsd-comment tsd-typography"><p>The <a href="Loxer.LoxerConfig.html" class="tsd-kind-interface">Configuration</a> of Loxer.</p>
+</div></section>
+<section class="tsd-panel tsd-member">
+<h3 class="tsd-anchor-link" id="defaultlevels"><code class="tsd-tag">Optional</code><span>default<wbr/>Levels</span><a href="#defaultlevels" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
+<div class="tsd-signature"><span class="tsd-kind-property">defaultLevels</span><span class="tsd-signature-symbol">?:</span> <span class="tsd-signature-symbol">{</span> <span class="tsd-kind-property">devLevel</span><span class="tsd-signature-symbol">:</span> <a href="../types/Loxer.LevelType.html" class="tsd-signature-type tsd-kind-type-alias">LevelType</a><span class="tsd-signature-symbol">;</span> <span class="tsd-kind-property">prodLevel</span><span class="tsd-signature-symbol">:</span> <a href="../types/Loxer.LevelType.html" class="tsd-signature-type tsd-kind-type-alias">LevelType</a> <span class="tsd-signature-symbol">}</span></div>
+<div class="tsd-comment tsd-typography"><p>The default levels to show logs in production or development. These will automatically be adapted to the default
+module <code>NONE</code> and <code>DEFAULT</code>. If you want to set them differently, then you have to override them in the <code>modules</code>
+option.</p>
+<ul>
+<li>both default to <code>devLevel: 1</code> and <code>prodLevel: 0</code></li>
+</ul>
 </div>
-<footer class="with-border-bottom">
-</footer>
-<div class="container tsd-generator">
-	<p>Generated using <a href="http://typedoc.org/" target="_blank">TypeDoc</a></p>
-</div>
-<div class="overlay"></div>
-<script src="../assets/js/main.js"></script>
-</body>
-</html>
+<div class="tsd-type-declaration">
+<h4>Type Declaration</h4>
+<ul class="tsd-parameters">
+<li class="tsd-parameter">
+<h5><span class="tsd-kind-property">devLevel</span><span class="tsd-signature-symbol">: </span><a href="../types/Loxer.LevelType.html" class="tsd-signature-type tsd-kind-type-alias">LevelType</a></h5>
+<div class="tsd-comment tsd-typography"><p>the actual level to show logs in development mode</p>
+</div></li>
+<li class="tsd-parameter">
+<h5><span class="tsd-kind-property">prodLevel</span><span class="tsd-signature-symbol">: </span><a href="../types/Loxer.LevelType.html" class="tsd-signature-type tsd-kind-type-alias">LevelType</a></h5>
+<div class="tsd-comment tsd-typography"><p>the actual level to show logs in production mode</p>
+</div></li></ul></div></section></section></details></div>
+<div class="col-sidebar">
+<div class="page-menu">
+<div class="tsd-navigation settings">
+<details class="tsd-accordion"><summary class="tsd-accordion-summary"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true"><use href="../assets/icons.svg#icon-chevronDown"></use></svg>
+<h3>Settings</h3></summary>
+<div class="tsd-accordion-details">
+<div class="tsd-filter-visibility"><span class="settings-label">Member Visibility</span>
+<ul id="tsd-filter-options">
+<li class="tsd-filter-item"><label class="tsd-filter-input"><input type="checkbox" id="tsd-filter-protected" name="protected"/><svg width="32" height="32" viewBox="0 0 32 32" aria-hidden="true"><rect class="tsd-checkbox-background" width="30" height="30" x="1" y="1" rx="6" fill="none"></rect><path class="tsd-checkbox-checkmark" d="M8.35422 16.8214L13.2143 21.75L24.6458 10.25" stroke="none" stroke-width="3.5" stroke-linejoin="round" fill="none"></path></svg><span>Protected</span></label></li>
+<li class="tsd-filter-item"><label class="tsd-filter-input"><input type="checkbox" id="tsd-filter-inherited" name="inherited" checked/><svg width="32" height="32" viewBox="0 0 32 32" aria-hidden="true"><rect class="tsd-checkbox-background" width="30" height="30" x="1" y="1" rx="6" fill="none"></rect><path class="tsd-checkbox-checkmark" d="M8.35422 16.8214L13.2143 21.75L24.6458 10.25" stroke="none" stroke-width="3.5" stroke-linejoin="round" fill="none"></path></svg><span>Inherited</span></label></li>
+<li class="tsd-filter-item"><label class="tsd-filter-input"><input type="checkbox" id="tsd-filter-external" name="external"/><svg width="32" height="32" viewBox="0 0 32 32" aria-hidden="true"><rect class="tsd-checkbox-background" width="30" height="30" x="1" y="1" rx="6" fill="none"></rect><path class="tsd-checkbox-checkmark" d="M8.35422 16.8214L13.2143 21.75L24.6458 10.25" stroke="none" stroke-width="3.5" stroke-linejoin="round" fill="none"></path></svg><span>External</span></label></li></ul></div>
+<div class="tsd-theme-toggle"><label class="settings-label" for="tsd-theme">Theme</label><select id="tsd-theme"><option value="os">OS</option><option value="light">Light</option><option value="dark">Dark</option></select></div></div></details></div>
+<details open class="tsd-accordion tsd-page-navigation"><summary class="tsd-accordion-summary"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true"><use href="../assets/icons.svg#icon-chevronDown"></use></svg>
+<h3>On This Page</h3></summary>
+<div class="tsd-accordion-details">
+<details open class="tsd-accordion tsd-page-navigation-section"><summary class="tsd-accordion-summary" data-key="section-Properties"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true"><use href="../assets/icons.svg#icon-chevronDown"></use></svg>Properties</summary>
+<div><a href="#modules"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="Property"><use href="../assets/icons.svg#icon-1024"></use></svg><span>modules</span></a>
+<ul>
+<li>
+<ul>
+<li><a href="#an-object-containing-all-loggable-modules"><span>An object containing all loggable modules</span></a></li>
+<li><a href="#given-default-modules"><span>Given <wbr/>Default <wbr/>Modules</span></a></li>
+<li>
+<ul>
+<li><a href="#the-none-module"><span>The <wbr/>NONE module</span></a></li>
+<li><a href="#the-default-module"><span>The <wbr/>DEFAULT module</span></a></li>
+<li><a href="#the-invalid-module"><span>The <wbr/>INVALID module</span></a></li></ul></li></ul></li></ul><a href="#dev"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="Property"><use href="../assets/icons.svg#icon-1024"></use></svg><span>dev</span></a><a href="#callbacks"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="Property"><use href="../assets/icons.svg#icon-1024"></use></svg><span>callbacks</span></a><a href="#config"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="Property"><use href="../assets/icons.svg#icon-1024"></use></svg><span>config</span></a><a href="#defaultlevels"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="Property"><use href="../assets/icons.svg#icon-1024"></use></svg><span>default<wbr/>Levels</span></a></div></details></div></details></div>
+<div class="site-menu">
+<nav class="tsd-navigation"><a href="../modules.html">Loxer - v3.0.0</a>
+<ul class="tsd-small-nested-navigation" id="tsd-nav-container">
+<li>Loading...</li></ul></nav></div></div></div><footer>
+<p class="tsd-generator">Generated using <a href="https://typedoc.org/" target="_blank">TypeDoc</a></p></footer>
+<div class="overlay"></div></body></html>

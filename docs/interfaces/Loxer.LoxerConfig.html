@@ -1,360 +1,142 @@
-<!doctype html>
-<html class="default no-js">
-<head>
-	<meta charset="utf-8">
-	<meta http-equiv="X-UA-Compatible" content="IE=edge">
-	<title>LoxerConfig | Loxer - v1.1.1</title>
-	<meta name="description" content="">
-	<meta name="viewport" content="width=device-width, initial-scale=1">
-	<link rel="stylesheet" href="../assets/css/main.css">
-	<script async src="../assets/js/search.js" id="search-script"></script>
-</head>
-<body>
-<header>
-	<div class="tsd-page-toolbar">
-		<div class="container">
-			<div class="table-wrap">
-				<div class="table-cell" id="tsd-search" data-index="../assets/js/search.json" data-base="..">
-					<div class="field">
-						<label for="tsd-search-field" class="tsd-widget search no-caption">Search</label>
-						<input id="tsd-search-field" type="text" />
-					</div>
-					<ul class="results">
-						<li class="state loading">Preparing search index...</li>
-						<li class="state failure">The search index is not available</li>
-					</ul>
-					<ul class="results-priority" style="display:none">
-					</ul>
-					<a href="../index.html" class="title">Loxer - v1.1.1</a>
-				</div>
-				<div class="table-cell" id="tsd-widgets">
-					<div id="tsd-filter">
-						<a href="#" class="tsd-widget options no-caption" data-toggle="options">Options</a>
-						<div class="tsd-filter-group">
-							<div class="tsd-select" id="tsd-filter-visibility">
-								<span class="tsd-select-label">All</span>
-								<ul class="tsd-select-list">
-									<li data-value="public">Public</li>
-									<li data-value="protected">Public/Protected</li>
-									<li data-value="private" class="selected">All</li>
-								</ul>
-							</div>
-							<input type="checkbox" id="tsd-filter-inherited" checked />
-							<label class="tsd-widget" for="tsd-filter-inherited">Inherited</label>
-							<input type="checkbox" id="tsd-filter-externals" checked />
-							<label class="tsd-widget" for="tsd-filter-externals">Externals</label>
-							<input type="checkbox" id="tsd-filter-only-exported" />
-							<label class="tsd-widget" for="tsd-filter-only-exported">Only exported</label>
-						</div>
-					</div>
-					<a href="#" class="tsd-widget menu no-caption" data-toggle="menu">Menu</a>
-				</div>
-			</div>
-		</div>
-	</div>
-	<div class="tsd-page-title">
-		<div class="container">
-			<ul class="tsd-breadcrumb">
-				<li>
-					<a href="../modules/Loxer.html">Loxer</a>
-				</li>
-				<li>
-					<a href="Loxer.LoxerConfig.html">LoxerConfig</a>
-				</li>
-			</ul>
-		</div>
-	</div>
-</header>
+<!DOCTYPE html><html class="default" lang="en" data-base="../"><head><meta charset="utf-8"/><meta http-equiv="x-ua-compatible" content="IE=edge"/><title>LoxerConfig | Loxer - v3.0.0</title><meta name="description" content="Documentation for Loxer"/><meta name="viewport" content="width=device-width, initial-scale=1"/><link rel="stylesheet" href="../assets/style.css"/><link rel="stylesheet" href="../assets/highlight.css"/><script defer src="../assets/main.js"></script><script async src="../assets/icons.js" id="tsd-icons-script"></script><script async src="../assets/search.js" id="tsd-search-script"></script><script async src="../assets/navigation.js" id="tsd-nav-script"></script><script async src="../assets/hierarchy.js" id="tsd-hierarchy-script"></script></head><body><script>document.documentElement.dataset.theme = localStorage.getItem("tsd-theme") || "os";document.body.style.display="none";setTimeout(() => window.app?app.showPage():document.body.style.removeProperty("display"),500)</script><header class="tsd-page-toolbar">
+<div class="tsd-toolbar-contents container"><a href="../index.html" class="title">Loxer - v3.0.0</a>
+<div id="tsd-toolbar-links"></div><button id="tsd-search-trigger" class="tsd-widget" aria-label="Search"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><use href="../assets/icons.svg#icon-search"></use></svg></button><dialog id="tsd-search" aria-label="Search"><input role="combobox" id="tsd-search-input" aria-controls="tsd-search-results" aria-autocomplete="list" aria-expanded="true" autocapitalize="off" autocomplete="off" placeholder="Search the docs" maxLength="100"/>
+<ul role="listbox" id="tsd-search-results"></ul>
+<div id="tsd-search-status" aria-live="polite" aria-atomic="true">
+<div>Preparing search index...</div></div></dialog><a href="#" class="tsd-widget menu" id="tsd-toolbar-menu-trigger" data-toggle="menu" aria-label="Menu"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><use href="../assets/icons.svg#icon-menu"></use></svg></a></div></header>
 <div class="container container-main">
-	<div class="row">
-		<div class="col-3 col-menu menu-sticky-wrap menu-highlight">
-			<nav class="tsd-navigation primary">
-				<ul>
-					<li class=" ">
-						<a href="../modules.html">Modules</a>
-					</li>
-					<li class=" tsd-kind-module">
-						<a href="../modules/Decorators.html">Decorators</a>
-					</li>
-					<li class=" tsd-kind-module">
-						<a href="../modules/Error.html">Error</a>
-					</li>
-					<li class=" tsd-kind-module">
-						<a href="../modules/Formatting.html">Formatting</a>
-					</li>
-					<li class=" tsd-kind-module">
-						<a href="../modules/Logs.html">Logs</a>
-					</li>
-					<li class="current tsd-kind-module">
-						<a href="../modules/Loxer.html">Loxer</a>
-					</li>
-				</ul>
-			</nav>
-		</div>
-		<div class="col-7 offset-3 col-content">
-			<h1>Interface LoxerConfig</h1>
-			<section class="tsd-panel tsd-comment"><div class="tsd-comment tsd-typography tsd-comment-shorttext">
-					<div class="lead">
-						<p>Configuration for the <a href="Loxer.LoxerOptions.html">LoxerOptions</a></p>
-					</div>
-			</div></section>
-			<section class="tsd-panel tsd-hierarchy">
-				<h3>Hierarchy</h3>
-				<ul class="tsd-hierarchy">
-					<li>
-						<span class="target">LoxerConfig</span>
-					</li>
-				</ul>
-			</section>
-			<section class="tsd-panel-group tsd-index-group">
-				<section class="tsd-panel tsd-index-panel">
-					<div class="tsd-index-content">
-						<section class="tsd-index-section ">
-							<h3>Properties</h3>
-							<ul class="tsd-index-list">
-								<li class="tsd-kind-property tsd-parent-kind-interface"><a href="Loxer.LoxerConfig.html#moduleTextSlice" class="tsd-kind-icon">module<wbr>Text<wbr>Slice</a></li>
-								<li class="tsd-kind-property tsd-parent-kind-interface"><a href="Loxer.LoxerConfig.html#endTitleOpacity" class="tsd-kind-icon">end<wbr>Title<wbr>Opacity</a></li>
-								<li class="tsd-kind-property tsd-parent-kind-interface"><a href="Loxer.LoxerConfig.html#boxLayoutStyle" class="tsd-kind-icon">box<wbr>Layout<wbr>Style</a></li>
-								<li class="tsd-kind-property tsd-parent-kind-interface"><a href="Loxer.LoxerConfig.html#disabledInProductionMode" class="tsd-kind-icon">disabled<wbr>InProduction<wbr>Mode</a></li>
-								<li class="tsd-kind-property tsd-parent-kind-interface"><a href="Loxer.LoxerConfig.html#disabled" class="tsd-kind-icon">disabled</a></li>
-								<li class="tsd-kind-property tsd-parent-kind-interface"><a href="Loxer.LoxerConfig.html#highlightColor" class="tsd-kind-icon">highlight<wbr>Color</a></li>
-								<li class="tsd-kind-property tsd-parent-kind-interface"><a href="Loxer.LoxerConfig.html#disableColors" class="tsd-kind-icon">disable<wbr>Colors</a></li>
-								<li class="tsd-kind-property tsd-parent-kind-interface"><a href="Loxer.LoxerConfig.html#historyCacheSize" class="tsd-kind-icon">history<wbr>Cache<wbr>Size</a></li>
-							</ul>
-						</section>
-					</div>
-				</section>
-			</section>
-			<section class="tsd-panel-group tsd-member-group ">
-				<h2>Properties</h2>
-				<section class="tsd-panel tsd-member tsd-kind-property tsd-parent-kind-interface">
-					<a name="moduleTextSlice" class="tsd-anchor"></a>
-					<h3><span class="tsd-flag ts-flagOptional">Optional</span> module<wbr>Text<wbr>Slice</h3>
-					<div class="tsd-signature tsd-kind-icon">module<wbr>Text<wbr>Slice<span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">number</span></div>
-					<aside class="tsd-sources">
-					</aside>
-					<div class="tsd-comment tsd-typography tsd-comment-shorttext">
-						<div class="lead">
-							<p>the length where the modules&#39; names will be sliced in order to fit the layout.</p>
-							<ul>
-								<li>defaults to <code>8</code></li>
-							</ul>
-						</div>
-					</div>
-				</section>
-				<section class="tsd-panel tsd-member tsd-kind-property tsd-parent-kind-interface">
-					<a name="endTitleOpacity" class="tsd-anchor"></a>
-					<h3><span class="tsd-flag ts-flagOptional">Optional</span> end<wbr>Title<wbr>Opacity</h3>
-					<div class="tsd-signature tsd-kind-icon">end<wbr>Title<wbr>Opacity<span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">number</span></div>
-					<aside class="tsd-sources">
-					</aside>
-					<div class="tsd-comment tsd-typography tsd-comment-shorttext">
-						<div class="lead">
-							<p>the opacity of the moduleText (<code>options.modules[...].fullName</code>) that appears on the <code>Loxer.of(...).close()</code> log</p>
-							<ul>
-								<li>number between <code>[0,1]</code></li>
-								<li>defaults to <code>0</code> which means &quot;hidden&quot;</li>
-							</ul>
-						</div>
-					</div>
-				</section>
-				<section class="tsd-panel tsd-member tsd-kind-property tsd-parent-kind-interface">
-					<a name="boxLayoutStyle" class="tsd-anchor"></a>
-					<h3><span class="tsd-flag ts-flagOptional">Optional</span> box<wbr>Layout<wbr>Style</h3>
-					<div class="tsd-signature tsd-kind-icon">box<wbr>Layout<wbr>Style<span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">BoxLayoutStyle</span></div>
-					<aside class="tsd-sources">
-					</aside>
-					<div class="tsd-comment tsd-typography tsd-comment-shorttext">
-						<div class="lead">
-							<p>the style of the default Box-layout</p>
-							<ul>
-								<li>possible values are &quot;round&quot; | &quot;light&quot; | &quot;heavy&quot; | &quot;double&quot; | &quot;off&quot;</li>
-								<li>&#39;off&#39; does not print any Layout but saves the insets, that the box layout would need</li>
-								<li>defaults to <code>&#39;round&#39;</code></li>
-							</ul>
-						</div>
-					</div>
-				</section>
-				<section class="tsd-panel tsd-member tsd-kind-property tsd-parent-kind-interface">
-					<a name="disabledInProductionMode" class="tsd-anchor"></a>
-					<h3><span class="tsd-flag ts-flagOptional">Optional</span> disabled<wbr>InProduction<wbr>Mode</h3>
-					<div class="tsd-signature tsd-kind-icon">disabled<wbr>InProduction<wbr>Mode<span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">boolean</span></div>
-					<aside class="tsd-sources">
-					</aside>
-					<div class="tsd-comment tsd-typography tsd-comment-shorttext">
-						<div class="lead">
-							<p>disables Loxer in production mode.</p>
-							<ul>
-								<li>if Loxer is initialized with <code>options.config.disabledInProductionMode: true</code> then - in production environment - the
-								cache is erased and upcoming logs will not be cached anymore</li>
-								<li>in fact all logging function then immediately return &quot;nothing&quot; for performance reasons</li>
-								<li>defaults to <code>false</code></li>
-							</ul>
-						</div>
-					</div>
-				</section>
-				<section class="tsd-panel tsd-member tsd-kind-property tsd-parent-kind-interface">
-					<a name="disabled" class="tsd-anchor"></a>
-					<h3><span class="tsd-flag ts-flagOptional">Optional</span> disabled</h3>
-					<div class="tsd-signature tsd-kind-icon">disabled<span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">boolean</span></div>
-					<aside class="tsd-sources">
-					</aside>
-					<div class="tsd-comment tsd-typography tsd-comment-shorttext">
-						<div class="lead">
-							<p>disables Loxer completely.</p>
-							<ul>
-								<li>this <strong>MUST</strong> be used in order to suppress logging without deleting the Loxer calls!</li>
-								<li>without disabling AND init() of Loxer, all the logs will be cached &quot;infinitely&quot;, because
-								they &quot;wait&quot; for the init().</li>
-								<li>if Loxer is initialized with <code>options.config.disabled: true</code> then the cache is erased and upcoming logs will not be
-								cached anymore</li>
-								<li>in fact all logging function then immediately return &quot;nothing&quot; for performance reasons</li>
-								<li>defaults to <code>false</code></li>
-							</ul>
-						</div>
-					</div>
-				</section>
-				<section class="tsd-panel tsd-member tsd-kind-property tsd-parent-kind-interface">
-					<a name="highlightColor" class="tsd-anchor"></a>
-					<h3><span class="tsd-flag ts-flagOptional">Optional</span> highlight<wbr>Color</h3>
-					<div class="tsd-signature tsd-kind-icon">highlight<wbr>Color<span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">string</span></div>
-					<aside class="tsd-sources">
-					</aside>
-					<div class="tsd-comment tsd-typography tsd-comment-shorttext">
-						<div class="lead">
-							<p>the backgroundColor used for highlighting logs. Supported formats:</p>
-							<ul>
-								<li>hex-string: (eg: <code>&#39;#ff0000&#39;</code> or <code>&#39;#f00&#39;</code> for red)</li>
-								<li>rgb-string: (eg: <code>&#39;rgb(255, 0, 0)&#39;</code> for red)</li>
-								<li>defaults to &quot;inverted&quot; colors</li>
-							</ul>
-						</div>
-					</div>
-				</section>
-				<section class="tsd-panel tsd-member tsd-kind-property tsd-parent-kind-interface">
-					<a name="disableColors" class="tsd-anchor"></a>
-					<h3><span class="tsd-flag ts-flagOptional">Optional</span> disable<wbr>Colors</h3>
-					<div class="tsd-signature tsd-kind-icon">disable<wbr>Colors<span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">boolean</span></div>
-					<aside class="tsd-sources">
-					</aside>
-					<div class="tsd-comment tsd-typography tsd-comment-shorttext">
-						<div class="lead">
-							<p>disables all colors for the output.</p>
-							<ul>
-								<li>use this if the console can&#39;t handle <code>\x1b[38;2;R;G;Bm</code> colors.</li>
-								<li>this only takes effect, if the Callbacks are unset and the console.log is used internally.</li>
-								<li>the Callbacks receive colored and uncolored messages separately</li>
-								<li>defaults to <code>false</code></li>
-							</ul>
-						</div>
-					</div>
-				</section>
-				<section class="tsd-panel tsd-member tsd-kind-property tsd-parent-kind-interface">
-					<a name="historyCacheSize" class="tsd-anchor"></a>
-					<h3><span class="tsd-flag ts-flagOptional">Optional</span> history<wbr>Cache<wbr>Size</h3>
-					<div class="tsd-signature tsd-kind-icon">history<wbr>Cache<wbr>Size<span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">number</span></div>
-					<aside class="tsd-sources">
-					</aside>
-					<div class="tsd-comment tsd-typography tsd-comment-shorttext">
-						<div class="lead">
-							<p>determines how many output- / error logs shall be cached in the history.</p>
-							<ul>
-								<li>is accessible with <code>Loxer.history</code></li>
-								<li>will be additionally appended to error outputs</li>
-								<li><strong>defaults to <code>50</code></strong></li>
-							</ul>
-						</div>
-					</div>
-				</section>
-			</section>
-			<!--{&quot;options&quot;:&quot;C:\\dev\\loxer\\typedoc.json&quot;,&quot;tsconfig&quot;:&quot;C:\\dev\\loxer&quot;,&quot;packages&quot;:[],&quot;entryPoints&quot;:[&quot;C:\\dev\\loxer\\src\\types.ts&quot;,&quot;C:\\dev\\loxer\\src\\decorators\\index.ts&quot;,&quot;C:\\dev\\loxer\\src\\loxes\\index.ts&quot;,&quot;C:\\dev\\loxer\\src\\core\\index.ts&quot;,&quot;C:\\dev\\loxer\\src\\core\\Error.ts&quot;],&quot;exclude&quot;:[],&quot;externalPattern&quot;:[&quot;**/node_modules/**&quot;],&quot;excludeExternals&quot;:false,&quot;excludeNotDocumented&quot;:false,&quot;excludeInternal&quot;:true,&quot;excludePrivate&quot;:false,&quot;excludeProtected&quot;:false,&quot;disableSources&quot;:true,&quot;includes&quot;:&quot;C:\\dev\\loxer\\assets&quot;,&quot;media&quot;:&quot;&quot;,&quot;watch&quot;:false,&quot;preserveWatchOutput&quot;:false,&quot;emit&quot;:false,&quot;out&quot;:&quot;C:\\dev\\loxer\\docs&quot;,&quot;json&quot;:&quot;&quot;,&quot;pretty&quot;:true,&quot;theme&quot;:&quot;./node_modules/typedoc-neo-theme/bin/default&quot;,&quot;highlightTheme&quot;:&quot;light-plus&quot;,&quot;name&quot;:&quot;Loxer&quot;,&quot;includeVersion&quot;:true,&quot;excludeTags&quot;:[],&quot;readme&quot;:&quot;&quot;,&quot;defaultCategory&quot;:&quot;Other&quot;,&quot;categoryOrder&quot;:[],&quot;categorizeByGroup&quot;:true,&quot;sort&quot;:[&quot;instance-first&quot;,&quot;source-order&quot;],&quot;gitRevision&quot;:&quot;&quot;,&quot;gitRemote&quot;:&quot;origin&quot;,&quot;gaID&quot;:&quot;&quot;,&quot;gaSite&quot;:&quot;auto&quot;,&quot;hideGenerator&quot;:false,&quot;toc&quot;:[],&quot;disableOutputCheck&quot;:false,&quot;help&quot;:false,&quot;version&quot;:false,&quot;showConfig&quot;:false,&quot;plugin&quot;:[],&quot;logger&quot;:&quot;console&quot;,&quot;logLevel&quot;:1,&quot;treatWarningsAsErrors&quot;:false,&quot;listInvalidSymbolLinks&quot;:false}-->
-		</div>
-		<div class="col-2 col-menu secondary-menu">
-			<nav class="tsd-navigation secondary menu-sticky">
-				<ul class="before-current">
-					<li class=" tsd-kind-type-alias tsd-parent-kind-module root">
-						<a href="../modules/Loxer.html#Loxer-1" class="tsd-kind-icon">Loxer</a>
-					</li>
-					<li class=" tsd-kind-interface tsd-parent-kind-module root">
-						<a href="Loxer.LoxerCore.html" class="tsd-kind-icon">Loxer<wbr>Core</a>
-					</li>
-					<li class=" tsd-kind-interface tsd-parent-kind-module root">
-						<a href="Loxer.LoxerOptions.html" class="tsd-kind-icon">Loxer<wbr>Options</a>
-					</li>
-					<li class=" tsd-kind-type-alias tsd-parent-kind-module root">
-						<a href="../modules/Loxer.html#LoxerModules" class="tsd-kind-icon">Loxer<wbr>Modules</a>
-					</li>
-					<li class=" tsd-kind-interface tsd-parent-kind-module root">
-						<a href="Loxer.Module.html" class="tsd-kind-icon">Module</a>
-					</li>
-					<li class=" tsd-kind-type-alias tsd-parent-kind-module root">
-						<a href="../modules/Loxer.html#LevelType" class="tsd-kind-icon">Level<wbr>Type</a>
-					</li>
-					<li class=" tsd-kind-interface tsd-parent-kind-module root">
-						<a href="Loxer.LoxerCallbacks.html" class="tsd-kind-icon">Loxer<wbr>Callbacks</a>
-					</li>
-				</ul>
-				<ul class="current">
-					<li class="current tsd-kind-interface tsd-parent-kind-module root">
-						<a href="Loxer.LoxerConfig.html" class="tsd-kind-icon">Loxer<wbr>Config</a>
-						<ul>
-							<li class=" tsd-kind-property tsd-parent-kind-interface">
-								<a href="Loxer.LoxerConfig.html#moduleTextSlice" class="tsd-kind-icon">module<wbr>Text<wbr>Slice</a>
-							</li>
-							<li class=" tsd-kind-property tsd-parent-kind-interface">
-								<a href="Loxer.LoxerConfig.html#endTitleOpacity" class="tsd-kind-icon">end<wbr>Title<wbr>Opacity</a>
-							</li>
-							<li class=" tsd-kind-property tsd-parent-kind-interface">
-								<a href="Loxer.LoxerConfig.html#boxLayoutStyle" class="tsd-kind-icon">box<wbr>Layout<wbr>Style</a>
-							</li>
-							<li class=" tsd-kind-property tsd-parent-kind-interface">
-								<a href="Loxer.LoxerConfig.html#disabledInProductionMode" class="tsd-kind-icon">disabled<wbr>InProduction<wbr>Mode</a>
-							</li>
-							<li class=" tsd-kind-property tsd-parent-kind-interface">
-								<a href="Loxer.LoxerConfig.html#disabled" class="tsd-kind-icon">disabled</a>
-							</li>
-							<li class=" tsd-kind-property tsd-parent-kind-interface">
-								<a href="Loxer.LoxerConfig.html#highlightColor" class="tsd-kind-icon">highlight<wbr>Color</a>
-							</li>
-							<li class=" tsd-kind-property tsd-parent-kind-interface">
-								<a href="Loxer.LoxerConfig.html#disableColors" class="tsd-kind-icon">disable<wbr>Colors</a>
-							</li>
-							<li class=" tsd-kind-property tsd-parent-kind-interface">
-								<a href="Loxer.LoxerConfig.html#historyCacheSize" class="tsd-kind-icon">history<wbr>Cache<wbr>Size</a>
-							</li>
-						</ul>
-					</li>
-				</ul>
-				<ul class="after-current">
-					<li class=" tsd-kind-interface tsd-parent-kind-module root">
-						<a href="Loxer.LogMethods.html" class="tsd-kind-icon">Log<wbr>Methods</a>
-					</li>
-					<li class=" tsd-kind-type-alias tsd-parent-kind-module root">
-						<a href="../modules/Loxer.html#ErrorType" class="tsd-kind-icon">Error<wbr>Type</a>
-					</li>
-					<li class=" tsd-kind-interface tsd-parent-kind-module root">
-						<a href="Loxer.OfLoxes.html" class="tsd-kind-icon">Of<wbr>Loxes</a>
-					</li>
-					<li class=" tsd-kind-interface tsd-parent-kind-module root">
-						<a href="Loxer.OpenedLox.html" class="tsd-kind-icon">Opened<wbr>Lox</a>
-					</li>
-					<li class=" tsd-kind-interface tsd-parent-kind-module tsd-has-type-parameter root">
-						<a href="Loxer.Modifiers.html" class="tsd-kind-icon">Modifiers</a>
-					</li>
-					<li class=" tsd-kind-type-alias tsd-parent-kind-module root">
-						<a href="../modules/Loxer.html#LogLevelType" class="tsd-kind-icon">Log<wbr>Level<wbr>Type</a>
-					</li>
-				</ul>
-			</nav>
-		</div>
-	</div>
-</div>
-<footer class="with-border-bottom">
-</footer>
-<div class="container tsd-generator">
-	<p>Generated using <a href="http://typedoc.org/" target="_blank">TypeDoc</a></p>
-</div>
-<div class="overlay"></div>
-<script src="../assets/js/main.js"></script>
-</body>
-</html>
+<div class="col-content">
+<div class="tsd-page-title">
+<ul class="tsd-breadcrumb" aria-label="Breadcrumb">
+<li><a href="../modules/Loxer.html">Loxer</a></li>
+<li><a href="" aria-current="page">LoxerConfig</a></li></ul>
+<h1>Interface LoxerConfig</h1></div>
+<section class="tsd-panel tsd-comment">
+<div class="tsd-comment tsd-typography"><p>Configuration for the <a href="Loxer.LoxerOptions.html" class="tsd-kind-interface">LoxerOptions</a></p>
+</div></section>
+<div class="tsd-signature"><span class="tsd-signature-keyword">interface</span> <span class="tsd-kind-interface">LoxerConfig</span> <span class="tsd-signature-symbol">{</span><br/>    <a class="tsd-kind-property" href="#moduletextslice">moduleTextSlice</a><span class="tsd-signature-symbol">?:</span> <span class="tsd-signature-type">number</span><span class="tsd-signature-symbol">;</span><br/>    <a class="tsd-kind-property" href="#endtitleopacity">endTitleOpacity</a><span class="tsd-signature-symbol">?:</span> <span class="tsd-signature-type">number</span><span class="tsd-signature-symbol">;</span><br/>    <a class="tsd-kind-property" href="#boxlayoutstyle">boxLayoutStyle</a><span class="tsd-signature-symbol">?:</span> <span class="tsd-signature-type">BoxLayoutStyle</span><span class="tsd-signature-symbol">;</span><br/>    <a class="tsd-kind-property" href="#disabledinproductionmode">disabledInProductionMode</a><span class="tsd-signature-symbol">?:</span> <span class="tsd-signature-type">boolean</span><span class="tsd-signature-symbol">;</span><br/>    <a class="tsd-kind-property" href="#disabled">disabled</a><span class="tsd-signature-symbol">?:</span> <span class="tsd-signature-type">boolean</span><span class="tsd-signature-symbol">;</span><br/>    <a class="tsd-kind-property" href="#highlightcolor">highlightColor</a><span class="tsd-signature-symbol">?:</span> <span class="tsd-signature-type">string</span><span class="tsd-signature-symbol">;</span><br/>    <a class="tsd-kind-property" href="#disablecolors">disableColors</a><span class="tsd-signature-symbol">?:</span> <span class="tsd-signature-type">boolean</span><span class="tsd-signature-symbol">;</span><br/>    <a class="tsd-kind-property" href="#historycachesize">historyCacheSize</a><span class="tsd-signature-symbol">?:</span> <span class="tsd-signature-type">number</span><span class="tsd-signature-symbol">;</span><br/><span class="tsd-signature-symbol">}</span></div>
+<section class="tsd-panel-group tsd-index-group">
+<section class="tsd-panel tsd-index-panel">
+<details class="tsd-index-content tsd-accordion" open><summary class="tsd-accordion-summary tsd-index-summary"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true"><use href="../assets/icons.svg#icon-chevronDown"></use></svg>
+<h5 class="tsd-index-heading uppercase">Index</h5></summary>
+<div class="tsd-accordion-details">
+<section class="tsd-index-section">
+<h3 class="tsd-index-heading tsd-anchor-link" id="properties">Properties<a href="#properties" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
+<div class="tsd-index-list"><a href="#moduletextslice" class="tsd-index-link"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="Property"><use href="../assets/icons.svg#icon-1024"></use></svg><span>module<wbr/>Text<wbr/>Slice?</span></a>
+<a href="#endtitleopacity" class="tsd-index-link"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="Property"><use href="../assets/icons.svg#icon-1024"></use></svg><span>end<wbr/>Title<wbr/>Opacity?</span></a>
+<a href="#boxlayoutstyle" class="tsd-index-link"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="Property"><use href="../assets/icons.svg#icon-1024"></use></svg><span>box<wbr/>Layout<wbr/>Style?</span></a>
+<a href="#disabledinproductionmode" class="tsd-index-link"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="Property"><use href="../assets/icons.svg#icon-1024"></use></svg><span>disabled<wbr/>In<wbr/>Production<wbr/>Mode?</span></a>
+<a href="#disabled" class="tsd-index-link"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="Property"><use href="../assets/icons.svg#icon-1024"></use></svg><span>disabled?</span></a>
+<a href="#highlightcolor" class="tsd-index-link"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="Property"><use href="../assets/icons.svg#icon-1024"></use></svg><span>highlight<wbr/>Color?</span></a>
+<a href="#disablecolors" class="tsd-index-link"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="Property"><use href="../assets/icons.svg#icon-1024"></use></svg><span>disable<wbr/>Colors?</span></a>
+<a href="#historycachesize" class="tsd-index-link"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="Property"><use href="../assets/icons.svg#icon-1024"></use></svg><span>history<wbr/>Cache<wbr/>Size?</span></a>
+</div></section></div></details></section></section>
+<details class="tsd-panel-group tsd-member-group tsd-accordion" open><summary class="tsd-accordion-summary" data-key="section-Properties"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true"><use href="../assets/icons.svg#icon-chevronDown"></use></svg>
+<h2 class="tsd-anchor-link" id="properties-1">Properties<a href="#properties-1" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h2></summary>
+<section>
+<section class="tsd-panel tsd-member">
+<h3 class="tsd-anchor-link" id="moduletextslice"><code class="tsd-tag">Optional</code><span>module<wbr/>Text<wbr/>Slice</span><a href="#moduletextslice" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
+<div class="tsd-signature"><span class="tsd-kind-property">moduleTextSlice</span><span class="tsd-signature-symbol">?:</span> <span class="tsd-signature-type">number</span></div>
+<div class="tsd-comment tsd-typography"><p>the length where the modules' names will be sliced in order to fit the layout.</p>
+<ul>
+<li>defaults to <code>8</code></li>
+</ul>
+</div></section>
+<section class="tsd-panel tsd-member">
+<h3 class="tsd-anchor-link" id="endtitleopacity"><code class="tsd-tag">Optional</code><span>end<wbr/>Title<wbr/>Opacity</span><a href="#endtitleopacity" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
+<div class="tsd-signature"><span class="tsd-kind-property">endTitleOpacity</span><span class="tsd-signature-symbol">?:</span> <span class="tsd-signature-type">number</span></div>
+<div class="tsd-comment tsd-typography"><p>the opacity of the moduleText (<code>options.modules[...].fullName</code>) that appears on the <code>Loxer.of(...).close()</code> log</p>
+<ul>
+<li>number between <code>[0,1]</code></li>
+<li>defaults to <code>0</code> which means &quot;hidden&quot;</li>
+</ul>
+</div></section>
+<section class="tsd-panel tsd-member">
+<h3 class="tsd-anchor-link" id="boxlayoutstyle"><code class="tsd-tag">Optional</code><span>box<wbr/>Layout<wbr/>Style</span><a href="#boxlayoutstyle" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
+<div class="tsd-signature"><span class="tsd-kind-property">boxLayoutStyle</span><span class="tsd-signature-symbol">?:</span> <span class="tsd-signature-type">BoxLayoutStyle</span></div>
+<div class="tsd-comment tsd-typography"><p>the style of the default Box-layout</p>
+<ul>
+<li>possible values are &quot;round&quot; | &quot;light&quot; | &quot;heavy&quot; | &quot;double&quot; | &quot;off&quot;</li>
+<li>'off' does not print any Layout but saves the insets, that the box layout would need</li>
+<li>defaults to <code>'round'</code></li>
+</ul>
+</div></section>
+<section class="tsd-panel tsd-member">
+<h3 class="tsd-anchor-link" id="disabledinproductionmode"><code class="tsd-tag">Optional</code><span>disabled<wbr/>In<wbr/>Production<wbr/>Mode</span><a href="#disabledinproductionmode" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
+<div class="tsd-signature"><span class="tsd-kind-property">disabledInProductionMode</span><span class="tsd-signature-symbol">?:</span> <span class="tsd-signature-type">boolean</span></div>
+<div class="tsd-comment tsd-typography"><p>disables Loxer in production mode.</p>
+<ul>
+<li>if Loxer is initialized with <code>options.config.disabledInProductionMode: true</code> then - in production environment - the
+cache is erased and upcoming logs will not be cached anymore</li>
+<li>in fact all logging function then immediately return &quot;nothing&quot; for performance reasons</li>
+<li>defaults to <code>false</code></li>
+</ul>
+</div></section>
+<section class="tsd-panel tsd-member">
+<h3 class="tsd-anchor-link" id="disabled"><code class="tsd-tag">Optional</code><span>disabled</span><a href="#disabled" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
+<div class="tsd-signature"><span class="tsd-kind-property">disabled</span><span class="tsd-signature-symbol">?:</span> <span class="tsd-signature-type">boolean</span></div>
+<div class="tsd-comment tsd-typography"><p>disables Loxer completely.</p>
+<ul>
+<li>this <strong>MUST</strong> be used in order to suppress logging without deleting the Loxer calls!</li>
+<li>without disabling AND init() of Loxer, all the logs will be cached &quot;infinitely&quot;, because
+they &quot;wait&quot; for the init().</li>
+<li>if Loxer is initialized with <code>options.config.disabled: true</code> then the cache is erased and upcoming logs will not be
+cached anymore</li>
+<li>in fact all logging function then immediately return &quot;nothing&quot; for performance reasons</li>
+<li>defaults to <code>false</code></li>
+</ul>
+</div></section>
+<section class="tsd-panel tsd-member">
+<h3 class="tsd-anchor-link" id="highlightcolor"><code class="tsd-tag">Optional</code><span>highlight<wbr/>Color</span><a href="#highlightcolor" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
+<div class="tsd-signature"><span class="tsd-kind-property">highlightColor</span><span class="tsd-signature-symbol">?:</span> <span class="tsd-signature-type">string</span></div>
+<div class="tsd-comment tsd-typography"><p>the backgroundColor used for highlighting logs. Supported formats:</p>
+<ul>
+<li>hex-string: (eg: <code>'#ff0000'</code> or <code>'#f00'</code> for red)</li>
+<li>rgb-string: (eg: <code>'rgb(255, 0, 0)'</code> for red)</li>
+<li>defaults to &quot;inverted&quot; colors</li>
+</ul>
+</div></section>
+<section class="tsd-panel tsd-member">
+<h3 class="tsd-anchor-link" id="disablecolors"><code class="tsd-tag">Optional</code><span>disable<wbr/>Colors</span><a href="#disablecolors" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
+<div class="tsd-signature"><span class="tsd-kind-property">disableColors</span><span class="tsd-signature-symbol">?:</span> <span class="tsd-signature-type">boolean</span></div>
+<div class="tsd-comment tsd-typography"><p>disables all colors for the output.</p>
+<ul>
+<li>use this if the console can't handle <code>\x1b[38;2;R;G;Bm</code> colors.</li>
+<li>this only takes effect, if the Callbacks are unset and the console.log is used internally.</li>
+<li>the Callbacks receive colored and uncolored messages separately</li>
+<li>defaults to <code>false</code></li>
+</ul>
+</div></section>
+<section class="tsd-panel tsd-member">
+<h3 class="tsd-anchor-link" id="historycachesize"><code class="tsd-tag">Optional</code><span>history<wbr/>Cache<wbr/>Size</span><a href="#historycachesize" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
+<div class="tsd-signature"><span class="tsd-kind-property">historyCacheSize</span><span class="tsd-signature-symbol">?:</span> <span class="tsd-signature-type">number</span></div>
+<div class="tsd-comment tsd-typography"><p>determines how many output- / error logs shall be cached in the history.</p>
+<ul>
+<li>is accessible with <code>Loxer.history</code></li>
+<li>will be additionally appended to error outputs</li>
+<li><strong>defaults to <code>50</code></strong></li>
+</ul>
+</div></section></section></details></div>
+<div class="col-sidebar">
+<div class="page-menu">
+<div class="tsd-navigation settings">
+<details class="tsd-accordion"><summary class="tsd-accordion-summary"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true"><use href="../assets/icons.svg#icon-chevronDown"></use></svg>
+<h3>Settings</h3></summary>
+<div class="tsd-accordion-details">
+<div class="tsd-filter-visibility"><span class="settings-label">Member Visibility</span>
+<ul id="tsd-filter-options">
+<li class="tsd-filter-item"><label class="tsd-filter-input"><input type="checkbox" id="tsd-filter-protected" name="protected"/><svg width="32" height="32" viewBox="0 0 32 32" aria-hidden="true"><rect class="tsd-checkbox-background" width="30" height="30" x="1" y="1" rx="6" fill="none"></rect><path class="tsd-checkbox-checkmark" d="M8.35422 16.8214L13.2143 21.75L24.6458 10.25" stroke="none" stroke-width="3.5" stroke-linejoin="round" fill="none"></path></svg><span>Protected</span></label></li>
+<li class="tsd-filter-item"><label class="tsd-filter-input"><input type="checkbox" id="tsd-filter-inherited" name="inherited" checked/><svg width="32" height="32" viewBox="0 0 32 32" aria-hidden="true"><rect class="tsd-checkbox-background" width="30" height="30" x="1" y="1" rx="6" fill="none"></rect><path class="tsd-checkbox-checkmark" d="M8.35422 16.8214L13.2143 21.75L24.6458 10.25" stroke="none" stroke-width="3.5" stroke-linejoin="round" fill="none"></path></svg><span>Inherited</span></label></li>
+<li class="tsd-filter-item"><label class="tsd-filter-input"><input type="checkbox" id="tsd-filter-external" name="external"/><svg width="32" height="32" viewBox="0 0 32 32" aria-hidden="true"><rect class="tsd-checkbox-background" width="30" height="30" x="1" y="1" rx="6" fill="none"></rect><path class="tsd-checkbox-checkmark" d="M8.35422 16.8214L13.2143 21.75L24.6458 10.25" stroke="none" stroke-width="3.5" stroke-linejoin="round" fill="none"></path></svg><span>External</span></label></li></ul></div>
+<div class="tsd-theme-toggle"><label class="settings-label" for="tsd-theme">Theme</label><select id="tsd-theme"><option value="os">OS</option><option value="light">Light</option><option value="dark">Dark</option></select></div></div></details></div>
+<details open class="tsd-accordion tsd-page-navigation"><summary class="tsd-accordion-summary"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true"><use href="../assets/icons.svg#icon-chevronDown"></use></svg>
+<h3>On This Page</h3></summary>
+<div class="tsd-accordion-details">
+<details open class="tsd-accordion tsd-page-navigation-section"><summary class="tsd-accordion-summary" data-key="section-Properties"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true"><use href="../assets/icons.svg#icon-chevronDown"></use></svg>Properties</summary>
+<div><a href="#moduletextslice"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="Property"><use href="../assets/icons.svg#icon-1024"></use></svg><span>module<wbr/>Text<wbr/>Slice</span></a><a href="#endtitleopacity"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="Property"><use href="../assets/icons.svg#icon-1024"></use></svg><span>end<wbr/>Title<wbr/>Opacity</span></a><a href="#boxlayoutstyle"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="Property"><use href="../assets/icons.svg#icon-1024"></use></svg><span>box<wbr/>Layout<wbr/>Style</span></a><a href="#disabledinproductionmode"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="Property"><use href="../assets/icons.svg#icon-1024"></use></svg><span>disabled<wbr/>In<wbr/>Production<wbr/>Mode</span></a><a href="#disabled"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="Property"><use href="../assets/icons.svg#icon-1024"></use></svg><span>disabled</span></a><a href="#highlightcolor"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="Property"><use href="../assets/icons.svg#icon-1024"></use></svg><span>highlight<wbr/>Color</span></a><a href="#disablecolors"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="Property"><use href="../assets/icons.svg#icon-1024"></use></svg><span>disable<wbr/>Colors</span></a><a href="#historycachesize"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="Property"><use href="../assets/icons.svg#icon-1024"></use></svg><span>history<wbr/>Cache<wbr/>Size</span></a></div></details></div></details></div>
+<div class="site-menu">
+<nav class="tsd-navigation"><a href="../modules.html">Loxer - v3.0.0</a>
+<ul class="tsd-small-nested-navigation" id="tsd-nav-container">
+<li>Loading...</li></ul></nav></div></div></div><footer>
+<p class="tsd-generator">Generated using <a href="https://typedoc.org/" target="_blank">TypeDoc</a></p></footer>
+<div class="overlay"></div></body></html>

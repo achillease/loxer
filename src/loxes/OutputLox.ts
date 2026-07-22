@@ -1,6 +1,6 @@
-import { Box } from '../core/BoxFactory';
-import { DEFAULT_EXTENDED_MODULE, ExtendedModule } from '../core/Modules';
-import { Lox } from './Lox';
+import { Box } from '../core/BoxFactory.js';
+import { DEFAULT_EXTENDED_MODULE, ExtendedModule } from '../core/Modules.js';
+import { Lox } from './Lox.js';
 /** @module OutputLox */
 
 /** This is a log streamed to the `devLog`or `prodLog` output stream defined at the {@link LoxerCallbacks}. */

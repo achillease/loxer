@@ -1,8 +1,8 @@
 /** @module Loxer */
-import { BoxLayoutStyle } from './core/BoxFormat';
-import { ItemOptions, ItemType } from './core/Item';
-import { ErrorLox } from './loxes/ErrorLox';
-import { OutputLox } from './loxes/OutputLox';
+import { BoxLayoutStyle } from './core/BoxFormat.js';
+import { ItemOptions, ItemType } from './core/Item.js';
+import { ErrorLox } from './loxes/ErrorLox.js';
+import { OutputLox } from './loxes/OutputLox.js';
 
 export type Loxer = LoxerCore & LogMethods & Modifiers<never>;
 /** this is the main type of {@link Loxer} */

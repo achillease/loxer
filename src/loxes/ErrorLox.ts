@@ -1,5 +1,5 @@
-import { Lox } from './Lox';
-import { OutputLox } from './OutputLox';
+import { Lox } from './Lox.js';
+import { OutputLox } from './OutputLox.js';
 /** @module ErrorLox */
 
 /** This is a log streamed to the `devError`or `prodError` output stream defined at the {@link LoxerCallbacks}. */

@@ -1,3 +1,3 @@
 /** @module Logs */
-export * from './ErrorLox';
-export * from './OutputLox';
+export * from './ErrorLox.js';
+export * from './OutputLox.js';

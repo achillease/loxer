@@ -14,9 +14,10 @@
   Markdown meant to render outside the repo (README, npm page).
 - Regenerate the API reference with `pnpm docs` (`typedoc --options typedoc.json`) after a JSDoc
   change. A documentation task touching JSDoc is done only when `pnpm docs` exits 0.
-- Keep workflow plan folders and worklogs at repo-root `plans/<date>-<slug>/`, never under
-  `docs/plans/`. `docs/` is the TypeDoc `out` dir, so `pnpm docs` wipes anything living there (see
-  the `docs/` Never below); untracked plan folders would be destroyed on the next run.
+- Keep workflow plan folders and worklogs in `documentation/plans/<date>-<slug>/`, alongside
+  `documentation/specs/`; never put them under `docs/plans/`. `docs/` is the TypeDoc `out` dir,
+  so `pnpm docs` wipes anything living there (see the `docs/` Never below); untracked plan
+  folders would be destroyed on the next run.
 - When renaming or moving a file under `documentation/`, update the matching
   `https://github.com/pcprinz/loxer/blob/master/documentation/...` links in `README.md` and in the
   JSDoc comments on the `Loxer` class in `src/Loxer.ts`. `typedoc.json` sets no `readme` option, so

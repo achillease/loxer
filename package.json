@@ -21,6 +21,10 @@
       "types": "./dist/index.d.ts",
       "default": "./dist/index.js"
     },
+    "./trace": {
+      "types": "./dist/trace.d.ts",
+      "default": "./dist/trace.js"
+    },
     "./package.json": "./package.json"
   },
   "files": [
@@ -30,12 +34,15 @@
     "node": ">=20"
   },
   "scripts": {
-    "build": "tsc",
+    "build": "tsc && pnpm --recursive --filter \"./packages/**\" run build",
+    "typecheck:test": "tsc -p test/tsconfig.json",
     "watch": "tsc --watch",
     "test": "vitest run --coverage",
     "lint": "eslint .",
     "prepare": "husky && pnpm build",
-    "docs": "typedoc --options typedoc.json"
+    "docs": "typedoc --options typedoc.json",
+    "demo": "pnpm --filter loxer-vite-trace-demo dev",
+    "demo:build": "pnpm --filter loxer-vite-trace-demo build"
   },
   "packageManager": "pnpm@10.27.0",
   "devDependencies": {

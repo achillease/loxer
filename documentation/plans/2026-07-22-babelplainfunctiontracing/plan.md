@@ -29,7 +29,7 @@ package.
    dependency and uses only Babel's public plugin visitor API (`api.types`) rather than direct
    parser/traversal/generator dependencies. Its stricter Node 22.18+ engine applies only to this
    companion build tool; Loxer's Node 20+ runtime contract remains unchanged. It begins at `0.1.0`
-   and declares a peer range for the Loxer version that introduces `loxer/instrument`.
+   and declares a peer range for the Loxer version that introduces `loxer/trace`.
 2. `vite-plugin-loxer-trace` is a thin Vite adapter around that canonical transformer. It runs as an
    early transform, filters source modules, passes filename/TSX/JSX parser support and Vite source-map
    settings to Babel, and returns the transformed code/map. It contains no independent AST rewrite.
@@ -40,7 +40,7 @@ package.
    across adapters. A future native Oxc adapter may implement that contract only if profiling or
    non-Vite Oxc adoption justifies eliminating Babel's extra parse/print pass.
 
-Use `loxed(target, options)`, imported from `loxer/instrument`, as the typed, valid-TypeScript marker
+Use `loxed(target, options)`, imported from `loxer/trace`, as the typed, valid-TypeScript marker
 placed beside a named function binding. The marker module exposes the existing trace option shape for
 autocomplete; the plugin recognizes the imported `loxed` call and removes it after transforming its
 bound function. This preserves ordinary function declarations and avoids unsupported function-decorator
@@ -85,8 +85,8 @@ Vite/Electron renderer when callers do not pass `dev` explicitly.
   delegates every transformation to the canonical Babel plugin and supports TS/TSX/JSX source files.
 - `src/decorators/trace.ts` and a new shared tracing-types module under `src/` - move/re-export the
   public trace option types needed by the marker while preserving existing `@trace` API behavior.
-- `src/instrument.ts`, `src/index.ts`, and package exports - expose the typed `loxed` marker at
-  `loxer/instrument` and shared trace option types without making Babel/Vite implementation code a
+- `src/trace.ts`, `src/index.ts`, and package exports - expose the typed `loxed` marker at
+  `loxer/trace` and shared trace option types without making Babel/Vite implementation code a
   runtime dependency of `loxer`.
 - `src/Loxer.ts` - make inferred development-mode detection safe in browser-like environments while
   preserving explicit `dev` configuration and Node behavior.

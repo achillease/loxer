@@ -349,7 +349,11 @@ export interface LogMethods {
    * ---
    * @param id the id returned from `Loxer.open()` to reference this log to
    */
-  of(id: number | OpenedLox): OfLoxes;
+  /**
+   * @internal `preserveCurrentModule` is reserved for generated trace calls. Public manual boxes
+   * continue to inherit their opening module by default.
+   */
+  of(id: number | OpenedLox, preserveCurrentModule?: boolean): OfLoxes;
 }
 
 /** Any possible type that a `catch` could return */

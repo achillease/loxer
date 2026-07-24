@@ -18,6 +18,9 @@
   `documentation/specs/`; never put them under `docs/plans/`. `docs/` is the TypeDoc `out` dir,
   so `pnpm docs` wipes anything living there (see the `docs/` Never below); untracked plan
   folders would be destroyed on the next run.
+- Keep review reports in a plan folder append-only: use `review.md` for the first pass, then
+  `review-N.md` for each later pass; never overwrite an earlier report. Group related remediation
+  before rerunning review instead of addressing one finding per pass.
 - When renaming or moving a file under `documentation/`, update the matching
   `https://github.com/pcprinz/loxer/blob/master/documentation/...` links in `README.md` and in the
   JSDoc comments on the `Loxer` class in `src/Loxer.ts`. `typedoc.json` sets no `readme` option, so

@@ -1,0 +1,35 @@
+{
+  "name": "babel-plugin-loxer-trace",
+  "version": "0.1.0",
+  "description": "Babel instrumentation for Loxer plain-function traces",
+  "license": "MIT",
+  "author": "Christian Prinz",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    },
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "dist"
+  ],
+  "engines": {
+    "node": ">=22.18.0"
+  },
+  "peerDependencies": {
+    "@babel/core": "^8.0.0",
+    "loxer": "^3.0.0"
+  },
+  "devDependencies": {
+    "@babel/core": "^8.0.1",
+    "loxer": "workspace:*",
+    "typescript": "6.0.3"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json"
+  }
+}

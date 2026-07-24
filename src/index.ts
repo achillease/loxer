@@ -6,3 +6,4 @@ export * from './decorators/initLoxer.js';
 export * from './decorators/trace.js';
 export * from './Loxer.js';
 export { NamedError } from './core/Error.js';
+export type { LoxedOptions } from './tracing-types.js';

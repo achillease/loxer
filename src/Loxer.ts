@@ -1,11 +1,17 @@
 import { BoxFactory } from './core/BoxFactory.js';
-import { castError, LoxerError, NamedError } from './core/Error.js';
+import {
+  castError,
+  getErrorMessage,
+  LoxerError,
+  NamedError,
+  sanitizeErrorMessage,
+} from './core/Error.js';
 import { ItemType, ItemOptions } from './core/Item.js';
 import { Loxes } from './core/Loxes.js';
 import { LoxHistory } from './core/LoxHistory.js';
 import { Modules } from './core/Modules.js';
 import { OutputStreams } from './core/OutputStreams.js';
-import { is, isError, isNES } from './Helpers.js';
+import { is, isNES } from './Helpers.js';
 import { ErrorLox } from './loxes/ErrorLox.js';
 import { Lox, LoxType } from './loxes/Lox.js';
 import { OutputLox } from './loxes/OutputLox.js';
@@ -39,7 +45,8 @@ class LoxerInstance implements LoxerType {
     if (is(props) && is(props?.dev)) {
       this._isDev = props.dev;
     } else {
-      this._isDev = isNES(process.env.NODE_ENV) ? 'development' === process.env.NODE_ENV : false;
+      const nodeEnvironment = typeof process === 'undefined' ? undefined : process.env?.NODE_ENV;
+      this._isDev = isNES(nodeEnvironment) ? 'development' === nodeEnvironment : false;
     }
     // configuration
     const config = props?.config;
@@ -168,7 +175,7 @@ class LoxerInstance implements LoxerType {
     item?: ItemType,
     itemOptions?: ItemOptions
   ) {
-    const sureError = isError(error) ? error : castError(error);
+    const sureError = castError(error);
     this.switchOutput(
       new Lox({
         id: logId,
@@ -176,7 +183,7 @@ class LoxerInstance implements LoxerType {
         item,
         itemOptions,
         level: this._level ?? 1,
-        message: messagePrefix + sureError.message,
+        message: messagePrefix + sanitizeErrorMessage(getErrorMessage(sureError)),
         moduleId,
         type: 'error',
       }),
@@ -220,7 +227,7 @@ class LoxerInstance implements LoxerType {
     return result;
   }
 
-  of(opened: number | OpenedLox): OfLoxes {
+  of(opened: number | OpenedLox, preserveCurrentModule: boolean = false): OfLoxes {
     const id = typeof opened === 'number' ? opened : opened.id;
     if (this._isDisabled) {
       return {
@@ -290,15 +297,18 @@ class LoxerInstance implements LoxerType {
       };
     }
 
+    const moduleId =
+      preserveCurrentModule && this._moduleId !== 'NONE' ? this._moduleId : openLox.moduleId;
+
     return {
       add: (message: string, item?: ItemType, itemOptions?: ItemOptions) => {
-        this.appendToOpenLox('single', openLox, message, item, itemOptions);
+        this.appendToOpenLox('single', openLox, moduleId, message, item, itemOptions);
       },
       close: (message: string, item?: ItemType, itemOptions?: ItemOptions) => {
-        this.appendToOpenLox('close', openLox, message, item, itemOptions);
+        this.appendToOpenLox('close', openLox, openLox.moduleId, message, item, itemOptions);
       },
       error: (error: ErrorType, item?: ItemType, itemOptions?: ItemOptions) => {
-        this.internalError(error, openLox.id, openLox.moduleId, undefined, item, itemOptions);
+        this.internalError(error, openLox.id, moduleId, undefined, item, itemOptions);
       },
       namedError: (
         name: string,
@@ -310,7 +320,7 @@ class LoxerInstance implements LoxerType {
         this.internalError(
           new NamedError(name, message, existingError),
           openLox.id,
-          openLox.moduleId,
+          moduleId,
           undefined,
           item,
           itemOptions
@@ -322,11 +332,12 @@ class LoxerInstance implements LoxerType {
   private appendToOpenLox(
     type: LoxType,
     openLox: Lox,
+    moduleId: string,
     message: string,
     item?: ItemType,
     itemOptions?: ItemOptions
   ) {
-    const { id, moduleId, level: openLevel } = openLox;
+    const { id, level: openLevel } = openLox;
     // close level must be open level + added logs must not have a lower level, though the open box could possibly not exist
     const level =
       type === 'single'

@@ -9,6 +9,10 @@
 ## Always
 
 - Run `pnpm test` (`vitest run --coverage`) before treating any change to `src/` as done.
+- Keep test type settings in `test/tsconfig.json` so editors discover them for files under
+  `test/`. It must include `vitest/globals` and use Vite-compatible
+  `moduleResolution: "bundler"`; changes to that configuration are complete only when
+  `pnpm typecheck:test` passes.
 - If a change touches global logger state, call `resetLoxer()` in `afterEach` and re-init `Loxer`
   in `beforeEach` — see `test/boxed.test.ts` for the pattern.
 - If a change alters box layout (open/close columns, trimming, visible slots), update or add

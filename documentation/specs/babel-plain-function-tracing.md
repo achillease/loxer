@@ -26,7 +26,7 @@ declarations, so the opt-in surface must use ordinary, valid TypeScript rather t
 `@trace function` syntax. Babel projects must retain their normal TypeScript type-checking workflow;
 Babel transformation is not a replacement for it.
 
-V1 uses `loxed(target, options)`, imported from `loxer/instrument`, as a typed marker immediately
+V1 uses `loxed(target, options)`, imported from `loxer/trace`, as a typed marker immediately
 beside a named function binding. The build transform removes the marker after instrumenting that
 binding; executing an untransformed marker must fail with a clear configuration error.
 
@@ -40,7 +40,7 @@ change application behavior.
 ## Acceptance criteria
 
 - [ ] A Babel-capable TypeScript project can opt a supported named plain function into Loxer tracing
-  with `loxed(target, options)` imported from `loxer/instrument`; its options receive normal
+  with `loxed(target, options)` imported from `loxer/trace`; its options receive normal
   TypeScript autocomplete and type checking.
 - [ ] `loxed` supports function-level module, level, highlight, message, and item options equivalent
   to the useful current `TraceOptions` modes, but does not expose the class-only

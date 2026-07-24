@@ -1,6 +1,5 @@
 /** @module Error */
-import { eraseBeginningLines, isError } from '../Helpers.js';
-import { ErrorType } from '../types.js';
+import { eraseBeginningLines } from '../Helpers.js';
 
 /** A customizable Error, that may be created from an existing Error */
 export class NamedError extends Error {
@@ -31,7 +30,7 @@ export class NamedError extends Error {
     this.message = message;
     this.name = name;
     if (existingError !== undefined) {
-      const sureError = castError(existingError as ErrorType);
+      const sureError = castError(existingError);
       this.message += ` =[${sureError.name}]=> ${sureError.message}`;
       this.stack = sureError.stack;
     }
@@ -39,16 +38,73 @@ export class NamedError extends Error {
 }
 
 /** @internal */
-export function castError(error: ErrorType): Error {
-  if (isError(error)) {
-    error.stack = eraseBeginningLines(`${error.stack}`, 1);
+export function castError(error: unknown): Error {
+  if (isNativeError(error)) {
+    try {
+      error.stack = eraseBeginningLines(`${error.stack}`, 1);
+    } catch {
+      // Keep the original error when its stack is unreadable.
+    }
 
     return error;
-  } else {
-    const result = new Error(typeof error === 'object' ? JSON.stringify(error) : error.toString());
-    result.stack = eraseBeginningLines(`${result.stack}`, 3);
+  }
 
-    return result;
+  const result = new Error(stringifyThrownValue(error));
+  result.stack = eraseBeginningLines(`${result.stack}`, 3);
+
+  return result;
+}
+
+function isNativeError(error: unknown): error is Error {
+  try {
+    return error instanceof Error;
+  } catch {
+    return false;
+  }
+}
+
+/** @internal */
+export function sanitizeErrorMessage(message: string): string {
+  return message.replace(
+    /[\u0000-\u001F\u007F-\u009F]/g,
+    (character) => `\\u${character.charCodeAt(0).toString(16).padStart(4, '0')}`
+  );
+}
+
+/** @internal */
+export function getErrorMessage(error: Error): string {
+  try {
+    return typeof error.message === 'string' ? error.message : String(error.message);
+  } catch {
+    return '[unreadable error message]';
+  }
+}
+
+function stringifyThrownValue(error: unknown): string {
+  if (typeof error === 'string') {
+    return error;
+  }
+  if (error === undefined) {
+    return 'undefined';
+  }
+  if (error === null) {
+    return 'null';
+  }
+  if (typeof error === 'object') {
+    try {
+      const serialized = JSON.stringify(error);
+      if (serialized !== undefined) {
+        return serialized;
+      }
+    } catch {
+      return '[unserializable thrown value]';
+    }
+  }
+
+  try {
+    return String(error);
+  } catch {
+    return '[unstringifiable thrown value]';
   }
 }
 

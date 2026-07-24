@@ -59,6 +59,71 @@ const lox2 = Loxer.l(1).h().m('AUTH').open('highlighted level 1 log for module A
 ```
 
 For a complete guide on how to use everything, definitely take a look at the **[Documentation](https://github.com/pcprinz/loxer/blob/master/documentation/index.md)**
+
+## Plain-function tracing
+
+Loxer can open and close a trace box automatically around a named plain function during the build.
+This requires Loxer 3, Babel 8, and Node 22.18 or newer for the tracing plugin.
+
+```sh
+pnpm add loxer
+pnpm add -D @babel/core @babel/preset-typescript babel-plugin-loxer-trace
+```
+
+Register the plugin in the Babel configuration that transforms the marked TypeScript files:
+
+```js
+// babel.config.mjs
+export default {
+  presets: ['@babel/preset-typescript'],
+  plugins: ['babel-plugin-loxer-trace'],
+};
+```
+
+Initialize Loxer with every module that a trace or log uses, then import `loxed` from
+`loxer/trace` and put its marker immediately after the named function binding:
+
+```ts
+import { Loxer } from 'loxer';
+import { loxed } from 'loxer/trace';
+
+Loxer.init({
+  modules: {
+    ORDER: { color: '#00ff99', fullName: 'Order', devLevel: 2, prodLevel: 0 },
+  },
+});
+
+function submitOrder(orderId: string) {
+  Loxer.m('ORDER').log(`Submitting ${orderId}`);
+  return orderId;
+}
+
+loxed(submitOrder, { moduleId: 'ORDER', openMessage: 'args' });
+```
+
+`loxed()` is a build-time marker, not a runtime wrapper. Every module that executes a marker must
+pass through the Babel plugin; otherwise the marker throws to signal a missing build configuration.
+
+For Vite, add the adapter and register it as a normal Vite plugin:
+
+```sh
+pnpm add -D vite-plugin-loxer-trace
+```
+
+```ts
+// vite.config.ts
+import { defineConfig } from 'vite';
+import loxerTrace from 'vite-plugin-loxer-trace';
+
+export default defineConfig({
+  plugins: [loxerTrace()],
+});
+```
+
+See the [plain-function tracing guide](https://github.com/pcprinz/loxer/blob/master/documentation/index.md#plain-function-tracing)
+and the [Babel plugin README](https://github.com/pcprinz/loxer/blob/master/packages/babel-plugin-loxer-trace/README.md)
+for supported function shapes, options, and transform details.
+
 ## Preview Example
 
 Consider the following log output (without the log date):

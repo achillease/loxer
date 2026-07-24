@@ -1,0 +1,10 @@
+{
+  "extends": "../../tsconfig.json",
+  "include": ["src", "vite.config.ts"],
+  "compilerOptions": {
+    "noEmit": true,
+    "rootDir": ".",
+    "types": ["node", "vite/client"],
+    "tsBuildInfoFile": "node_modules/.cache/loxer-vite-trace-demo/tsbuildinfo"
+  }
+}

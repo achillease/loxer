@@ -2,22 +2,22 @@ import { Loxer } from './Loxer.js';
 import {
   FunctionCloseMessage,
   FunctionOpenMessage,
-  LoxedOptions,
+  TraceOptions,
   TraceHighlight,
 } from './tracing-types.js';
 
-export type { LoxedOptions } from './tracing-types.js';
+export type { TraceOptions } from './tracing-types.js';
 
-type LoxedTarget = (...args: any[]) => unknown;
+type PlainFunctionTraceTarget = (...args: any[]) => unknown;
 
-export interface LoxedTrace {
+export interface FunctionTrace {
   readonly id: number;
   success(result: any): void;
   failure(error: any): void;
 }
 
 /** @internal */
-export function __setLoxedFunctionLength(
+export function __setTraceFunctionLength(
   target: (...args: any[]) => unknown,
   length: number
 ): void {
@@ -29,12 +29,12 @@ export function __setLoxedFunctionLength(
  *
  * @internal
  */
-export function __observeLoxedResult(trace: LoxedTrace, result: any): boolean {
+export function __observeTraceResult(traceState: FunctionTrace, result: any): boolean {
   try {
     Promise.prototype.then.call(
       result,
-      (value) => trace.success(value),
-      (error) => trace.failure(error)
+      (value) => traceState.success(value),
+      (error) => traceState.failure(error)
     );
 
     return true;
@@ -49,9 +49,12 @@ export function __observeLoxedResult(trace: LoxedTrace, result: any): boolean {
  * The build-time trace transform removes this call. Reaching it at runtime means the transform is
  * missing.
  */
-export function loxed<T extends LoxedTarget>(_target: T, _options?: LoxedOptions): never {
+export function trace<T extends PlainFunctionTraceTarget>(
+  _target: T,
+  _options?: TraceOptions<Parameters<T>, Awaited<ReturnType<T>>>
+): never {
   throw new Error(
-    'loxed() is a build-time marker. Configure babel-plugin-loxer-trace or ' +
+    'trace() is a build-time marker. Configure babel-plugin-loxer-trace or ' +
       'vite-plugin-loxer-trace before executing this module.'
   );
 }
@@ -61,11 +64,11 @@ export function loxed<T extends LoxedTarget>(_target: T, _options?: LoxedOptions
  *
  * @internal
  */
-export function __startLoxedTrace(
+export function __startTrace(
   functionName: string,
   args: any[],
-  options: LoxedOptions = {}
-): LoxedTrace {
+  options: TraceOptions = {}
+): FunctionTrace {
   const { highlight, level = 1, moduleId } = options;
   const openMessage = getOpenMessage(functionName, args, options.openMessage);
   const item = options.argsAsItem ? args : undefined;
@@ -110,6 +113,9 @@ function getOpenMessage(
     if (style === 'types') {
       return `${functionName}(${args.map((arg) => typeof arg).join(', ')})`;
     }
+    if (style === 'className.functionName') {
+      return fallback;
+    }
   } catch {
     return fallback;
   }
@@ -144,6 +150,9 @@ function getCloseMessage(
       const serialized = JSON.stringify(result, null, ' ');
 
       return serialized === undefined ? fallback : `${functionName} done. returns: \n${serialized}`;
+    }
+    if (style === 'className.functionName') {
+      return fallback;
     }
   } catch {
     return fallback;

@@ -1,5 +1,5 @@
 import { BoxFactory, BoxLayouts, Loxer } from 'loxer';
-import { loxed } from 'loxer/trace';
+import { trace } from 'loxer/trace';
 import './style.css';
 
 type CallbackBox = Parameters<typeof BoxFactory.getBoxString>[0];
@@ -40,7 +40,7 @@ app.innerHTML = `
       <h1>Plain-function trace demo</h1>
       <p class="intro">
         Each action below calls a normal TypeScript function marked with
-        <code>loxed(functionName, options)</code>. The panel shows the real Loxer callbacks.
+        <code>trace(functionName, options)</code>. The panel shows the real Loxer callbacks.
       </p>
     </header>
 
@@ -71,7 +71,7 @@ app.innerHTML = `
           <p class="eyebrow">Callback stream</p>
           <h2>Trace records</h2>
         </div>
-        <code>import { loxed } from 'loxer/trace'</code>
+        <code>import { trace } from 'loxer/trace'</code>
       </div>
       <ol id="trace-output" class="trace-output"></ol>
       <p id="empty-output" class="empty-output">No trace records yet.</p>
@@ -131,7 +131,7 @@ function calculateTotal(unitPrice: number, quantity: number): number {
   return total;
 }
 
-loxed(calculateTotal, {
+trace(calculateTotal, {
   argsAsItem: true,
   closeMessage: (result) => `calculateTotal done. returns: ${result.toFixed(2)}`,
   highlight: 'close',
@@ -148,7 +148,7 @@ async function reserveInventory(orderId: number, delay: number): Promise<number>
   return orderId;
 }
 
-loxed(reserveInventory, {
+trace(reserveInventory, {
   moduleId: 'INVENTORY',
   openMessage: ([orderId]) => `reserveInventory(${orderId})`,
 });
@@ -166,7 +166,7 @@ async function chargePayment(orderId: number): Promise<number> {
   return orderId;
 }
 
-loxed(chargePayment, {
+trace(chargePayment, {
   moduleId: 'PAYMENT',
   openMessage: ([orderId]) => `chargePayment(${orderId})`,
 });
@@ -180,7 +180,7 @@ async function submitOrder(orderId: number, delay: number): Promise<{ orderId: n
   return { orderId };
 }
 
-loxed(submitOrder, {
+trace(submitOrder, {
   closeMessage: ({ orderId }) => `Order ${orderId} submitted`,
   moduleId: 'ORDER',
   openMessage: ([orderId]) => `submitOrder(${orderId})`,

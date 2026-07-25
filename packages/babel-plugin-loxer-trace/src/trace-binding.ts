@@ -27,13 +27,13 @@ export function traceBinding(
 ): void {
   if (bindingPath.isFunctionDeclaration()) {
     if (bindingPath.node.generator) {
-      throw bindingPath.buildCodeFrameError('loxed() does not support generator functions.');
+      throw bindingPath.buildCodeFrameError('trace() does not support generator functions.');
     }
 
-    const stateId = bindingPath.scope.generateUidIdentifier('loxedTrace');
+    const stateId = bindingPath.scope.generateUidIdentifier('traceState');
     rewriteDirectLoxerCalls(bindingPath.get('body'), loxerBinding, stateId, t);
     const originalBody = bindingPath.node.body;
-    const invokeId = bindingPath.scope.generateUidIdentifier('invokeLoxed');
+    const invokeId = bindingPath.scope.generateUidIdentifier('invokeTrace');
     const argsExpression = t.arrayExpression([t.spreadElement(t.identifier('arguments'))]);
     bindingPath.node.body = buildWrapperBody(
       originalBody,
@@ -54,31 +54,31 @@ export function traceBinding(
 
   if (!bindingPath.isVariableDeclarator()) {
     throw bindingPath.buildCodeFrameError(
-      'loxed() supports function declarations and named variable bindings only.'
+      'trace() supports function declarations and named variable bindings only.'
     );
   }
 
   const initPath = bindingPath.get('init');
   if (!initPath.isFunctionExpression() && !initPath.isArrowFunctionExpression()) {
     throw bindingPath.buildCodeFrameError(
-      `loxed() target "${functionName}" is not initialized with a function.`
+      `trace() target "${functionName}" is not initialized with a function.`
     );
   }
   if (initPath.node.generator) {
-    throw initPath.buildCodeFrameError('loxed() does not support generator functions.');
+    throw initPath.buildCodeFrameError('trace() does not support generator functions.');
   }
 
   if (!t.isBlockStatement(initPath.node.body)) {
     initPath.node.body = t.blockStatement([t.returnStatement(initPath.node.body)]);
   }
 
-  const stateId = initPath.scope.generateUidIdentifier('loxedTrace');
+  const stateId = initPath.scope.generateUidIdentifier('traceState');
   rewriteDirectLoxerCalls(initPath.get('body'), loxerBinding, stateId, t);
-  const invokeId = initPath.scope.generateUidIdentifier('invokeLoxed');
+  const invokeId = initPath.scope.generateUidIdentifier('invokeTrace');
 
   if (initPath.isArrowFunctionExpression()) {
     const original = t.cloneNode(initPath.node, true);
-    const argsId = initPath.scope.generateUidIdentifier('loxedArgs');
+    const argsId = initPath.scope.generateUidIdentifier('traceArgs');
     const wrapperBody = buildWrapperBody(
       undefined,
       initPath.node.async,
@@ -134,7 +134,7 @@ function getBindingArgsExpression(_initPath: NodePath<any>, t: BabelTypes): any 
 function getBindingStatement(bindingPath: NodePath<any>): NodePath<any> {
   const statementPath = bindingPath.getStatementParent();
   if (!statementPath) {
-    throw bindingPath.buildCodeFrameError('loxed() target must be declared in a statement.');
+    throw bindingPath.buildCodeFrameError('trace() target must be declared in a statement.');
   }
 
   return statementPath.parentPath?.isExportNamedDeclaration()
@@ -174,8 +174,8 @@ function buildWrapperBody(
   originalFunction: any,
   t: BabelTypes
 ): any {
-  const resultId = t.identifier(stateId.name.replace('loxedTrace', 'loxedResult'));
-  const errorId = t.identifier(stateId.name.replace('loxedTrace', 'loxedError'));
+  const resultId = t.identifier(stateId.name.replace('traceState', 'traceResult'));
+  const errorId = t.identifier(stateId.name.replace('traceState', 'traceError'));
   const declarations = [
     t.variableDeclaration('const', [
       t.variableDeclarator(

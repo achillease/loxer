@@ -4,7 +4,7 @@ import type { InputOptions } from '@babel/core';
 export interface LoxerTracePluginOptions {
   /** Module specifier from which the plugin should find the `Loxer` binding. */
   loxerImport?: string;
-  /** Module specifier from which the plugin should find the `loxed` marker and runtime helpers. */
+  /** Module specifier from which the plugin should find the `trace` marker and runtime helpers. */
   traceImport?: string;
 }
 

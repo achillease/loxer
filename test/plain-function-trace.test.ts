@@ -1,11 +1,6 @@
 import { ErrorLox, OutputLox } from '../src/loxes';
 import { Loxer, resetLoxer } from '../src';
-import {
-  __observeLoxedResult,
-  __setLoxedFunctionLength,
-  __startLoxedTrace,
-  loxed,
-} from '../src/trace';
+import { __observeTraceResult, __setTraceFunctionLength, __startTrace, trace } from '../src/trace';
 import { transformLoxerTrace } from '../packages/babel-plugin-loxer-trace/src/transform';
 import { vi } from 'vitest';
 
@@ -14,10 +9,10 @@ let devErrors: ErrorLox[] = [];
 let moduleCount = 0;
 
 const traceRuntimeUrl = asDataModule(
-  'export const loxed = (...args) => globalThis.__loxerTraceMarker(...args);' +
-    'export const __startLoxedTrace = (...args) => globalThis.__loxerStartTrace(...args);' +
-    'export const __observeLoxedResult = (...args) => globalThis.__loxerObserveLoxedResult(...args);' +
-    'export const __setLoxedFunctionLength = (...args) => globalThis.__loxerSetFunctionLength(...args);'
+  'export const trace = (...args) => globalThis.__loxerTraceMarker(...args);' +
+    'export const __startTrace = (...args) => globalThis.__loxerStartTrace(...args);' +
+    'export const __observeTraceResult = (...args) => globalThis.__loxerObserveTraceResult(...args);' +
+    'export const __setTraceFunctionLength = (...args) => globalThis.__loxerSetFunctionLength(...args);'
 );
 const loxerRuntimeUrl = asDataModule(
   'export const Loxer = new Proxy({}, { get: (_target, property) => {' +
@@ -27,10 +22,10 @@ const loxerRuntimeUrl = asDataModule(
 );
 
 beforeEach(() => {
-  (globalThis as any).__loxerTraceMarker = loxed;
-  (globalThis as any).__loxerObserveLoxedResult = __observeLoxedResult;
-  (globalThis as any).__loxerSetFunctionLength = __setLoxedFunctionLength;
-  (globalThis as any).__loxerStartTrace = __startLoxedTrace;
+  (globalThis as any).__loxerTraceMarker = trace;
+  (globalThis as any).__loxerObserveTraceResult = __observeTraceResult;
+  (globalThis as any).__loxerSetFunctionLength = __setTraceFunctionLength;
+  (globalThis as any).__loxerStartTrace = __startTrace;
   (globalThis as any).__loxerTraceLoxer = Loxer;
   Loxer.init({
     dev: true,
@@ -56,7 +51,7 @@ afterEach(() => {
   devLogs = [];
   devErrors = [];
   delete (globalThis as any).__loxerTraceMarker;
-  delete (globalThis as any).__loxerObserveLoxedResult;
+  delete (globalThis as any).__loxerObserveTraceResult;
   delete (globalThis as any).__loxerSetFunctionLength;
   delete (globalThis as any).__loxerStartTrace;
   delete (globalThis as any).__loxerTraceLoxer;
@@ -69,7 +64,7 @@ test('a transformed function preserves sync result, modifier chains, and its box
       Loxer.m('ORDER').h(true).l(2).log('calculating:' + value);
       return value * 2;
     }
-    loxed(calculate, {
+    trace(calculate, {
       moduleId: 'TRACE',
       openMessage: 'args',
       closeMessage: 'result',
@@ -101,11 +96,11 @@ test('a transformed declaration preserves this and rethrows the original synchro
     function multiply(value) {
       return this.factor * value;
     }
-    loxed(multiply, { moduleId: 'TRACE' });
+    trace(multiply, { moduleId: 'TRACE' });
     function rejectSync() {
       throw original;
     }
-    loxed(rejectSync, { moduleId: 'TRACE' });
+    trace(rejectSync, { moduleId: 'TRACE' });
     export { multiply, original, rejectSync };
   `);
 
@@ -132,7 +127,7 @@ test('a transformed async function preserves its rejection and links errors and 
       Loxer.h().namedError('PaymentError', 'card declined');
       throw new Error('original failure');
     }
-    loxed(submit, { moduleId: 'TRACE' });
+    trace(submit, { moduleId: 'TRACE' });
     export { submit };
   `);
 
@@ -159,7 +154,7 @@ test('a non-async trace keeps the original promise identity while its lifecycle 
       Loxer.m('ORDER').log('loading');
       return pending;
     }
-    loxed(load, { moduleId: 'TRACE' });
+    trace(load, { moduleId: 'TRACE' });
     export { complete, load, pending };
   `);
 
@@ -189,7 +184,7 @@ test('a non-async trace keeps a hostile thenable object and closes successfully'
     function readHostile() {
       return hostile;
     }
-    loxed(readHostile, { moduleId: 'TRACE' });
+    trace(readHostile, { moduleId: 'TRACE' });
     export { hostile, readHostile };
   `);
 
@@ -207,7 +202,7 @@ test('a hoisted declaration can run before its marker without an options TDZ', a
       return 'Hello ' + name;
     }
     const beforeMarker = greet('Ada');
-    loxed(greet, { moduleId: 'TRACE', openMessage: 'args' });
+    trace(greet, { moduleId: 'TRACE', openMessage: 'args' });
     export { beforeMarker, greet };
   `);
 
@@ -226,7 +221,7 @@ test('a hoisted declaration can run before its declaration and marker with defau
     function greet(name) {
       return 'Hello ' + name;
     }
-    loxed(greet, { moduleId: 'TRACE', openMessage: 'args' });
+    trace(greet, { moduleId: 'TRACE', openMessage: 'args' });
     export { beforeDeclaration, greet };
   `);
 
@@ -244,11 +239,11 @@ test('named function expressions and arrows retain their original this semantics
     const functionExpression = function (value) {
       return this.factor * value;
     };
-    loxed(functionExpression, { moduleId: 'TRACE' });
+    trace(functionExpression, { moduleId: 'TRACE' });
 
     function createArrow() {
       const arrow = (value) => this.factor * value;
-      loxed(arrow, { moduleId: 'ORDER' });
+      trace(arrow, { moduleId: 'ORDER' });
       return arrow;
     }
     export { createArrow, functionExpression };
@@ -265,10 +260,10 @@ test('variable-bound function forms retain arity and named expression self refer
     const expression = function recurse(value, total) {
       return value === 0 ? total : recurse(value - 1, total + 1);
     };
-    loxed(expression, { moduleId: 'TRACE' });
+    trace(expression, { moduleId: 'TRACE' });
 
     const arrow = (left, right) => left + right;
-    loxed(arrow, { moduleId: 'ORDER' });
+    trace(arrow, { moduleId: 'ORDER' });
     export { arrow, expression };
   `);
 
@@ -290,7 +285,7 @@ test('custom thenables are returned and are never invoked by tracing', async () 
     function readThenable() {
       return customThenable;
     }
-    loxed(readThenable, { moduleId: 'TRACE' });
+    trace(readThenable, { moduleId: 'TRACE' });
     export { customThenable, readThenable, thenCalls };
   `);
 
@@ -319,11 +314,11 @@ test('native promises with throwing own or subclass then accessors return unchan
     function readOwn() {
       return ownThen;
     }
-    loxed(readOwn, { moduleId: 'TRACE' });
+    trace(readOwn, { moduleId: 'TRACE' });
     function readSubclass() {
       return subclassThen;
     }
-    loxed(readSubclass, { moduleId: 'ORDER' });
+    trace(readSubclass, { moduleId: 'ORDER' });
     export { ownThen, readOwn, readSubclass, subclassThen };
   `);
 
@@ -344,9 +339,9 @@ test('native promises with throwing own or subclass then accessors return unchan
 test('simple and rest arrows capture actual arguments', async () => {
   const traced = await loadTracedModule(`
     const simple = (first, second) => first + second;
-    loxed(simple, { moduleId: 'TRACE', openMessage: 'args' });
+    trace(simple, { moduleId: 'TRACE', openMessage: 'args' });
     const rest = (first, ...tail) => [first, tail];
-    loxed(rest, { moduleId: 'ORDER', openMessage: 'args' });
+    trace(rest, { moduleId: 'ORDER', openMessage: 'args' });
     export { rest, simple };
   `);
 
@@ -365,11 +360,11 @@ test('undefined and circular thrown values remain the caller-visible failures', 
     function throwUndefined() {
       throw undefined;
     }
-    loxed(throwUndefined, { moduleId: 'TRACE' });
+    trace(throwUndefined, { moduleId: 'TRACE' });
     function throwCircular() {
       throw circular;
     }
-    loxed(throwCircular, { moduleId: 'ORDER' });
+    trace(throwCircular, { moduleId: 'ORDER' });
     export { circular, throwCircular, throwUndefined };
   `);
 
@@ -402,7 +397,7 @@ test('failure output escapes control characters without replacing the original E
     function fail() {
       throw original;
     }
-    loxed(fail, { moduleId: 'TRACE' });
+    trace(fail, { moduleId: 'TRACE' });
     export { fail, original };
   `);
 
@@ -430,7 +425,7 @@ test('an unreadable native Error message does not mask the original failure or b
     function failUnreadable() {
       throw original;
     }
-    loxed(failUnreadable, { moduleId: 'TRACE' });
+    trace(failUnreadable, { moduleId: 'TRACE' });
     export { failUnreadable, original };
   `);
 
@@ -459,7 +454,7 @@ test('a proxy with an unreadable prototype remains the caller-visible failure an
     function failProxy() {
       throw original;
     }
-    loxed(failProxy, { moduleId: 'TRACE' });
+    trace(failProxy, { moduleId: 'TRACE' });
     export { failProxy, original };
   `);
 
@@ -485,7 +480,7 @@ test('nested and overlapping transformed invocations link each direct log to its
       Loxer.log('child:end:' + value);
       return value;
     }
-    loxed(child, { moduleId: 'TRACE', openMessage: 'args' });
+    trace(child, { moduleId: 'TRACE', openMessage: 'args' });
 
     async function parent(value) {
       Loxer.log('parent:start:' + value);
@@ -493,7 +488,7 @@ test('nested and overlapping transformed invocations link each direct log to its
       Loxer.log('parent:end:' + value);
       return result;
     }
-    loxed(parent, { moduleId: 'ORDER', openMessage: 'args' });
+    trace(parent, { moduleId: 'ORDER', openMessage: 'args' });
     export { child, parent };
   `);
 
@@ -530,15 +525,15 @@ test('nested and overlapping transformed invocations link each direct log to its
 });
 
 test('the runtime marker fails loudly without a transform', () => {
-  expect(() => loxed(() => 'untransformed')).toThrow(
-    'loxed() is a build-time marker. Configure babel-plugin-loxer-trace'
+  expect(() => trace(() => 'untransformed')).toThrow(
+    'trace() is a build-time marker. Configure babel-plugin-loxer-trace'
   );
 });
 
 test('formatter and cyclic-result failures fall back without changing results', () => {
   const cyclic: { self?: unknown } = {};
   cyclic.self = cyclic;
-  const trace = __startLoxedTrace('format', [1], {
+  const trace = __startTrace('format', [1], {
     moduleId: 'TRACE',
     openMessage: () => {
       throw new Error('formatter failed');
@@ -553,15 +548,15 @@ test('formatter and cyclic-result failures fall back without changing results', 
 });
 
 test('trace options format types, pretty results, and successful formatter messages', () => {
-  const typed = __startLoxedTrace('typed', [1, 'text', null], {
+  const typed = __startTrace('typed', [1, 'text', null], {
     closeMessage: 'prettyResult',
     moduleId: 'TRACE',
     openMessage: 'types',
   });
   typed.success({ nested: true });
 
-  const formatted = __startLoxedTrace('formatted', ['Ada'], {
-    closeMessage: (result) => `close:${result.name}`,
+  const formatted = __startTrace('formatted', ['Ada'], {
+    closeMessage: (result: any) => `close:${result.name}`,
     moduleId: 'ORDER',
     openMessage: (args) => `open:${args[0]}`,
   });
@@ -575,8 +570,19 @@ test('trace options format types, pretty results, and successful formatter messa
   ]);
 });
 
+test('className.functionName trace messages fall back to the function name', () => {
+  const trace = __startTrace('standalone', [], {
+    closeMessage: 'className.functionName',
+    moduleId: 'TRACE',
+    openMessage: 'className.functionName',
+  });
+  trace.success(undefined);
+
+  expect(devLogs.map((log) => log.message)).toEqual(['standalone()', 'standalone done']);
+});
+
 test('custom formatter messages escape terminal control characters', () => {
-  const trace = __startLoxedTrace('controlled', [], {
+  const trace = __startTrace('controlled', [], {
     closeMessage: () => 'close\n\u001b[31mmessage',
     moduleId: 'TRACE',
     openMessage: () => 'open\n\u001b[32mmessage',
@@ -590,14 +596,14 @@ test('custom formatter messages escape terminal control characters', () => {
 });
 
 test('non-string formatters and control characters fall back to safe trace messages', () => {
-  const fallback = __startLoxedTrace('fallback', [], {
+  const fallback = __startTrace('fallback', [], {
     closeMessage: (() => 123) as any,
     moduleId: 'TRACE',
     openMessage: (() => 123) as any,
   });
   fallback.success('result');
 
-  const escaped = __startLoxedTrace('escaped', ['line\nbreak', '\u001b[31mred\u001b[0m'], {
+  const escaped = __startTrace('escaped', ['line\nbreak', '\u001b[31mred\u001b[0m'], {
     moduleId: 'ORDER',
     openMessage: 'args',
   });
@@ -613,7 +619,7 @@ test('non-string formatters and control characters fall back to safe trace messa
 
 test('disabled traces are silent and pre-init traces replay when Loxer initializes', () => {
   resetLoxer();
-  const queued = __startLoxedTrace('queued', [], { moduleId: 'TRACE' });
+  const queued = __startTrace('queued', [], { moduleId: 'TRACE' });
   queued.success('ok');
 
   Loxer.init({
@@ -638,13 +644,13 @@ test('disabled traces are silent and pre-init traces replay when Loxer initializ
     config: { disabled: true },
     callbacks: { devLog: (log) => devLogs.push(log) },
   });
-  const disabled = __startLoxedTrace('disabled', [], { moduleId: 'TRACE' });
+  const disabled = __startTrace('disabled', [], { moduleId: 'TRACE' });
   disabled.success('ignored');
   expect(devLogs).toEqual([]);
 });
 
 test('an omitted trace level remains visible while a hidden trace leaves no visible records', () => {
-  const defaultLevel = __startLoxedTrace('defaultLevel', [], { moduleId: 'TRACE' });
+  const defaultLevel = __startTrace('defaultLevel', [], { moduleId: 'TRACE' });
   defaultLevel.success('visible');
   expect(devLogs.map((log) => [log.message, log.level])).toEqual([
     ['defaultLevel()', 1],
@@ -653,7 +659,7 @@ test('an omitted trace level remains visible while a hidden trace leaves no visi
 
   devLogs = [];
   const historyLength = Loxer.history.length;
-  const hidden = __startLoxedTrace('hiddenLevel', [], { level: 3, moduleId: 'TRACE' });
+  const hidden = __startTrace('hiddenLevel', [], { level: 3, moduleId: 'TRACE' });
   hidden.success('hidden');
   expect(devLogs).toEqual([]);
   expect(Loxer.history).toHaveLength(historyLength);
@@ -662,11 +668,11 @@ test('an omitted trace level remains visible while a hidden trace leaves no visi
 test('default and destructured traced arrows retain caller arguments for message and item output', async () => {
   const traced = await loadTracedModule(`
     const zero = () => 'zero';
-    loxed(zero, { moduleId: 'TRACE', openMessage: 'args', argsAsItem: true });
+    trace(zero, { moduleId: 'TRACE', openMessage: 'args', argsAsItem: true });
     const defaulted = (first = 'fallback', second = 'two') => first + ':' + second;
-    loxed(defaulted, { moduleId: 'ORDER', openMessage: 'args', argsAsItem: true });
+    trace(defaulted, { moduleId: 'ORDER', openMessage: 'args', argsAsItem: true });
     const destructured = ({ value } = { value: 'fallback' }, [tail] = ['tail']) => value + ':' + tail;
-    loxed(destructured, { moduleId: 'TRACE', openMessage: 'args', argsAsItem: true });
+    trace(destructured, { moduleId: 'TRACE', openMessage: 'args', argsAsItem: true });
     export { defaulted, destructured, zero };
   `);
 
@@ -706,16 +712,16 @@ test('shadowed Array and Object bindings do not affect generated trace helpers',
       function declaration(value) {
         return value * 2;
       }
-      loxed(declaration, { moduleId: 'TRACE' });
+      trace(declaration, { moduleId: 'TRACE' });
       const expression = function (value) {
         return value + 1;
       };
-      loxed(expression, { moduleId: 'ORDER' });
+      trace(expression, { moduleId: 'ORDER' });
       return { declaration, expression, Array };
     }
     const Object = { defineProperty() { throw new Error('shadowed Object'); } };
     export const arrow = (first, second = 1) => first + second;
-    loxed(arrow, { moduleId: 'TRACE' });
+    trace(arrow, { moduleId: 'TRACE' });
     export { withShadowedArray };
   `);
 
@@ -733,7 +739,7 @@ test('a hidden direct modifier log does not enter history and leaves a visible t
       Loxer.m('ORDER').l(3).log('not visible');
       return 'ok';
     }
-    loxed(hiddenDetail, { moduleId: 'TRACE' });
+    trace(hiddenDetail, { moduleId: 'TRACE' });
     export { hiddenDetail };
   `);
   const historyLength = Loxer.history.length;
@@ -760,19 +766,40 @@ test('initialization does not require a global process object', () => {
 
 test('the transform removes the marker and reports unsupported marker forms', async () => {
   const result = await transformLoxerTrace(
-    `${imports()} function one() { return 1; } loxed(one); export { one };`,
+    `${imports()} function one() { return 1; } trace(one); export { one };`,
     transformOptions()
   );
-  expect(result?.code).not.toContain('loxed(one)');
-  expect(result?.code).toContain('__startLoxedTrace');
+  expect(result?.code).not.toContain('trace(one)');
+  expect(result?.code).toContain('__startTrace');
 
   await expect(
-    transformLoxerTrace(`${imports()} const value = loxed(() => 1);`, transformOptions())
-  ).rejects.toThrow('loxed() must be a standalone statement');
+    transformLoxerTrace(`${imports()} const value = trace(() => 1);`, transformOptions())
+  ).rejects.toThrow('trace() must be a standalone statement');
 });
 
 function imports(): string {
-  return `import { loxed } from '${traceRuntimeUrl}'; import { Loxer } from '${loxerRuntimeUrl}';`;
+  return `import { trace } from '${traceRuntimeUrl}'; import { Loxer } from '${loxerRuntimeUrl}';`;
+}
+
+type AssertFalse<Value extends false> = Value;
+type LegacyMarkerIsAbsent = 'loxed' extends keyof typeof import('../src/trace') ? true : false;
+type LegacyMarkerIsNotExported = AssertFalse<LegacyMarkerIsAbsent>;
+
+function traceFormatterTypeFixture(): void {
+  function calculateTotal(quantity: number, currency: string): Promise<{ amount: number }> {
+    return Promise.resolve({ amount: quantity });
+  }
+
+  trace(calculateTotal, {
+    openMessage(args) {
+      const exactArguments: [quantity: number, currency: string] = args;
+      return `${exactArguments[0]} ${exactArguments[1]}`;
+    },
+    closeMessage(result) {
+      const exactResult: { amount: number } = result;
+      return String(exactResult.amount);
+    },
+  });
 }
 
 function transformOptions() {

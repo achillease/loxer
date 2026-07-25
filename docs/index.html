@@ -35,6 +35,33 @@
 </code><button type="button">Copy</button></pre>
 
 <p>For a complete guide on how to use everything, definitely take a look at the <strong><a href="https://github.com/pcprinz/loxer/blob/master/documentation/index.md">Documentation</a></strong></p>
+<h2 id="plain-function-tracing" class="tsd-anchor-link">Plain-function tracing<a href="#plain-function-tracing" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="assets/icons.svg#icon-anchor"></use></svg></a></h2>
+<p>Loxer can open and close a trace box automatically around a named plain function during the build.
+This requires Loxer 3, Babel 8, and Node 22.18 or newer for the tracing plugin.</p>
+<pre><code class="sh"><span class="hl-3">pnpm</span><span class="hl-2"> </span><span class="hl-4">add</span><span class="hl-2"> </span><span class="hl-4">loxer</span><br/><span class="hl-3">pnpm</span><span class="hl-2"> </span><span class="hl-4">add</span><span class="hl-2"> </span><span class="hl-6">-D</span><span class="hl-2"> </span><span class="hl-4">@babel/core</span><span class="hl-2"> </span><span class="hl-4">@babel/preset-typescript</span><span class="hl-2"> </span><span class="hl-4">babel-plugin-loxer-trace</span>
+</code><button type="button">Copy</button></pre>
+
+<p>Register the plugin in the Babel configuration that transforms the marked TypeScript files:</p>
+<pre><code class="js"><span class="hl-0">// babel.config.mjs</span><br/><span class="hl-8">export</span><span class="hl-2"> </span><span class="hl-8">default</span><span class="hl-2"> {</span><br/><span class="hl-2">  </span><span class="hl-1">presets:</span><span class="hl-2"> [</span><span class="hl-4">&#39;@babel/preset-typescript&#39;</span><span class="hl-2">],</span><br/><span class="hl-2">  </span><span class="hl-1">plugins:</span><span class="hl-2"> [</span><span class="hl-4">&#39;babel-plugin-loxer-trace&#39;</span><span class="hl-2">],</span><br/><span class="hl-2">};</span>
+</code><button type="button">Copy</button></pre>
+
+<p>Initialize Loxer with every module that a trace or log uses, then import <code>trace</code> from
+<code>loxer/trace</code> and put its marker immediately after the named function binding:</p>
+<pre><code class="ts"><span class="hl-8">import</span><span class="hl-2"> { </span><span class="hl-1">Loxer</span><span class="hl-2"> } </span><span class="hl-8">from</span><span class="hl-2"> </span><span class="hl-4">&#39;loxer&#39;</span><span class="hl-2">;</span><br/><span class="hl-8">import</span><span class="hl-2"> { </span><span class="hl-1">trace</span><span class="hl-2"> } </span><span class="hl-8">from</span><span class="hl-2"> </span><span class="hl-4">&#39;loxer/trace&#39;</span><span class="hl-2">;</span><br/><br/><span class="hl-1">Loxer</span><span class="hl-2">.</span><span class="hl-3">init</span><span class="hl-2">({</span><br/><span class="hl-2">  </span><span class="hl-1">modules:</span><span class="hl-2"> {</span><br/><span class="hl-2">    </span><span class="hl-1">ORDER:</span><span class="hl-2"> { </span><span class="hl-1">color:</span><span class="hl-2"> </span><span class="hl-4">&#39;#00ff99&#39;</span><span class="hl-2">, </span><span class="hl-1">fullName:</span><span class="hl-2"> </span><span class="hl-4">&#39;Order&#39;</span><span class="hl-2">, </span><span class="hl-1">devLevel:</span><span class="hl-2"> </span><span class="hl-5">2</span><span class="hl-2">, </span><span class="hl-1">prodLevel:</span><span class="hl-2"> </span><span class="hl-5">0</span><span class="hl-2"> },</span><br/><span class="hl-2">  },</span><br/><span class="hl-2">});</span><br/><br/><span class="hl-6">function</span><span class="hl-2"> </span><span class="hl-3">submitOrder</span><span class="hl-2">(</span><span class="hl-1">orderId</span><span class="hl-2">: </span><span class="hl-9">string</span><span class="hl-2">) {</span><br/><span class="hl-2">  </span><span class="hl-1">Loxer</span><span class="hl-2">.</span><span class="hl-3">m</span><span class="hl-2">(</span><span class="hl-4">&#39;ORDER&#39;</span><span class="hl-2">).</span><span class="hl-3">log</span><span class="hl-2">(</span><span class="hl-4">`Submitting </span><span class="hl-6">${</span><span class="hl-1">orderId</span><span class="hl-6">}</span><span class="hl-4">`</span><span class="hl-2">);</span><br/><span class="hl-2">  </span><span class="hl-8">return</span><span class="hl-2"> </span><span class="hl-1">orderId</span><span class="hl-2">;</span><br/><span class="hl-2">}</span><br/><br/><span class="hl-3">trace</span><span class="hl-2">(</span><span class="hl-1">submitOrder</span><span class="hl-2">, { </span><span class="hl-1">moduleId:</span><span class="hl-2"> </span><span class="hl-4">&#39;ORDER&#39;</span><span class="hl-2">, </span><span class="hl-1">openMessage:</span><span class="hl-2"> </span><span class="hl-4">&#39;args&#39;</span><span class="hl-2"> });</span>
+</code><button type="button">Copy</button></pre>
+
+<p><code>trace()</code> is a build-time marker, not a runtime wrapper. Every module that executes a marker must
+pass through the Babel plugin; otherwise the marker throws to signal a missing build configuration.</p>
+<p>For Vite, add the adapter and register it as a normal Vite plugin:</p>
+<pre><code class="sh"><span class="hl-3">pnpm</span><span class="hl-2"> </span><span class="hl-4">add</span><span class="hl-2"> </span><span class="hl-6">-D</span><span class="hl-2"> </span><span class="hl-4">vite-plugin-loxer-trace</span>
+</code><button type="button">Copy</button></pre>
+
+<pre><code class="ts"><span class="hl-0">// vite.config.ts</span><br/><span class="hl-8">import</span><span class="hl-2"> { </span><span class="hl-1">defineConfig</span><span class="hl-2"> } </span><span class="hl-8">from</span><span class="hl-2"> </span><span class="hl-4">&#39;vite&#39;</span><span class="hl-2">;</span><br/><span class="hl-8">import</span><span class="hl-2"> </span><span class="hl-1">loxerTrace</span><span class="hl-2"> </span><span class="hl-8">from</span><span class="hl-2"> </span><span class="hl-4">&#39;vite-plugin-loxer-trace&#39;</span><span class="hl-2">;</span><br/><br/><span class="hl-8">export</span><span class="hl-2"> </span><span class="hl-8">default</span><span class="hl-2"> </span><span class="hl-3">defineConfig</span><span class="hl-2">({</span><br/><span class="hl-2">  </span><span class="hl-1">plugins:</span><span class="hl-2"> [</span><span class="hl-3">loxerTrace</span><span class="hl-2">()],</span><br/><span class="hl-2">});</span>
+</code><button type="button">Copy</button></pre>
+
+<p>See the <a href="https://github.com/pcprinz/loxer/blob/master/documentation/index.md#plain-function-tracing">plain-function tracing guide</a>
+and the <a href="https://github.com/pcprinz/loxer/blob/master/packages/babel-plugin-loxer-trace/README.md">Babel plugin README</a>
+for supported function shapes, options, and transform details.</p>
 <h2 id="preview-example" class="tsd-anchor-link">Preview Example<a href="#preview-example" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="assets/icons.svg#icon-anchor"></use></svg></a></h2>
 <p>Consider the following log output (without the log date):</p>
 <!-- ![plain_console](/assets/docs_images/plainOutput.png) -->
@@ -70,6 +97,7 @@
 <ul>
 <li><a href="#documentation"><span>Documentation</span></a></li>
 <li><a href="#usage"><span>Usage</span></a></li>
+<li><a href="#plain-function-tracing"><span>Plain-<wbr/>function tracing</span></a></li>
 <li><a href="#preview-example"><span>Preview <wbr/>Example</span></a></li>
 <li><a href="#installation"><span>Installation</span></a></li>
 <li><a href="#deps"><span>Deps</span></a></li></ul></div></details></div>

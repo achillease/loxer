@@ -1,6 +1,6 @@
 # Babel plugin for Loxer traces
 
-`babel-plugin-loxer-trace` turns an explicit `loxed()` marker into runtime code that traces a
+`babel-plugin-loxer-trace` turns an explicit `trace()` marker into runtime code that traces a
 named plain function with Loxer boxes. It is the canonical transform: the Vite companion package
 delegates to this package instead of implementing a second transform.
 
@@ -31,34 +31,34 @@ marker immediately after its binding.
 
 ```ts
 import { Loxer } from 'loxer';
-import { loxed } from 'loxer/trace';
+import { trace } from 'loxer/trace';
 
 async function submitOrder(orderId: string) {
   Loxer.m('PAYMENT').log(`charging ${orderId}`);
   return charge(orderId);
 }
 
-loxed(submitOrder, {
+trace(submitOrder, {
   moduleId: 'ORDER',
   openMessage: 'args',
   closeMessage: 'result',
 });
 ```
 
-`loxed()` is deliberately not a runtime wrapper. If it runs in the browser or Node, the build step
+`trace()` is deliberately not a runtime wrapper. If it runs in the browser or Node, the build step
 was skipped and it throws a configuration error. A successful transform removes both the marker
 call and the marker import.
 
 ## What the transform does
 
-The plugin identifies the _binding_ imported as `loxed`, rather than transforming every call with
-that spelling. This keeps unrelated local functions named `loxed` untouched. For each valid marker,
+The plugin identifies the _binding_ imported as `trace`, rather than transforming every call with
+that spelling. This keeps unrelated local functions named `trace` untouched. For each valid marker,
 it adds collision-safe imports for internal helpers from `loxer/trace`, rewrites the selected
 function body, and removes the marker import when it is no longer used.
 
 ```mermaid
 flowchart LR
-  A["Application module\nimport loxed from loxer/trace"] --> B["Standalone marker\nloxed(target, options)"]
+  A["Application module\nimport trace from loxer/trace"] --> B["Standalone marker\ntrace(target, options)"]
   B --> C["Babel plugin\nresolves marker and target bindings"]
   C --> D["Generated helper imports\nfrom loxer/trace"]
   D --> E["Traced target function\nin compiled module"]
@@ -95,6 +95,10 @@ sequenceDiagram
 For an ordinary function that returns a native Promise, the transform observes settlement but
 returns the same Promise object to the caller. An `async` function is traced through its awaited
 result. This preserves the observable sync/async result and native Promise identity.
+
+`TraceOptions` infers formatter callback types from the marked function: an open
+formatter receives its actual argument tuple, while a close formatter receives its returned or
+awaited result.
 
 ## API and source layout
 
@@ -156,7 +160,7 @@ expression.
 
 These boundaries are intentional:
 
-- The marker must be a standalone statement beside its named binding: `loxed(target, options)`.
+- The marker must be a standalone statement beside its named binding: `trace(target, options)`.
   It cannot be used as an expression, target an anonymous value, or receive a spread options
   argument.
 - Generator and async-generator functions are not supported.
@@ -166,7 +170,7 @@ These boundaries are intentional:
 - An object that merely looks like a thenable is not treated as a native Promise result. The
   function returns it unchanged and its trace completes synchronously.
 - The marker is a build-time contract. Keep this plugin in every Babel/Vite path that executes a
-  module containing `loxed()`.
+  module containing `trace()`.
 
 ## Maintaining the package
 

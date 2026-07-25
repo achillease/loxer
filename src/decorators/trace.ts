@@ -8,19 +8,22 @@ export type { TraceOptions } from '../tracing-types.js';
  * This decorator wraps a class level method inside a `Loxer.open()` and a `Loxer.of(...).close()` box.
  *
  * ---
- * @param options either a `string` for the `moduleId` or an `object` of type `TraceOptions`
+ * @param options either a `string` for the `moduleId` or an object of type `TraceOptions`;
+ * pass the method's argument tuple and resolved result type explicitly to type formatter callbacks
  * @returns a Decorator for class level methods
  */
-export function trace(options?: TraceOptions | string) {
+export function trace<Args extends readonly unknown[] = readonly unknown[], Result = unknown>(
+  options?: TraceOptions<Args, Result> | string
+) {
   return function (target: any, propertyKey: string, descriptor: PropertyDescriptor): any {
     const original = descriptor.value;
     const className: string = target.constructor.name;
     const fixedName = className.endsWith('Class')
       ? className.substr(0, className.length - 5)
       : className;
-    descriptor.value = function (...args: any[]) {
+    descriptor.value = function (...args: Args) {
       let moduleId;
-      let o: TraceOptions | undefined;
+      let o: TraceOptions<Args, Result> | undefined;
       if (is(options) && typeof options === 'string') {
         moduleId = options;
       } else if (is(options)) {
@@ -72,12 +75,12 @@ export function trace(options?: TraceOptions | string) {
   };
 }
 
-function getOpenMessage(
-  o: TraceOptions | undefined,
+function getOpenMessage<Args extends readonly unknown[], Result>(
+  o: TraceOptions<Args, Result> | undefined,
   propertyKey: string,
-  args: any[],
+  args: Args,
   fixedName: string
-) {
+): string {
   const om = o?.openMessage;
   let openMessage = propertyKey + '()';
   if (is(om)) {
@@ -95,12 +98,12 @@ function getOpenMessage(
   return openMessage;
 }
 
-function getCloseMessage(
-  o: TraceOptions | undefined,
+function getCloseMessage<Args extends readonly unknown[], Result>(
+  o: TraceOptions<Args, Result> | undefined,
   propertyKey: string,
-  result: any,
+  result: Result,
   fixedName: string
-) {
+): string {
   const cm = o?.closeMessage;
   let closeMessage = propertyKey + ' done';
   if (is(cm)) {

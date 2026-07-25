@@ -40,19 +40,21 @@ package.
    across adapters. A future native Oxc adapter may implement that contract only if profiling or
    non-Vite Oxc adoption justifies eliminating Babel's extra parse/print pass.
 
-Use `loxed(target, options)`, imported from `loxer/trace`, as the typed, valid-TypeScript marker
+Use `trace(target, options)`, imported from `loxer/trace`, as the typed, valid-TypeScript marker
 placed beside a named function binding. The marker module exposes the existing trace option shape for
-autocomplete; the plugin recognizes the imported `loxed` call and removes it after transforming its
+autocomplete; the plugin recognizes the imported `trace` call and removes it after transforming its
 bound function. This preserves ordinary function declarations and avoids unsupported function-decorator
 syntax. A missing transform must fail loudly during development rather than silently running untraced
 code.
 
-Define `LoxedOptions` as focused function-level parity with the useful current trace modes:
+Define `TraceOptions` as shared parity between function and method trace modes:
 `moduleId`, `level`, `highlight`, open/close message variants and formatters, and argument/result item
-capture. Exclude `className.functionName`. On an uncaught throw or rejection, emit the original error,
-close with `<functionName> failed`, and rethrow the original value. Formatter exceptions and values
-that cannot be serialized for a result message must fall back to the default trace message rather than
-altering application behavior.
+capture. `className.functionName` renders the class and method name for decorators and falls back to
+the function name for plain functions. Infer open formatter callbacks from the marked function's actual
+argument tuple and close formatter callbacks from its awaited result. On an uncaught throw or rejection,
+emit the original error, close with `<functionName> failed`, and rethrow the original value. Formatter
+exceptions and values that cannot be serialized for a result message must fall back to the default trace
+message rather than altering application behavior.
 
 For each marked sync or Promise-returning function, the canonical transform injects an invocation-local
 numeric box ID, wraps the original body in a result-preserving success/failure boundary, and emits
@@ -67,7 +69,7 @@ their own IDs and boxes.
 
 Keep generated operations on `Loxer.of(id)` rather than a cached `OpenedLox` method object. That
 reuses the core's existing module/level, queueing, disabled-mode, history, and closed-box validation.
-Refactor shared `TraceOptions` typing out of the legacy decorator-only module as needed so the marker
+Refactor shared `TraceOptions` typing out of the decorator-only module as needed so the marker
 and decorator describe the same options without changing the legacy decorator's behavior. Make
 `Loxer.init()`'s inferred environment safe when `process` is absent so the runtime can execute in a
 Vite/Electron renderer when callers do not pass `dev` explicitly.
@@ -85,7 +87,7 @@ Vite/Electron renderer when callers do not pass `dev` explicitly.
   delegates every transformation to the canonical Babel plugin and supports TS/TSX/JSX source files.
 - `src/decorators/trace.ts` and a new shared tracing-types module under `src/` - move/re-export the
   public trace option types needed by the marker while preserving existing `@trace` API behavior.
-- `src/trace.ts`, `src/index.ts`, and package exports - expose the typed `loxed` marker at
+- `src/trace.ts`, `src/index.ts`, and package exports - expose the typed `trace` marker at
   `loxer/trace` and shared trace option types without making Babel/Vite implementation code a
   runtime dependency of `loxer`.
 - `src/Loxer.ts` - make inferred development-mode detection safe in browser-like environments while
@@ -110,7 +112,7 @@ Vite/Electron renderer when callers do not pass `dev` explicitly.
 - Assert return values, `this`, thrown/rejected values, close/error ordering, per-invocation IDs,
   elapsed-time behavior, disabled mode, hidden levels, and pre-init queue replay against the existing
   logger callbacks.
-- Cover every supported `LoxedOptions` message/item mode, the fixed failure close message, formatter
+- Cover every supported `TraceOptions` message/item mode, the fixed failure close message, formatter
   exceptions, and cyclic/non-serializable result values without changing application behavior.
 - Run the canonical plugin against Babel 8 on Node 22.18+ and the current active Node LTS; assert the
   companion package rejects unsupported runtime/Babel combinations with an actionable diagnostic.

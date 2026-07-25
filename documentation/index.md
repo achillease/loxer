@@ -22,19 +22,19 @@ The following sections describe the use of Loxer in detail. Further information 
 
 # Plain-function tracing
 
-For a Babel-capable TypeScript project, `loxed` marks a named plain function for automatic Loxer box
+For a Babel-capable TypeScript project, `trace` marks a named plain function for automatic Loxer box
 tracing. Import it from `loxer/trace` and place the marker immediately after the function binding:
 
 ```typescript
 import { Loxer } from 'loxer';
-import { loxed } from 'loxer/trace';
+import { trace } from 'loxer/trace';
 
 async function submitOrder(orderId: number) {
   Loxer.m('PAYMENT').log(`Charging order ${orderId}`);
   return charge(orderId);
 }
 
-loxed(submitOrder, {
+trace(submitOrder, {
   moduleId: 'ORDER',
   openMessage: 'args',
   closeMessage: 'result',
@@ -48,7 +48,7 @@ rejection. Direct `.h()`/`.highlight()`, `.l()`/`.level()`, and `.m()`/`.module(
 normal observable behavior. The function keeps its original `this`, synchronous return value, Promise
 identity, and thrown or rejected value.
 
-`loxed` supports named function declarations and named variables initialized with a function expression
+`trace` supports named function declarations and named variables initialized with a function expression
 or arrow function. It does not trace generators, async generators, aliases, or separately declared or
 detached helper functions. Instrument such code separately, or use explicit `Loxer.open()` /
 `Loxer.of()` calls when it needs to join a particular box.
@@ -89,8 +89,29 @@ export default defineConfig({
 `openMessage` accepts `functionName`, `args`, `types`, or a formatter; `closeMessage` accepts
 `functionName`, `result`, `prettyResult`, or a formatter. `moduleId`, `level`, `highlight`,
 `argsAsItem`, and `resultAsItem` follow the same behavior as function-relevant `@trace` options.
-Formatters and result serialization fall back to the default message when they fail, without changing
-the application result.
+`TraceOptions` is shared by the plain-function marker and the class-method decorator. The marker
+infers an open formatter's argument from the marked function's actual argument tuple and a close
+formatter's argument from its awaited result. TypeScript evaluates `@trace(...)` before it associates
+the decorator with the method, so decorators need explicit generics when formatter callbacks need
+these types:
+
+```typescript
+import { trace } from 'loxer';
+
+class CheckoutService {
+  @trace<[subtotal: number, taxRate: number], number>({
+    openMessage: ([subtotal, taxRate]) => `Calculating ${subtotal} at ${taxRate}`,
+    closeMessage: (total) => `Total: ${total.toFixed(2)}`,
+  })
+  calculate(subtotal: number, taxRate: number): number {
+    return subtotal * (1 + taxRate);
+  }
+}
+```
+
+`className.functionName` uses the class and method name for decorators. For a plain function, it
+falls back to `functionName`. Formatters and result serialization fall back to the default message
+when they fail, without changing the application result.
 
 `openMessage: 'args'` and result message modes create formatted message strings for callbacks; built-in
 argument formatting escapes control characters. `argsAsItem` and `resultAsItem` are the modes that send

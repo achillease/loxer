@@ -32,7 +32,11 @@ class Service {
   withTypes(n: number) {
     return n;
   }
-  @trace({ moduleId: 'NONE', openMessage: 'className.functionName', closeMessage: 'className.functionName' }) // @ts-ignore
+  @trace({
+    moduleId: 'NONE',
+    openMessage: 'className.functionName',
+    closeMessage: 'className.functionName',
+  }) // @ts-ignore
   named(n: number) {
     return n;
   }
@@ -63,6 +67,32 @@ class Service {
   @trace({ moduleId: 'NONE', closeMessage: 'result' }) // @ts-ignore
   async asyncResult(n: number) {
     return { doubled: n * 2 };
+  }
+}
+
+class TypedCallbackService {
+  @trace<[amount: number, label: string], { total: number }>({
+    moduleId: 'NONE',
+    openMessage: ([amount, label]) => {
+      const displayAmount = amount.toFixed(2);
+      const displayLabel = label.toUpperCase();
+
+      // @ts-expect-error `amount` is explicitly typed as a number.
+      amount.toUpperCase();
+
+      return `open:${displayLabel}:${displayAmount}`;
+    },
+    closeMessage: (result) => {
+      const displayTotal = result.total.toFixed(2);
+
+      // @ts-expect-error `result` has the explicitly supplied result shape.
+      result.label;
+
+      return `close:${displayTotal}`;
+    },
+  }) // @ts-ignore
+  typed(amount: number, label: string) {
+    return { total: amount + label.length };
   }
 }
 

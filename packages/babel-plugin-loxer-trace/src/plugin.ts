@@ -2,7 +2,7 @@ import type { NodePath, PluginObject } from '@babel/core';
 import { traceBinding } from './trace-binding.js';
 import type { BabelTypes, LoxerTracePluginOptions } from './types.js';
 
-/** A resolved standalone `loxed(target, options?)` marker in the current program. */
+/** A resolved standalone `trace(target, options?)` marker in the current program. */
 interface Marker {
   /** Path to the marker call, used for replacement and code-frame errors. */
   callPath: NodePath<any>;
@@ -15,10 +15,10 @@ interface Marker {
 }
 
 /**
- * Babel 8 plugin that replaces `loxed()` marker statements with trace-aware function bodies.
+ * Babel 8 plugin that replaces `trace()` marker statements with trace-aware function bodies.
  *
  * The marker itself is imported from `loxer/trace`; this plugin detects its binding rather than
- * matching a spelling, so unrelated local functions named `loxed` are left alone.
+ * matching a spelling, so unrelated local functions named `trace` are left alone.
  */
 export default function loxerTracePlugin(
   api: any,
@@ -48,7 +48,7 @@ export default function loxerTracePlugin(
             for (const specifierPath of bodyPath.get('specifiers') as NodePath<any>[]) {
               if (
                 specifierPath.isImportSpecifier() &&
-                t.isIdentifier(specifierPath.node.imported, { name: 'loxed' })
+                t.isIdentifier(specifierPath.node.imported, { name: 'trace' })
               ) {
                 const binding = programPath.scope.getBinding(specifierPath.node.local.name);
                 if (binding) {
@@ -81,26 +81,26 @@ export default function loxerTracePlugin(
         }
 
         const seenTargets = new Set<any>();
-        const runtimeId = programPath.scope.generateUidIdentifier('startLoxedTrace');
-        const observeResultId = programPath.scope.generateUidIdentifier('observeLoxedResult');
+        const runtimeId = programPath.scope.generateUidIdentifier('startTrace');
+        const observeResultId = programPath.scope.generateUidIdentifier('observeTraceResult');
         const setFunctionLengthId =
-          programPath.scope.generateUidIdentifier('setLoxedFunctionLength');
+          programPath.scope.generateUidIdentifier('setTraceFunctionLength');
         runtimeImportPath.node.specifiers.push(
-          t.importSpecifier(runtimeId, t.identifier('__startLoxedTrace')),
-          t.importSpecifier(observeResultId, t.identifier('__observeLoxedResult')),
-          t.importSpecifier(setFunctionLengthId, t.identifier('__setLoxedFunctionLength'))
+          t.importSpecifier(runtimeId, t.identifier('__startTrace')),
+          t.importSpecifier(observeResultId, t.identifier('__observeTraceResult')),
+          t.importSpecifier(setFunctionLengthId, t.identifier('__setTraceFunctionLength'))
         );
 
         for (const marker of markers) {
           if (seenTargets.has(marker.targetBinding)) {
             throw marker.callPath.buildCodeFrameError(
-              `Function "${marker.targetName}" has more than one loxed() marker.`
+              `Function "${marker.targetName}" has more than one trace() marker.`
             );
           }
           seenTargets.add(marker.targetBinding);
 
           const optionsId = marker.callPath.scope.generateUidIdentifier(
-            `${marker.targetName}LoxedOptions`
+            `${marker.targetName}TraceOptions`
           );
           getBindingStatement(marker.targetBinding.path).insertBefore(
             t.variableDeclaration('var', [t.variableDeclarator(optionsId, t.objectExpression([]))])
@@ -138,7 +138,7 @@ export default function loxerTracePlugin(
 function getBindingStatement(bindingPath: NodePath<any>): NodePath<any> {
   const statementPath = bindingPath.getStatementParent();
   if (!statementPath) {
-    throw bindingPath.buildCodeFrameError('loxed() target must be declared in a statement.');
+    throw bindingPath.buildCodeFrameError('trace() target must be declared in a statement.');
   }
 
   return statementPath.parentPath?.isExportNamedDeclaration()
@@ -169,28 +169,28 @@ function collectMarkers(
 
       if (!callPath.parentPath.isExpressionStatement()) {
         throw callPath.buildCodeFrameError(
-          'loxed() must be a standalone statement beside its named function binding.'
+          'trace() must be a standalone statement beside its named function binding.'
         );
       }
       if (callPath.node.arguments.length < 1 || callPath.node.arguments.length > 2) {
-        throw callPath.buildCodeFrameError('loxed() expects a target and optional options.');
+        throw callPath.buildCodeFrameError('trace() expects a target and optional options.');
       }
 
       const target = callPath.node.arguments[0];
       if (!t.isIdentifier(target)) {
         throw callPath.buildCodeFrameError(
-          'loxed() targets must be named function-binding identifiers.'
+          'trace() targets must be named function-binding identifiers.'
         );
       }
 
       const targetBinding = callPath.scope.getBinding(target.name);
       if (!targetBinding) {
-        throw callPath.buildCodeFrameError(`Cannot resolve loxed() target "${target.name}".`);
+        throw callPath.buildCodeFrameError(`Cannot resolve trace() target "${target.name}".`);
       }
 
       const optionsNode = callPath.node.arguments[1];
       if (t.isSpreadElement(optionsNode) || t.isJSXNamespacedName(optionsNode)) {
-        throw callPath.buildCodeFrameError('loxed() options cannot be a spread argument.');
+        throw callPath.buildCodeFrameError('trace() options cannot be a spread argument.');
       }
 
       markers.push({

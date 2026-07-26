@@ -29,6 +29,11 @@ jobs:
       - name: Audit (production deps)
         run: pnpm audit --prod
 
+      - name: Audit (all dependencies, informational)
+        if: matrix.node == '24.x' && matrix.os == 'ubuntu-latest'
+        continue-on-error: true
+        run: pnpm audit
+
       - name: Lint
         run: pnpm lint
 

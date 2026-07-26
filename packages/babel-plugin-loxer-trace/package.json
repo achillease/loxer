@@ -18,14 +18,15 @@
     "dist"
   ],
   "engines": {
-    "node": ">=22.18.0"
+    "node": ">=20.19.0"
   },
   "peerDependencies": {
-    "@babel/core": "^8.0.0",
+    "@babel/core": "^7.26.10 || ^8.0.0",
     "loxer": "^3.0.0"
   },
   "devDependencies": {
     "@babel/core": "^8.0.1",
+    "@babel/types": "^8.0.4",
     "loxer": "workspace:*",
     "typescript": "6.0.3"
   },

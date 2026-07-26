@@ -1,6 +1,12 @@
-import type { NodePath, PluginObject } from '@babel/core';
+import type { NodePath } from '@babel/core';
+import type * as BabelTypes from '@babel/types';
 import { traceBinding } from './trace-binding.js';
-import type { BabelTypes, LoxerTracePluginOptions } from './types.js';
+import type { LoxerTracePluginOptions } from './types.js';
+
+interface BabelPluginApi {
+  assertVersion(range: string): void;
+  types: typeof BabelTypes;
+}
 
 /** A resolved standalone `trace(target, options?)` marker in the current program. */
 interface Marker {
@@ -15,17 +21,18 @@ interface Marker {
 }
 
 /**
- * Babel 8 plugin that replaces `trace()` marker statements with trace-aware function bodies.
+ * Babel plugin that replaces `trace()` marker statements with trace-aware function bodies.
  *
  * The marker itself is imported from `loxer/trace`; this plugin detects its binding rather than
  * matching a spelling, so unrelated local functions named `trace` are left alone.
  */
 export default function loxerTracePlugin(
-  api: any,
+  apiValue: unknown,
   options: LoxerTracePluginOptions = {}
-): PluginObject {
-  api.assertVersion('^8.0.0');
-  const t: BabelTypes = api.types;
+): any {
+  const api = apiValue as BabelPluginApi;
+  api.assertVersion('^7.26.10 || ^8.0.0');
+  const t = api.types;
   const traceImport = options.traceImport ?? 'loxer/trace';
   const loxerImport = options.loxerImport ?? 'loxer';
 
@@ -150,7 +157,7 @@ function getBindingStatement(bindingPath: NodePath<any>): NodePath<any> {
 function collectMarkers(
   programPath: NodePath<any>,
   markerBindings: Set<any>,
-  t: BabelTypes
+  t: typeof BabelTypes
 ): Marker[] {
   const markers: Marker[] = [];
 

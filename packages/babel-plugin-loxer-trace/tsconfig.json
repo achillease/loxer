@@ -4,6 +4,7 @@
   "compilerOptions": {
     "rootDir": "src",
     "outDir": "dist",
+    "stripInternal": true,
     "tsBuildInfoFile": "node_modules/.cache/babel-plugin-loxer-trace/tsbuildinfo"
   }
 }

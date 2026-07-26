@@ -1,5 +1,3 @@
-import type { InputOptions } from '@babel/core';
-
 /** Options accepted by the Babel plugin when registered in a Babel configuration. */
 export interface LoxerTracePluginOptions {
   /** Module specifier from which the plugin should find the `Loxer` binding. */
@@ -15,8 +13,16 @@ export interface TransformLoxerTraceOptions extends LoxerTracePluginOptions {
   /** Babel parser plugins required by the source syntax, such as `typescript` or `jsx`. */
   parserPlugins?: string[];
   /** Whether Babel should produce source maps for the transformed module. */
-  sourceMaps?: InputOptions['sourceMaps'];
+  sourceMaps?: boolean | 'inline' | 'both';
 }
 
-/** Babel's type-builder namespace, kept structural to avoid a runtime import. */
-export type BabelTypes = (typeof import('@babel/core'))['types'];
+/** Structural result returned by the configuration-free transform helper. */
+export interface LoxerTraceResult {
+  metadata: Record<string, any>;
+  options: Record<string, any>;
+  ast: any;
+  code: string | null;
+  map: any;
+  sourceType: 'module' | 'commonjs' | 'script';
+  externalDependencies: Set<string>;
+}

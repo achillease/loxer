@@ -1,6 +1,6 @@
-import { transformAsync, type FileResult } from '@babel/core';
+import { transformAsync } from '@babel/core';
 import loxerTracePlugin from './plugin.js';
-import type { TransformLoxerTraceOptions } from './types.js';
+import type { LoxerTraceResult, TransformLoxerTraceOptions } from './types.js';
 
 /**
  * Transforms one module string with the tracing plugin without reading a Babel configuration.
@@ -11,7 +11,7 @@ import type { TransformLoxerTraceOptions } from './types.js';
 export async function transformLoxerTrace(
   code: string,
   options: TransformLoxerTraceOptions = {}
-): Promise<FileResult | null> {
+): Promise<LoxerTraceResult | null> {
   const { filename, traceImport, loxerImport, parserPlugins = [], sourceMaps = true } = options;
 
   return transformAsync(code, {

@@ -1,5 +1,5 @@
 import type { NodePath } from '@babel/core';
-import type { BabelTypes } from './types.js';
+import type * as BabelTypes from '@babel/types';
 
 const SUPPORTED_MODIFIERS = new Set(['highlight', 'h', 'level', 'l', 'module', 'm']);
 
@@ -15,6 +15,7 @@ const LINKED_METHODS = new Map([
  * The generated wrapper keeps observable function behavior intact while directing eligible
  * direct `Loxer` calls to the trace's box identifier.
  */
+/** @internal */
 export function traceBinding(
   bindingPath: NodePath<any>,
   functionName: string,
@@ -23,7 +24,7 @@ export function traceBinding(
   setFunctionLengthId: any,
   optionsId: any,
   loxerBinding: any,
-  t: BabelTypes
+  t: typeof BabelTypes
 ): void {
   if (bindingPath.isFunctionDeclaration()) {
     if (bindingPath.node.generator) {
@@ -126,7 +127,7 @@ export function traceBinding(
 }
 
 /** Builds an array of a non-arrow function's actual arguments for the runtime open record. */
-function getBindingArgsExpression(_initPath: NodePath<any>, t: BabelTypes): any {
+function getBindingArgsExpression(_initPath: NodePath<any>, t: typeof BabelTypes): any {
   return t.arrayExpression([t.spreadElement(t.identifier('arguments'))]);
 }
 
@@ -143,7 +144,7 @@ function getBindingStatement(bindingPath: NodePath<any>): NodePath<any> {
 }
 
 /** Calculates JavaScript's observable `Function.length` from a parameter list. */
-function getFunctionLength(params: any[], t: BabelTypes): number {
+function getFunctionLength(params: any[], t: typeof BabelTypes): number {
   let length = 0;
   for (const parameter of params) {
     if (t.isAssignmentPattern(parameter) || t.isRestElement(parameter)) {
@@ -172,7 +173,7 @@ function buildWrapperBody(
   invokeId: any,
   argsExpression: any,
   originalFunction: any,
-  t: BabelTypes
+  t: typeof BabelTypes
 ): any {
   const resultId = t.identifier(stateId.name.replace('traceState', 'traceResult'));
   const errorId = t.identifier(stateId.name.replace('traceState', 'traceError'));
@@ -255,7 +256,7 @@ function rewriteDirectLoxerCalls(
   bodyPath: NodePath<any>,
   loxerBinding: any,
   stateId: any,
-  t: BabelTypes
+  t: typeof BabelTypes
 ): void {
   if (!loxerBinding) {
     return;
@@ -292,7 +293,7 @@ function isDirectLoxerChain(
   expression: any,
   callPath: NodePath<any>,
   loxerBinding: any,
-  t: BabelTypes
+  t: typeof BabelTypes
 ): boolean {
   if (t.isIdentifier(expression)) {
     return (

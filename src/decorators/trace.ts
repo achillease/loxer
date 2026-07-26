@@ -4,6 +4,23 @@ import { TraceOptions } from '../tracing-types.js';
 
 export type { TraceOptions } from '../tracing-types.js';
 
+type TracedMethod = (this: any, ...args: any[]) => any;
+
+export interface TraceMethodContext {
+  readonly kind: 'method';
+  readonly name: string | symbol;
+  readonly static: boolean;
+  readonly private: boolean;
+  addInitializer(initializer: () => void): void;
+}
+
+export interface TraceMethodDecorator {
+  /** Legacy TypeScript protocol — `experimentalDecorators: true`. */
+  (target: any, propertyKey: string | symbol, descriptor: PropertyDescriptor): any;
+  /** Standard TC39 stage 3 protocol — TypeScript >= 5.0 default. */
+  <T extends TracedMethod>(value: T, context: TraceMethodContext): T;
+}
+
 /**
  * This decorator wraps a class level method inside a `Loxer.open()` and a `Loxer.of(...).close()` box.
  *
@@ -14,65 +31,122 @@ export type { TraceOptions } from '../tracing-types.js';
  */
 export function trace<Args extends readonly unknown[] = readonly unknown[], Result = unknown>(
   options?: TraceOptions<Args, Result> | string
-) {
-  return function (target: any, propertyKey: string, descriptor: PropertyDescriptor): any {
-    const original = descriptor.value;
-    const className: string = target.constructor.name;
-    const fixedName = className.endsWith('Class')
-      ? className.substr(0, className.length - 5)
-      : className;
-    descriptor.value = function (...args: Args) {
-      let moduleId;
-      let o: TraceOptions<Args, Result> | undefined;
-      if (is(options) && typeof options === 'string') {
-        moduleId = options;
-      } else if (is(options)) {
-        o = options;
-        moduleId = o?.moduleId;
+): TraceMethodDecorator {
+  return function (
+    valueOrTarget: TracedMethod | any,
+    contextOrPropertyKey: TraceMethodContext | string | symbol,
+    descriptor?: PropertyDescriptor
+  ): TracedMethod | PropertyDescriptor {
+    if (isStandardDecoratorContext(contextOrPropertyKey)) {
+      if (contextOrPropertyKey.kind !== 'method' || typeof valueOrTarget !== 'function') {
+        throw new TypeError('@trace can only decorate methods.');
       }
 
-      const level = o?.level ?? 1;
-      const h = o?.highlight;
+      return createTracedMethod(valueOrTarget, contextOrPropertyKey.name, options);
+    }
 
-      // open message
-      const openMessage = getOpenMessage(o, propertyKey, args, fixedName);
+    if (
+      (typeof contextOrPropertyKey !== 'string' && typeof contextOrPropertyKey !== 'symbol') ||
+      !descriptor ||
+      typeof descriptor.value !== 'function'
+    ) {
+      throw new TypeError('@trace can only decorate methods.');
+    }
 
-      // open the lox
-      const item = o?.argsAsItem ? args : undefined;
-      const loxId = Loxer.h(h === 'all' || h === 'open')
-        .l(level)
-        .m(moduleId)
-        .open(openMessage, item);
+    descriptor.value = createTracedMethod(descriptor.value, contextOrPropertyKey, options);
 
-      // call the function
-      const result = original.call(this, ...args);
+    return descriptor;
+  } as TraceMethodDecorator;
+}
 
-      if (result && typeof result.then === 'function') {
-        return result.then((payload: any) => {
-          // close the lox with the resolved payload (not the still-pending promise)
-          Loxer.h(h === 'all' || h === 'close')
-            .of(loxId)
-            .close(
-              getCloseMessage(o, propertyKey, payload, fixedName),
-              o?.resultAsItem ? payload : undefined
-            );
+function createTracedMethod<Args extends readonly unknown[] = readonly unknown[], Result = unknown>(
+  original: TracedMethod,
+  propertyKey: string | symbol,
+  options?: TraceOptions<Args, Result> | string
+): TracedMethod {
+  const propertyName = methodName(propertyKey);
 
-          return payload;
-        });
-      }
+  return function (this: any, ...args: Args) {
+    let moduleId;
+    let o: TraceOptions<Args, Result> | undefined;
+    if (is(options) && typeof options === 'string') {
+      moduleId = options;
+    } else if (is(options)) {
+      o = options;
+      moduleId = o?.moduleId;
+    }
 
-      // close message
-      const closeMessage = getCloseMessage(o, propertyKey, result, fixedName);
-      const resultItem = o?.resultAsItem ? result : undefined;
+    const level = o?.level ?? 1;
+    const h = o?.highlight;
+    const needsClassName =
+      o?.openMessage === 'className.functionName' || o?.closeMessage === 'className.functionName';
+    const fixedName = needsClassName ? resolveClassName(this) : '';
 
-      // close the lox
-      Loxer.h(h === 'all' || h === 'close')
-        .of(loxId)
-        .close(closeMessage, resultItem);
+    // open message
+    const openMessage = getOpenMessage(o, propertyName, args, fixedName);
 
-      return result;
-    };
+    // open the lox
+    const item = o?.argsAsItem ? args : undefined;
+    const loxId = Loxer.h(h === 'all' || h === 'open')
+      .l(level)
+      .m(moduleId)
+      .open(openMessage, item);
+
+    // call the function
+    const result = original.call(this, ...args);
+
+    if (result && typeof result.then === 'function') {
+      return result.then((payload: any) => {
+        const closeMessage = getCloseMessage(o, propertyName, payload, fixedName);
+        const resultItem = o?.resultAsItem ? payload : undefined;
+
+        // close the lox with the resolved payload (not the still-pending promise)
+        Loxer.h(h === 'all' || h === 'close')
+          .of(loxId)
+          .close(closeMessage, resultItem);
+
+        return payload;
+      });
+    }
+
+    // close message
+    const closeMessage = getCloseMessage(o, propertyName, result, fixedName);
+    const resultItem = o?.resultAsItem ? result : undefined;
+
+    // close the lox
+    Loxer.h(h === 'all' || h === 'close')
+      .of(loxId)
+      .close(closeMessage, resultItem);
+
+    return result;
   };
+}
+
+function isStandardDecoratorContext(value: unknown): value is TraceMethodContext {
+  return typeof value === 'object' && value !== null && 'kind' in value;
+}
+
+function methodName(propertyKey: string | symbol): string {
+  return typeof propertyKey === 'symbol'
+    ? (propertyKey.description ?? propertyKey.toString())
+    : propertyKey;
+}
+
+function resolveClassName(instance: any): string {
+  try {
+    const className = typeof instance === 'function' ? instance.name : instance?.constructor?.name;
+    if (typeof className !== 'string') {
+      return '';
+    }
+
+    return className.endsWith('Class') ? className.slice(0, -5) : className;
+  } catch {
+    return '';
+  }
+}
+
+function classPrefix(className: string): string {
+  return className ? className + '.' : '';
 }
 
 function getOpenMessage<Args extends readonly unknown[], Result>(
@@ -91,7 +165,7 @@ function getOpenMessage<Args extends readonly unknown[], Result>(
     } else if (om === 'types') {
       openMessage = propertyKey + '(' + args.map((a) => typeof a).join(', ') + ')';
     } else if (om === 'className.functionName') {
-      openMessage = fixedName + '.' + propertyKey + '()';
+      openMessage = classPrefix(fixedName) + propertyKey + '()';
     }
   }
 
@@ -114,7 +188,7 @@ function getCloseMessage<Args extends readonly unknown[], Result>(
     } else if (cm === 'prettyResult') {
       closeMessage = propertyKey + ' done. returns: \n' + JSON.stringify(result, null, ' ');
     } else if (cm === 'className.functionName') {
-      closeMessage = fixedName + '.' + propertyKey + ' done';
+      closeMessage = classPrefix(fixedName) + propertyKey + ' done';
     }
   }
 

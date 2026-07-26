@@ -92,6 +92,19 @@ test('Babel 7 output preserves a returned native Promise identity', async () => 
   await expect(returned).resolves.toBe('finished');
 });
 
+test('Babel 7 traces every listed target from one shared options assignment', async () => {
+  const transformed = await loadBabel7Module(`
+    function first(value) { return 'first:' + value; }
+    const second = (value) => 'second:' + value;
+    trace([first, second], { moduleId: 'TRACE' });
+    export { first, second };
+  `);
+
+  expect(transformed.first('a')).toBe('first:a');
+  expect(transformed.second('b')).toBe('second:b');
+  expect(transformed.second.length).toBe(1);
+});
+
 test('Babel 7 reports plugin validation failures with a source code frame', async () => {
   const source = `
     import { trace } from '${traceRuntimeUrl}';

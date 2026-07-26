@@ -44,13 +44,29 @@ export function __observeTraceResult(traceState: FunctionTrace, result: any): bo
 }
 
 /**
- * Marks a named plain-function binding for `babel-plugin-loxer-trace`.
+ * Marks one named plain-function binding, or an array literal of them, for
+ * `babel-plugin-loxer-trace`.
+ *
+ * Every marked binding is traced on its own: one box per invocation, its own linked direct `Loxer`
+ * calls, and unchanged callable behavior. A list shares the marker's options, which are evaluated
+ * once for the whole group.
  *
  * The build-time trace transform removes this call. Reaching it at runtime means the transform is
  * missing.
+ *
+ * @example
+ * ```ts
+ * import { trace } from 'loxer/trace';
+ *
+ * function load(id: string) { ... }
+ * function save(id: string) { ... }
+ *
+ * trace(load, { moduleId: 'ORDER', openMessage: 'args' });
+ * trace([load, save], { moduleId: 'ORDER', openMessage: 'args' });
+ * ```
  */
 export function trace<T extends PlainFunctionTraceTarget>(
-  _target: T,
+  _targets: T | readonly T[],
   _options?: TraceOptions<Parameters<T>, Awaited<ReturnType<T>>>
 ): never {
   throw new Error(

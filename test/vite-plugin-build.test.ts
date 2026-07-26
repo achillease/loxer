@@ -4,6 +4,7 @@ import { build as buildVite5 } from 'vite5';
 import loxerTrace from '../packages/vite-plugin-loxer-trace/src/index';
 
 const fixtureRoot = fileURLToPath(new URL('./fixtures/vite-app/', import.meta.url));
+const listFixtureRoot = fileURLToPath(new URL('./fixtures/vite-app-list/', import.meta.url));
 type BuildRunner = (config: unknown) => Promise<unknown>;
 
 test.each([
@@ -29,6 +30,36 @@ test.each([
 
   expect(emittedJavaScript(result)).toContain('__startTrace');
 });
+
+test.each([
+  ['Vite 5', buildVite5 as unknown as BuildRunner],
+  ['Vite 8', buildVite8 as unknown as BuildRunner],
+])(
+  '%s runs the tracing transform for a target-list marker through its real plugin container',
+  async (_name, build) => {
+    const result = await build({
+      build: {
+        minify: false,
+        write: false,
+      },
+      cacheDir: fileURLToPath(
+        new URL(
+          `./fixtures/.vite-cache-list-${_name.replace(/\s+/g, '-').toLowerCase()}/`,
+          import.meta.url
+        )
+      ),
+      configFile: false,
+      logLevel: 'silent',
+      plugins: [loxerTrace()],
+      root: listFixtureRoot,
+    });
+
+    const code = emittedJavaScript(result);
+    expect(code).toContain('__startTrace');
+    expect(code).not.toContain('trace([fixtureFirst, fixtureSecond])');
+    expect((code.match(/_startTrace\w*\(/g) ?? []).length).toBeGreaterThanOrEqual(2);
+  }
+);
 
 function emittedJavaScript(result: unknown): string {
   const buildResults = Array.isArray(result) ? result : [result];

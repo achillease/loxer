@@ -107,6 +107,12 @@ function submitOrder(orderId: string) {
 trace(submitOrder, { moduleId: 'ORDER', openMessage: 'args' });
 ```
 
+To trace several functions the same way, pass an array literal of them and the options they share:
+
+```ts
+trace([submitOrder, cancelOrder], { moduleId: 'ORDER', openMessage: 'args' });
+```
+
 `trace()` is a build-time marker, not a runtime wrapper. Every module that executes a marker must
 pass through the Babel plugin; otherwise the marker throws to signal a missing build configuration.
 

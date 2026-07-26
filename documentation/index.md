@@ -53,6 +53,44 @@ or arrow function. It does not trace generators, async generators, aliases, or s
 detached helper functions. Instrument such code separately, or use explicit `Loxer.open()` /
 `Loxer.of()` calls when it needs to join a particular box.
 
+## Tracing several functions with the same options
+
+Instead of a single function, `trace` also accepts an array literal of them plus the options they all
+share:
+
+```typescript
+import { trace } from 'loxer/trace';
+
+function loadOrder(orderId: number) {
+  return repository.find(orderId);
+}
+function saveOrder(orderId: number) {
+  return repository.save(orderId);
+}
+const cancelOrder = (orderId: number) => repository.cancel(orderId);
+
+trace([loadOrder, saveOrder, cancelOrder], {
+  moduleId: 'ORDER',
+  openMessage: 'args',
+});
+```
+
+Each listed function is traced exactly as its own `trace` marker would trace it: its own box per
+invocation, its own linked direct `Loxer` calls, and unchanged callable behavior. The single
+difference is the options, which are evaluated once and shared, so a helper call such as
+`trace([loadOrder, saveOrder], orderTraceOptions())` runs that helper one time for the group.
+
+A list accepts the same targets as a single marker and rejects the same unsupported ones. It must be
+an array literal of identifiers — a spread element, a computed member such as `service.method`, an
+empty array, or a variable holding an array is rejected at build time, because the transform has to
+resolve every binding while it compiles the module. Each function may carry only one marker: listing
+it twice, or marking it both alone and inside a list, is a build error rather than a nested double
+trace.
+
+Formatter callbacks receive the union of the listed functions' argument tuples and results, so a
+group of functions with different signatures needs a formatter that handles all of them. Give a
+function its own marker when it needs its own messages, module, or level.
+
 ## Build setup
 
 Install `babel-plugin-loxer-trace` alongside Babel 8, then register it in the Babel transform that

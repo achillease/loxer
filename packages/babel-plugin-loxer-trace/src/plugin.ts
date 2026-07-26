@@ -8,16 +8,25 @@ interface BabelPluginApi {
   types: typeof BabelTypes;
 }
 
-/** A resolved standalone `trace(target, options?)` marker in the current program. */
+/** One function binding selected by a marker. */
+interface MarkerTarget {
+  /** Babel binding for the selected function. */
+  binding: any;
+  /** Source-level function name used in trace messages and diagnostics. */
+  name: string;
+}
+
+/**
+ * A resolved standalone `trace(target, options?)` or `trace([targets], options?)` marker in the
+ * current program.
+ */
 interface Marker {
   /** Path to the marker call, used for replacement and code-frame errors. */
   callPath: NodePath<any>;
-  /** Options expression passed to the generated runtime helper. */
+  /** Options expression passed to the generated runtime helper, shared by every target. */
   optionsNode: any;
-  /** Babel binding for the function selected by the marker. */
-  targetBinding: any;
-  /** Source-level function name used in trace messages and diagnostics. */
-  targetName: string;
+  /** Function bindings the marker selected, in source order. */
+  targets: MarkerTarget[];
 }
 
 /**
@@ -87,7 +96,8 @@ export default function loxerTracePlugin(
           return;
         }
 
-        const seenTargets = new Set<any>();
+        assertOneMarkerPerTarget(markers);
+
         const runtimeId = programPath.scope.generateUidIdentifier('startTrace');
         const observeResultId = programPath.scope.generateUidIdentifier('observeTraceResult');
         const setFunctionLengthId =
@@ -99,35 +109,30 @@ export default function loxerTracePlugin(
         );
 
         for (const marker of markers) {
-          if (seenTargets.has(marker.targetBinding)) {
-            throw marker.callPath.buildCodeFrameError(
-              `Function "${marker.targetName}" has more than one trace() marker.`
-            );
-          }
-          seenTargets.add(marker.targetBinding);
-
-          const optionsId = marker.callPath.scope.generateUidIdentifier(
-            `${marker.targetName}TraceOptions`
+          const optionsId = programPath.scope.generateUidIdentifier(
+            marker.targets.length > 1
+              ? 'sharedTraceOptions'
+              : `${marker.targets[0].name}TraceOptions`
           );
-          getBindingStatement(marker.targetBinding.path).insertBefore(
-            t.variableDeclaration('var', [t.variableDeclarator(optionsId, t.objectExpression([]))])
-          );
+          declareTraceOptions(marker, optionsId);
           marker.callPath.parentPath.replaceWith(
             t.expressionStatement(
               t.assignmentExpression('=', t.cloneNode(optionsId), marker.optionsNode)
             )
           );
 
-          traceBinding(
-            marker.targetBinding.path,
-            marker.targetName,
-            runtimeId,
-            observeResultId,
-            setFunctionLengthId,
-            optionsId,
-            loxerBinding,
-            t
-          );
+          for (const target of marker.targets) {
+            traceBinding(
+              target.binding.path,
+              target.name,
+              runtimeId,
+              observeResultId,
+              setFunctionLengthId,
+              optionsId,
+              loxerBinding,
+              t
+            );
+          }
         }
 
         for (const binding of markerBindings) {
@@ -141,16 +146,62 @@ export default function loxerTracePlugin(
   };
 }
 
-/** Returns the declaration statement that owns a binding, preserving an enclosing named export. */
-function getBindingStatement(bindingPath: NodePath<any>): NodePath<any> {
-  const statementPath = bindingPath.getStatementParent();
-  if (!statementPath) {
-    throw bindingPath.buildCodeFrameError('trace() target must be declared in a statement.');
+/**
+ * Declares uninitialized `var` storage for a marker's options in its targets' outermost scope.
+ *
+ * Every target binding sits on the marker's scope chain, so those scopes are linearly nested and the
+ * outermost one is reachable from each target's generated body as well as from the assignment the
+ * marker leaves behind. Declaring there rather than at module scope keeps a marker written inside a
+ * function per-invocation: two calls of that function no longer share one options slot.
+ *
+ * The declaration deliberately has no initializer. `var` hoists, so nothing can overwrite the
+ * marker's assignment no matter where the marker sits relative to its targets, and a call that runs
+ * before the assignment reaches the runtime helper's own default options.
+ */
+function declareTraceOptions(marker: Marker, optionsId: any): void {
+  outermostTargetScope(marker.targets).push({ id: optionsId, kind: 'var' });
+}
+
+/** Returns the outermost of the marker targets' declaring scopes. */
+function outermostTargetScope(targets: MarkerTarget[]): any {
+  let outermost = targets[0].binding.scope;
+  let outermostDepth = scopeDepth(outermost);
+
+  for (const target of targets) {
+    const depth = scopeDepth(target.binding.scope);
+    if (depth < outermostDepth) {
+      outermost = target.binding.scope;
+      outermostDepth = depth;
+    }
   }
 
-  return statementPath.parentPath?.isExportNamedDeclaration()
-    ? statementPath.parentPath
-    : statementPath;
+  return outermost;
+}
+
+/** Counts a scope's ancestors, so nested scopes on one chain can be ordered. */
+function scopeDepth(scope: any): number {
+  let depth = 0;
+  for (let current = scope.parent; current; current = current.parent) {
+    depth += 1;
+  }
+
+  return depth;
+}
+
+/** Rejects a function selected by more than one marker, whose traces would nest into each other. */
+function assertOneMarkerPerTarget(markers: Marker[]): void {
+  const seenTargets = new Set<any>();
+
+  for (const marker of markers) {
+    for (const target of marker.targets) {
+      if (seenTargets.has(target.binding)) {
+        throw marker.callPath.buildCodeFrameError(
+          `Function "${target.name}" has more than one trace() marker.`
+        );
+      }
+      seenTargets.add(target.binding);
+    }
+  }
 }
 
 /** Finds valid marker calls whose callee resolves to one of the imported marker bindings. */
@@ -162,7 +213,7 @@ function collectMarkers(
   const markers: Marker[] = [];
 
   programPath.traverse({
-    /** Validate the marker's standalone shape and resolve the named function it targets. */
+    /** Validate the marker's standalone shape and resolve the named functions it targets. */
     CallExpression(callPath: NodePath<any>): void {
       const callee = callPath.node.callee;
       if (!t.isIdentifier(callee)) {
@@ -183,18 +234,6 @@ function collectMarkers(
         throw callPath.buildCodeFrameError('trace() expects a target and optional options.');
       }
 
-      const target = callPath.node.arguments[0];
-      if (!t.isIdentifier(target)) {
-        throw callPath.buildCodeFrameError(
-          'trace() targets must be named function-binding identifiers.'
-        );
-      }
-
-      const targetBinding = callPath.scope.getBinding(target.name);
-      if (!targetBinding) {
-        throw callPath.buildCodeFrameError(`Cannot resolve trace() target "${target.name}".`);
-      }
-
       const optionsNode = callPath.node.arguments[1];
       if (t.isSpreadElement(optionsNode) || t.isJSXNamespacedName(optionsNode)) {
         throw callPath.buildCodeFrameError('trace() options cannot be a spread argument.');
@@ -203,11 +242,50 @@ function collectMarkers(
       markers.push({
         callPath,
         optionsNode: optionsNode ?? t.objectExpression([]),
-        targetBinding,
-        targetName: target.name,
+        targets: collectTargets(callPath, t),
       });
     },
   });
 
   return markers;
+}
+
+/**
+ * Resolves a marker's first argument into the function bindings it selects.
+ *
+ * One identifier marks one function; an array literal marks every listed function with the same
+ * options. The list has to be a literal because the transform resolves each binding at compile time.
+ */
+function collectTargets(callPath: NodePath<any>, t: typeof BabelTypes): MarkerTarget[] {
+  const targetsNode = callPath.node.arguments[0];
+
+  if (!t.isArrayExpression(targetsNode)) {
+    return [resolveTarget(callPath, targetsNode, t)];
+  }
+
+  if (targetsNode.elements.length === 0) {
+    throw callPath.buildCodeFrameError('trace() expects at least one target.');
+  }
+
+  return targetsNode.elements.map((element) => resolveTarget(callPath, element, t));
+}
+
+/** Resolves one marker target identifier to the function binding it names. */
+function resolveTarget(
+  callPath: NodePath<any>,
+  targetNode: any,
+  t: typeof BabelTypes
+): MarkerTarget {
+  if (!t.isIdentifier(targetNode)) {
+    throw callPath.buildCodeFrameError(
+      'trace() targets must be named function-binding identifiers.'
+    );
+  }
+
+  const binding = callPath.scope.getBinding(targetNode.name);
+  if (!binding) {
+    throw callPath.buildCodeFrameError(`Cannot resolve trace() target "${targetNode.name}".`);
+  }
+
+  return { binding, name: targetNode.name };
 }

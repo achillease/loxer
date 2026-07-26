@@ -234,6 +234,27 @@ test('a hoisted declaration can run before its declaration and marker with defau
   expect(devLogs.at(-2)?.message).toBe('greet(Grace)');
 });
 
+test('a marker placed above its target declarations still applies its options', async () => {
+  const traced = await loadTracedModule(`
+    trace(hoisted, { moduleId: 'TRACE', openMessage: 'args' });
+    function hoisted(name) {
+      return 'Hello ' + name;
+    }
+    trace(later, { moduleId: 'ORDER', openMessage: 'args' });
+    const later = (name) => 'Bye ' + name;
+    export { hoisted, later };
+  `);
+
+  expect(traced.hoisted('Ada')).toBe('Hello Ada');
+  expect(traced.later('Grace')).toBe('Bye Grace');
+  expect(
+    devLogs.filter((log) => log.type === 'open').map((log) => [log.message, log.moduleId])
+  ).toEqual([
+    ['hoisted(Ada)', 'TRACE'],
+    ['later(Grace)', 'ORDER'],
+  ]);
+});
+
 test('named function expressions and arrows retain their original this semantics', async () => {
   const traced = await loadTracedModule(`
     const functionExpression = function (value) {
@@ -528,6 +549,496 @@ test('the runtime marker fails loudly without a transform', () => {
   expect(() => trace(() => 'untransformed')).toThrow(
     'trace() is a build-time marker. Configure babel-plugin-loxer-trace'
   );
+  expect(() => trace([() => 'untransformed'])).toThrow(
+    'trace() is a build-time marker. Configure babel-plugin-loxer-trace'
+  );
+});
+
+test('a target list traces every listed binding with one shared options expression', async () => {
+  const traced = await loadTracedModule(`
+    let optionsCalls = 0;
+    function makeOptions() {
+      optionsCalls += 1;
+      return { moduleId: 'TRACE', openMessage: 'args', closeMessage: 'result' };
+    }
+    function double(value) {
+      Loxer.m('ORDER').log('doubling:' + value);
+      return value * 2;
+    }
+    async function triple(value) {
+      return value * 3;
+    }
+    const quadruple = (value) => value * 4;
+    trace([double, triple, quadruple], makeOptions());
+    export { double, optionsCalls, quadruple, triple };
+  `);
+
+  expect(traced.optionsCalls).toBe(1);
+  expect(traced.double(2)).toBe(4);
+  await expect(traced.triple(2)).resolves.toBe(6);
+  expect(traced.quadruple(2)).toBe(8);
+  expect(traced.quadruple.length).toBe(1);
+
+  expect(devLogs.map((log) => [log.type, log.message, log.moduleId])).toEqual([
+    ['open', 'double(2)', 'TRACE'],
+    ['single', 'doubling:2', 'ORDER'],
+    ['close', 'double done. returns: 4', 'TRACE'],
+    ['open', 'triple(2)', 'TRACE'],
+    ['close', 'triple done. returns: 6', 'TRACE'],
+    ['open', 'quadruple(2)', 'TRACE'],
+    ['close', 'quadruple done. returns: 8', 'TRACE'],
+  ]);
+  const boxIds = devLogs.filter((log) => log.type === 'open').map((log) => log.id);
+  expect(new Set(boxIds).size).toBe(3);
+  expect(devLogs[1].id).toBe(boxIds[0]);
+});
+
+test('a target-list marker above its declarations still applies the shared options', async () => {
+  const traced = await loadTracedModule(`
+    trace([first, second], { moduleId: 'ORDER', openMessage: 'args' });
+    function first(value) {
+      return 'first:' + value;
+    }
+    function second(value) {
+      return 'second:' + value;
+    }
+    export { first, second };
+  `);
+
+  expect(traced.first('a')).toBe('first:a');
+  expect(traced.second('b')).toBe('second:b');
+  expect(
+    devLogs.filter((log) => log.type === 'open').map((log) => [log.message, log.moduleId])
+  ).toEqual([
+    ['first(a)', 'ORDER'],
+    ['second(b)', 'ORDER'],
+  ]);
+});
+
+test('list and single markers coexist and keep separate options per marker', async () => {
+  const traced = await loadTracedModule(`
+    function shared(value) {
+      return value;
+    }
+    const alsoShared = function (value) {
+      return value;
+    };
+    trace([shared, alsoShared], { moduleId: 'TRACE', openMessage: 'args' });
+    function separate(value) {
+      return value;
+    }
+    trace(separate, { moduleId: 'ORDER', openMessage: 'types' });
+    export { alsoShared, separate, shared };
+  `);
+
+  expect(traced.shared(1)).toBe(1);
+  expect(traced.alsoShared(2)).toBe(2);
+  expect(traced.separate(3)).toBe(3);
+  expect(
+    devLogs.filter((log) => log.type === 'open').map((log) => [log.message, log.moduleId])
+  ).toEqual([
+    ['shared(1)', 'TRACE'],
+    ['alsoShared(2)', 'TRACE'],
+    ['separate(number)', 'ORDER'],
+  ]);
+});
+
+test('a target list preserves this on a function expression, real arguments, and mixed arities', async () => {
+  const traced = await loadTracedModule(`
+    const scale = function (value) {
+      return [this.factor, arguments.length, value];
+    };
+    function greet(name) {
+      return 'hi ' + name;
+    }
+    const double = (value) => value * 2;
+    trace([scale, greet, double], { moduleId: 'TRACE' });
+    export { double, greet, scale };
+  `);
+
+  expect(traced.scale.call({ factor: 4 }, 2, 3)).toEqual([4, 2, 2]);
+  expect(traced.greet('Ada')).toBe('hi Ada');
+  expect(traced.double.length).toBe(1);
+  expect(traced.double(3)).toBe(6);
+  expect(devLogs.filter((log) => log.type === 'close')).toHaveLength(3);
+});
+
+test('a named self-recursive list member re-enters its own trace box on every recursive call', async () => {
+  const traced = await loadTracedModule(`
+    const expression = function recurse(value, total) {
+      return value === 0 ? total : recurse(value - 1, total + 1);
+    };
+    const double = (value) => value * 2;
+    trace([expression, double], { moduleId: 'TRACE', openMessage: 'args' });
+    export { double, expression };
+  `);
+
+  expect(traced.expression.name).toBe('recurse');
+  expect(traced.expression.length).toBe(2);
+  expect(traced.expression(3, 1)).toBe(4);
+  expect(traced.double(2)).toBe(4);
+
+  const recurseOpens = devLogs.filter(
+    (log) => log.type === 'open' && log.message.startsWith('expression')
+  );
+  const recurseCloses = devLogs.filter(
+    (log) => log.type === 'close' && log.message === 'expression done'
+  );
+  expect(recurseOpens).toHaveLength(4);
+  expect(recurseCloses).toHaveLength(4);
+  expect(new Set(recurseOpens.map((log) => log.id)).size).toBe(4);
+  expect(
+    devLogs.filter((log) => log.type === 'close' && log.message === 'double done')
+  ).toHaveLength(1);
+});
+
+test('a runtime failure in one list member does not affect its siblings box lifecycle', async () => {
+  const traced = await loadTracedModule(`
+    function first(value) {
+      return 'first:' + value;
+    }
+    function second(value) {
+      throw new Error('second failed:' + value);
+    }
+    function third(value) {
+      return 'third:' + value;
+    }
+    trace([first, second, third], { moduleId: 'TRACE', openMessage: 'args' });
+    export { first, second, third };
+  `);
+
+  expect(traced.first('a')).toBe('first:a');
+  expect(() => traced.second('b')).toThrow('second failed:b');
+  expect(traced.third('c')).toBe('third:c');
+
+  expect(devLogs.map((log) => [log.type, log.message])).toEqual([
+    ['open', 'first(a)'],
+    ['close', 'first done'],
+    ['open', 'second(b)'],
+    ['close', 'second failed'],
+    ['open', 'third(c)'],
+    ['close', 'third done'],
+  ]);
+  expect(devErrors.map((error) => error.message)).toEqual(['second failed:b']);
+  const boxIds = devLogs.filter((log) => log.type === 'open').map((log) => log.id);
+  expect(new Set(boxIds).size).toBe(3);
+});
+
+test('a non-async list member keeps native promise identity while its siblings trace independently', async () => {
+  const traced = await loadTracedModule(`
+    let complete;
+    const pending = new Promise((resolve) => { complete = resolve; });
+    function loadPending() {
+      return pending;
+    }
+    function saveSync(value) {
+      return value + 1;
+    }
+    trace([loadPending, saveSync], { moduleId: 'TRACE' });
+    export { complete, loadPending, pending, saveSync };
+  `);
+
+  const returned = traced.loadPending();
+  expect(returned).toBe(traced.pending);
+  expect(traced.saveSync(1)).toBe(2);
+  expect(devLogs.map((log) => [log.type, log.message])).toEqual([
+    ['open', 'loadPending()'],
+    ['open', 'saveSync()'],
+    ['close', 'saveSync done'],
+  ]);
+
+  traced.complete('ready');
+  await expect(returned).resolves.toBe('ready');
+  await Promise.resolve();
+
+  expect(devLogs.at(-1)).toMatchObject({ type: 'close', message: 'loadPending done' });
+  const boxIds = devLogs.filter((log) => log.type === 'open').map((log) => log.id);
+  expect(new Set(boxIds).size).toBe(2);
+});
+
+test('concurrent list members link direct Loxer calls to their own trace box without cross-talk', async () => {
+  const traced = await loadTracedModule(`
+    async function loadOrder(value) {
+      Loxer.log('load:start:' + value);
+      await Promise.resolve();
+      Loxer.log('load:end:' + value);
+      return value;
+    }
+    async function saveOrder(value) {
+      Loxer.log('save:start:' + value);
+      await Promise.resolve();
+      Loxer.log('save:end:' + value);
+      return value;
+    }
+    trace([loadOrder, saveOrder], { moduleId: 'TRACE', openMessage: 'args' });
+    export { loadOrder, saveOrder };
+  `);
+
+  await expect(Promise.all([traced.loadOrder('one'), traced.saveOrder('two')])).resolves.toEqual([
+    'one',
+    'two',
+  ]);
+
+  const idFor = (message: string) => devLogs.find((log) => log.message === message)?.id;
+  const loadId = idFor('loadOrder(one)');
+  const saveId = idFor('saveOrder(two)');
+  expect(loadId).toBeDefined();
+  expect(saveId).toBeDefined();
+  expect(loadId).not.toBe(saveId);
+  expect(idFor('load:start:one')).toBe(loadId);
+  expect(idFor('load:end:one')).toBe(loadId);
+  expect(idFor('save:start:two')).toBe(saveId);
+  expect(idFor('save:end:two')).toBe(saveId);
+});
+
+test('argsAsItem, resultAsItem, level, and highlight apply uniformly across a shared-options list', async () => {
+  const traced = await loadTracedModule(`
+    function first(value) {
+      return value + 1;
+    }
+    async function second(value) {
+      return value + 2;
+    }
+    const third = (value) => value + 3;
+    trace([first, second, third], {
+      moduleId: 'TRACE',
+      level: 2,
+      highlight: 'all',
+      argsAsItem: true,
+      resultAsItem: true,
+    });
+    export { first, second, third };
+  `);
+
+  expect(traced.first(1)).toBe(2);
+  await expect(traced.second(1)).resolves.toBe(3);
+  expect(traced.third(1)).toBe(4);
+
+  const opens = devLogs.filter((log) => log.type === 'open');
+  const closes = devLogs.filter((log) => log.type === 'close');
+  expect(opens.map((log) => log.message)).toEqual(['first()', 'second()', 'third()']);
+  expect(closes.map((log) => log.message)).toEqual(['first done', 'second done', 'third done']);
+  for (const log of [...opens, ...closes]) {
+    expect(log.level).toBe(2);
+    expect(log.highlighted).toBe(true);
+  }
+  expect(opens.map((log) => log.item)).toEqual([[1], [1], [1]]);
+  expect(closes.map((log) => log.item)).toEqual([2, 3, 4]);
+});
+
+test('a list marker in a nested scope re-evaluates its shared options on every call', async () => {
+  const traced = await loadTracedModule(`
+    function makeTraced(label) {
+      function first(value) {
+        return label + ':first:' + value;
+      }
+      function second(value) {
+        return label + ':second:' + value;
+      }
+      trace([first, second], { moduleId: 'TRACE', openMessage: 'args', closeMessage: 'result' });
+      return { first, second };
+    }
+    export { makeTraced };
+  `);
+
+  const alpha = traced.makeTraced('alpha');
+  expect(alpha.first('a')).toBe('alpha:first:a');
+  expect(alpha.second('b')).toBe('alpha:second:b');
+
+  const beta = traced.makeTraced('beta');
+  expect(beta.first('c')).toBe('beta:first:c');
+  expect(beta.second('d')).toBe('beta:second:d');
+
+  expect(devLogs.filter((log) => log.type === 'open').map((log) => log.message)).toEqual([
+    'first(a)',
+    'second(b)',
+    'first(c)',
+    'second(d)',
+  ]);
+  expect(devLogs.filter((log) => log.type === 'close').map((log) => log.message)).toEqual([
+    'first done. returns: "alpha:first:a"',
+    'second done. returns: "alpha:second:b"',
+    'first done. returns: "beta:first:c"',
+    'second done. returns: "beta:second:d"',
+  ]);
+});
+
+test('markers in a nested scope keep per-invocation options instead of sharing one slot', async () => {
+  const traced = await loadTracedModule(`
+    function makeTraced(moduleId) {
+      function single(value) {
+        return moduleId + ':' + value;
+      }
+      trace(single, { moduleId, openMessage: 'args' });
+      function listFirst(value) {
+        return moduleId + ':first:' + value;
+      }
+      function listSecond(value) {
+        return moduleId + ':second:' + value;
+      }
+      trace([listFirst, listSecond], { moduleId, openMessage: 'args' });
+      return { listFirst, listSecond, single };
+    }
+    export { makeTraced };
+  `);
+
+  const order = traced.makeTraced('ORDER');
+  const later = traced.makeTraced('TRACE');
+
+  expect(order.single('a')).toBe('ORDER:a');
+  expect(order.listFirst('b')).toBe('ORDER:first:b');
+  expect(later.single('c')).toBe('TRACE:c');
+  expect(later.listSecond('d')).toBe('TRACE:second:d');
+
+  expect(
+    devLogs.filter((log) => log.type === 'open').map((log) => [log.message, log.moduleId])
+  ).toEqual([
+    ['single(a)', 'ORDER'],
+    ['listFirst(b)', 'ORDER'],
+    ['single(c)', 'TRACE'],
+    ['listSecond(d)', 'TRACE'],
+  ]);
+});
+
+test('a list marker shares one options slot across targets declared in two nested scopes', async () => {
+  const traced = await loadTracedModule(`
+    function makeGroup(moduleId) {
+      function outerTarget(value) {
+        return moduleId + ':outer:' + value;
+      }
+      function build() {
+        function innerTarget(value) {
+          return moduleId + ':inner:' + value;
+        }
+        trace([outerTarget, innerTarget], { moduleId, openMessage: 'args' });
+        return innerTarget;
+      }
+      return { build, outerTarget };
+    }
+    export { makeGroup };
+  `);
+
+  const order = traced.makeGroup('ORDER');
+  const orderInner = order.build();
+  const later = traced.makeGroup('TRACE');
+  const laterInner = later.build();
+
+  expect(order.outerTarget('a')).toBe('ORDER:outer:a');
+  expect(orderInner('b')).toBe('ORDER:inner:b');
+  expect(later.outerTarget('c')).toBe('TRACE:outer:c');
+  expect(laterInner('d')).toBe('TRACE:inner:d');
+
+  expect(
+    devLogs.filter((log) => log.type === 'open').map((log) => [log.message, log.moduleId])
+  ).toEqual([
+    ['outerTarget(a)', 'ORDER'],
+    ['innerTarget(b)', 'ORDER'],
+    ['outerTarget(c)', 'TRACE'],
+    ['innerTarget(d)', 'TRACE'],
+  ]);
+});
+
+test('two list markers in one nested scope get separate per-invocation options slots', async () => {
+  const source = `
+    function makeGroups(firstId, secondId) {
+      function firstA(value) {
+        return 'firstA:' + value;
+      }
+      function firstB(value) {
+        return 'firstB:' + value;
+      }
+      trace([firstA, firstB], { moduleId: firstId, openMessage: 'args' });
+      function secondA(value) {
+        return 'secondA:' + value;
+      }
+      function secondB(value) {
+        return 'secondB:' + value;
+      }
+      trace([secondA, secondB], { moduleId: secondId, openMessage: 'args' });
+      return { firstA, firstB, secondA, secondB };
+    }
+    export { makeGroups };
+  `;
+
+  const emitted = await transformLoxerTrace(`${imports()}${source}`, transformOptions());
+  const emittedCode = emitted?.code ?? '';
+  const optionsIds = [...new Set(emittedCode.match(/_sharedTraceOptions\d*/g))].sort();
+  expect(optionsIds).toHaveLength(2);
+  expect(emittedCode).toContain(`var ${optionsIds.join(', ')};`);
+
+  const traced = await loadTracedModule(source);
+  const order = traced.makeGroups('ORDER', 'TRACE');
+  const swapped = traced.makeGroups('TRACE', 'ORDER');
+
+  expect(order.firstA('a')).toBe('firstA:a');
+  expect(order.secondA('b')).toBe('secondA:b');
+  expect(swapped.firstB('c')).toBe('firstB:c');
+  expect(swapped.secondB('d')).toBe('secondB:d');
+
+  expect(
+    devLogs.filter((log) => log.type === 'open').map((log) => [log.message, log.moduleId])
+  ).toEqual([
+    ['firstA(a)', 'ORDER'],
+    ['secondA(b)', 'TRACE'],
+    ['firstB(c)', 'TRACE'],
+    ['secondB(d)', 'ORDER'],
+  ]);
+});
+
+test('a marker on a block-scoped target keeps per-invocation options', async () => {
+  const traced = await loadTracedModule(`
+    function build(moduleId) {
+      let handler;
+      if (moduleId) {
+        function blockScoped(value) {
+          return moduleId + ':' + value;
+        }
+        trace(blockScoped, { moduleId, openMessage: 'args' });
+        handler = blockScoped;
+      }
+      return handler;
+    }
+    export { build };
+  `);
+
+  const order = traced.build('ORDER');
+  const later = traced.build('TRACE');
+
+  expect(order('a')).toBe('ORDER:a');
+  expect(later('b')).toBe('TRACE:b');
+  expect(
+    devLogs.filter((log) => log.type === 'open').map((log) => [log.message, log.moduleId])
+  ).toEqual([
+    ['blockScoped(a)', 'ORDER'],
+    ['blockScoped(b)', 'TRACE'],
+  ]);
+});
+
+test('shadowed Array and Object bindings do not affect a list-traced group in the same nested scope', async () => {
+  const traced = await loadTracedModule(`
+    function withShadowedGlobals() {
+      const Array = { from() { throw new Error('shadowed Array'); } };
+      const Object = { defineProperty() { throw new Error('shadowed Object'); } };
+      function declaration(value) {
+        return value * 2;
+      }
+      const expression = function (value) {
+        return value + 1;
+      };
+      const arrow = (first, second = 1) => first + second;
+      trace([declaration, expression, arrow], { moduleId: 'TRACE' });
+      return { arrow, declaration, expression, Array, Object };
+    }
+    export { withShadowedGlobals };
+  `);
+
+  const bindings = traced.withShadowedGlobals();
+  expect(bindings.declaration(3)).toBe(6);
+  expect(bindings.expression(3)).toBe(4);
+  expect(bindings.arrow.length).toBe(1);
+  expect(bindings.arrow(4)).toBe(5);
+  expect(bindings.arrow(4, 2)).toBe(6);
+  expect(devLogs.filter((log) => log.type === 'close')).toHaveLength(4);
 });
 
 test('formatter and cyclic-result failures fall back without changing results', () => {
@@ -777,6 +1288,50 @@ test('the transform removes the marker and reports unsupported marker forms', as
   ).rejects.toThrow('trace() must be a standalone statement');
 });
 
+test('the transform removes target-list markers and reports unsupported list forms', async () => {
+  const result = await transformLoxerTrace(
+    `${imports()} function one() { return 1; } function two() { return 2; } trace([one, two]); export { one, two };`,
+    transformOptions()
+  );
+  expect(result?.code).not.toContain('trace([one, two])');
+  expect(result?.code).toContain('__startTrace');
+
+  const rejects = (source: string) =>
+    expect(transformLoxerTrace(`${imports()} ${source}`, transformOptions())).rejects;
+
+  await rejects('trace([]);').toThrow('trace() expects at least one target.');
+  await rejects('function one() { return 1; } trace([...[one]]);').toThrow(
+    'trace() targets must be named function-binding identifiers.'
+  );
+  await rejects('const service = { run() {} }; trace([service.run]);').toThrow(
+    'trace() targets must be named function-binding identifiers.'
+  );
+  await rejects(
+    'function one() { return 1; } function two() { return 2; } trace([one, , two]);'
+  ).toThrow('trace() targets must be named function-binding identifiers.');
+  await rejects('trace(() => 1);').toThrow(
+    'trace() targets must be named function-binding identifiers.'
+  );
+  await rejects('function one() { return 1; } trace(one, ...[{ moduleId: "TRACE" }]);').toThrow(
+    'trace() options cannot be a spread argument.'
+  );
+  await rejects('const list = [one]; function one() { return 1; } trace(list);').toThrow(
+    'trace() target "list" is not initialized with a function.'
+  );
+  await rejects('function one() { return 1; } const value = trace([one]);').toThrow(
+    'trace() must be a standalone statement beside its named function binding.'
+  );
+  await rejects('function one() { return 1; } trace([one, one]);').toThrow(
+    'Function "one" has more than one trace() marker.'
+  );
+  await rejects('function one() { return 1; } trace(one); trace([one]);').toThrow(
+    'Function "one" has more than one trace() marker.'
+  );
+  await rejects('const constant = 1; trace([constant]);').toThrow(
+    'trace() target "constant" is not initialized with a function.'
+  );
+});
+
 function imports(): string {
   return `import { trace } from '${traceRuntimeUrl}'; import { Loxer } from '${loxerRuntimeUrl}';`;
 }
@@ -785,6 +1340,29 @@ type AssertFalse<Value extends false> = Value;
 type LegacyMarkerIsAbsent = 'loxed' extends keyof typeof import('../src/trace') ? true : false;
 type LegacyMarkerIsNotExported = AssertFalse<LegacyMarkerIsAbsent>;
 
+/**
+ * Bidirectional type pin for the formatter callbacks below.
+ *
+ * A plain `const pinned: Expected = actual;` is one-directional and therefore pins nothing about a
+ * union: if `Parameters<T>` regressed to a single branch, the narrower tuple would still be
+ * assignable to the wider union and the fixture would keep compiling. Checking both directions
+ * catches a collapsed branch, and the `IsAny` guard catches inference degrading to `any` (which is
+ * assignable in both directions and would otherwise pass). Mutual assignability rather than type
+ * identity is deliberate: a `readonly [f, g]` target list infers `T` as a union of the two element
+ * types, so `Parameters<T>` distributes to an unreduced `[id: string] | [id: string]` that is
+ * semantically the pinned tuple but not identical to it.
+ */
+type IsAny<Value> = 0 extends 1 & Value ? true : false;
+type Equals<Actual, Expected> =
+  IsAny<Actual> extends true
+    ? false
+    : [Actual] extends [Expected]
+      ? [Expected] extends [Actual]
+        ? true
+        : false
+      : false;
+type AssertTrue<Value extends true> = Value;
+
 function traceFormatterTypeFixture(): void {
   function calculateTotal(quantity: number, currency: string): Promise<{ amount: number }> {
     return Promise.resolve({ amount: quantity });
@@ -792,12 +1370,85 @@ function traceFormatterTypeFixture(): void {
 
   trace(calculateTotal, {
     openMessage(args) {
-      const exactArguments: [quantity: number, currency: string] = args;
-      return `${exactArguments[0]} ${exactArguments[1]}`;
+      type ArgumentsAreExact = AssertTrue<
+        Equals<typeof args, [quantity: number, currency: string]>
+      >;
+      const pinned: ArgumentsAreExact = true;
+      return `${args[0]} ${args[1]} ${pinned}`;
     },
     closeMessage(result) {
-      const exactResult: { amount: number } = result;
-      return String(exactResult.amount);
+      type ResultIsExact = AssertTrue<Equals<typeof result, { amount: number }>>;
+      const pinned: ResultIsExact = true;
+      return `${result.amount} ${pinned}`;
+    },
+  });
+}
+
+function traceListFormatterTypeFixture(): void {
+  function loadOrder(id: string): Promise<{ amount: number }> {
+    return Promise.resolve({ amount: id.length });
+  }
+  function saveOrder(id: string): Promise<{ amount: number }> {
+    return Promise.resolve({ amount: 0 });
+  }
+
+  trace([loadOrder, saveOrder], {
+    openMessage(args) {
+      type ArgumentsAreExact = AssertTrue<Equals<typeof args, [id: string]>>;
+      const pinned: ArgumentsAreExact = true;
+      return `${args[0]} ${pinned}`;
+    },
+    closeMessage(result) {
+      type ResultIsExact = AssertTrue<Equals<typeof result, { amount: number }>>;
+      const pinned: ResultIsExact = true;
+      return `${result.amount} ${pinned}`;
+    },
+  });
+}
+
+function traceReadonlyListFormatterTypeFixture(): void {
+  function loadOrder(id: string): Promise<{ amount: number }> {
+    return Promise.resolve({ amount: id.length });
+  }
+  function saveOrder(id: string): Promise<{ amount: number }> {
+    return Promise.resolve({ amount: 0 });
+  }
+  const targets = [loadOrder, saveOrder] as const;
+
+  trace(targets, {
+    openMessage(args) {
+      type ArgumentsAreExact = AssertTrue<Equals<typeof args, [id: string]>>;
+      const pinned: ArgumentsAreExact = true;
+      return `${args[0]} ${pinned}`;
+    },
+    closeMessage(result) {
+      type ResultIsExact = AssertTrue<Equals<typeof result, { amount: number }>>;
+      const pinned: ResultIsExact = true;
+      return `${result.amount} ${pinned}`;
+    },
+  });
+}
+
+function traceMixedSignatureListFormatterTypeFixture(): void {
+  function loadOrder(id: string): Promise<{ amount: number }> {
+    return Promise.resolve({ amount: id.length });
+  }
+  function countOrders(active: boolean): number {
+    return active ? 1 : 0;
+  }
+
+  trace([loadOrder, countOrders], {
+    openMessage(args) {
+      type ArgumentsAreExactUnion = AssertTrue<
+        Equals<typeof args, [id: string] | [active: boolean]>
+      >;
+      const pinned: ArgumentsAreExactUnion = true;
+      return `${String(args[0])} ${pinned}`;
+    },
+    closeMessage(result) {
+      type ResultIsExactUnion = AssertTrue<Equals<typeof result, { amount: number } | number>>;
+      const pinned: ResultIsExactUnion = true;
+      return `${String(result)} ${pinned}`;
     },
   });
 }

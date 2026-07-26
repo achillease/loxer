@@ -49,12 +49,31 @@ trace(submitOrder, {
 was skipped and it throws a configuration error. A successful transform removes both the marker
 call and the marker import.
 
+To instrument a group of functions the same way, mark them together: `trace()` also accepts an array
+literal of named functions plus the options they share.
+
+```ts
+import { trace } from 'loxer/trace';
+
+function loadOrder(orderId: string) {
+  return repository.find(orderId);
+}
+const cancelOrder = (orderId: string) => repository.cancel(orderId);
+
+trace([loadOrder, cancelOrder], { moduleId: 'ORDER', openMessage: 'args' });
+```
+
+Every listed binding is transformed exactly as its own marker would transform it, and each invocation
+still opens its own box. Only the options differ: the expression is evaluated once and the generated
+code shares that single result across the group.
+
 ## What the transform does
 
 The plugin identifies the _binding_ imported as `trace`, rather than transforming every call with
 that spelling. This keeps unrelated local functions named `trace` untouched. For each valid marker,
-it adds collision-safe imports for internal helpers from `loxer/trace`, rewrites the selected
-function body, and removes the marker import when it is no longer used.
+it adds collision-safe imports for internal helpers from `loxer/trace`, declares hoisted `var`
+storage for the marker's options in its targets' outermost scope, rewrites the selected function
+bodies, and removes the marker import when it is no longer used.
 
 ```mermaid
 flowchart LR
@@ -147,7 +166,7 @@ here, then ensure the adapter continues to pass the correct parser and source-ma
 
 ## Supported shapes and boundaries
 
-The marker supports:
+The markers support:
 
 - named function declarations;
 - named variables initialized with a function expression; and
@@ -160,9 +179,14 @@ expression.
 
 These boundaries are intentional:
 
-- The marker must be a standalone statement beside its named binding: `trace(target, options)`.
-  It cannot be used as an expression, target an anonymous value, or receive a spread options
-  argument.
+- A marker must be a standalone statement beside its named bindings: `trace(target, options)` or
+  `trace([target, target], options)`. It cannot be used as an expression, target an anonymous value,
+  or receive a spread options argument.
+- A target list must be an array literal of at least one identifier. A spread element, a member
+  expression, or a variable holding an array is rejected, because the transform resolves every
+  target binding at compile time.
+- A function may carry only one marker. Listing it twice in one call, or marking it both alone and
+  inside a list, is a build error instead of a nested double trace.
 - Generator and async-generator functions are not supported.
 - Only direct calls on the imported `Loxer` binding in the transformed function body are linked to
   the trace. Nested functions, detached aliases, and indirect logger calls remain ordinary Loxer

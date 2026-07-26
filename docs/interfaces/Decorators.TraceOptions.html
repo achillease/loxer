@@ -12,9 +12,11 @@
 <li><a href="" aria-current="page">TraceOptions</a></li></ul>
 <h1>Interface TraceOptions&lt;Args, Result&gt;</h1></div>
 <section class="tsd-panel tsd-comment">
-<div class="tsd-comment tsd-typography"><p>Options shared by the <code>@trace()</code> method decorator and <code>trace(target, options)</code> function marker.</p>
-<p>The plain-function marker infers <code>Args</code> and <code>Result</code> from its target. Decorators cannot infer a
-method's signature, so supply them explicitly when formatter callbacks need precise types.
+<div class="tsd-comment tsd-typography"><p>Options shared by the <code>@trace()</code> method decorator and the <code>trace(target | [targets], options)</code>
+function marker.</p>
+<p>The plain-function marker infers <code>Args</code> and <code>Result</code> from its target — from the union of every
+listed target when it marks a list. Decorators cannot infer a method's signature, so supply them
+explicitly when formatter callbacks need precise types.
 <code>className.functionName</code> uses the class name for decorated methods and falls back to the function
 name for plain functions.</p>
 </div></section>

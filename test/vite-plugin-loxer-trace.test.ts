@@ -43,6 +43,17 @@ test('supports JSX and custom include/exclude filters through the canonical tran
   expect(result?.map?.sources).toEqual(['included.jsx']);
 });
 
+test('transforms a target-list marker through the canonical transform', async () => {
+  const plugin = loxerTrace();
+  const source =
+    "import { trace } from 'loxer/trace'; function first() { return 1; } function second() { return 2; } trace([first, second]);";
+
+  const result = await runTransform(plugin, source, '/repo/list.ts');
+  expect(result?.code).not.toContain('trace([first, second])');
+  expect(result?.code).toContain('__startTrace');
+  expect(result?.code?.match(/_startTrace\d*\(/g)).toHaveLength(2);
+});
+
 test('global and sticky filter expressions are reusable across multiple Vite modules', async () => {
   const source =
     "import { trace } from 'loxer/trace'; function value() { return 1; } trace(value);";

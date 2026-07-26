@@ -73,10 +73,12 @@ export type FunctionCloseMessage<Result = unknown> =
   | 'prettyResult';
 
 /**
- * Options shared by the `@trace()` method decorator and `trace(target, options)` function marker.
+ * Options shared by the `@trace()` method decorator and the `trace(target | [targets], options)`
+ * function marker.
  *
- * The plain-function marker infers `Args` and `Result` from its target. Decorators cannot infer a
- * method's signature, so supply them explicitly when formatter callbacks need precise types.
+ * The plain-function marker infers `Args` and `Result` from its target — from the union of every
+ * listed target when it marks a list. Decorators cannot infer a method's signature, so supply them
+ * explicitly when formatter callbacks need precise types.
  * `className.functionName` uses the class name for decorated methods and falls back to the function
  * name for plain functions.
  */

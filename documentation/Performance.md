@@ -74,7 +74,7 @@ As you can see, when Loxer is disabled, it has almost no influence on the perfor
 
 
 ### Test 2 - Logs not leveled
-This scenario applies to logs that are not logged because their level does not correspond to the actual log level.
+This scenario applies to logs that are not logged because their level sits past what their module logs up to - here `'debug'` boxes against `'info'` modules.
 
 - Test runs with 25.000 logs with nested depth of 60
 - Total number of logs: 100.000

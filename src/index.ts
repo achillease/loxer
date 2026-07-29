@@ -6,3 +6,64 @@ export * from './decorators/initLoxer.js';
 export * from './decorators/trace.js';
 export * from './Loxer.js';
 export { NamedError } from './core/Error.js';
+export type { ErrorLox } from './loxes/ErrorLox.js';
+export type { OutputLox } from './loxes/OutputLox.js';
+// referenced by the option / lox types below, so a consumer can name every member's type
+export type { BoxLayoutStyle } from './core/BoxFormat.js';
+export type { ItemOptions, ItemType } from './core/Item.js';
+export type { ExtendedModule } from './core/Modules.js';
+export type { LoxType } from './loxes/Lox.js';
+export type {
+  BoxLevel,
+  DefaultModuleId,
+  ErrorType,
+  LevelMethods,
+  LogLevel,
+  LoxerCallbacks,
+  LoxerConfig,
+  LoxerModules,
+  LoxerOptions,
+  Module,
+  ModuleId,
+  OfLoxes,
+  OpenedLox,
+} from './types.js';
+
+/** ## Registry for type-safe module ids
+ * #### Augment this interface to type `.module(...)`, `.m(...)`, `Loxer.getModuleLevel(...)` and the
+ * `moduleId` trace option after the modules your project declares.
+ *
+ * While this interface is empty — the default — a module id is an ordinary `string` and nothing
+ * changes. Register your modules once and every module id becomes autocompleted and typo-checked:
+ *
+ * ```typescript
+ *   import { Loxer, type LoxerModules } from 'loxer';
+ *
+ *   export const modules = {
+ *     PERS: { fullName: 'Persons', color: '#0ff', devLevel: 'debug', prodLevel: 'warn' },
+ *     DB: { fullName: 'Database', color: '#f0f', devLevel: 'info', prodLevel: 'error' },
+ *   } satisfies LoxerModules;
+ *
+ *   declare module 'loxer' {
+ *     interface LoxerModuleRegistry extends Record<keyof typeof modules, true> {}
+ *   }
+ *
+ *   Loxer.init({ modules });
+ * ```
+ *
+ * From then on `Loxer.m('PERS')` is accepted and `Loxer.m('PRES')` is a compile error, while the
+ * built-in ids (see {@link DefaultModuleId}) stay valid. Only the property *keys* are read — their
+ * value type is irrelevant, `true` is just the cheapest thing to write.
+ *
+ * - **`satisfies LoxerModules`, never `: LoxerModules`**: an annotation widens the keys back to
+ *   `string`, which silently turns the whole check off again with no error to tell you.
+ * - the augmentation must live in a file that is a module. If it has no other `import` / `export`,
+ *   add an `export {};` — otherwise TypeScript reads it as an ambient declaration that *replaces*
+ *   the package.
+ * - a misspelled module specifier (`declare module 'loxr'`) fails silently, so check that a
+ *   deliberate typo really errors after wiring this up.
+ * - the registry is global to a compilation, matching `Loxer`'s single set of modules. Several
+ *   packages may each augment it; the declarations merge.
+ * - {@link ModuleId} is the resolved id type, should you need to name it.
+ */
+export interface LoxerModuleRegistry {}

@@ -14,7 +14,7 @@
 <section class="tsd-panel tsd-comment">
 <div class="tsd-comment tsd-typography"><p>this is the main type of <a href="../types/Loxer.Loxer.html" class="tsd-kind-type-alias">Loxer</a></p>
 </div></section>
-<div class="tsd-signature"><span class="tsd-signature-keyword">interface</span> <span class="tsd-kind-interface">LoxerCore</span> <span class="tsd-signature-symbol">{</span><br/>    <a class="tsd-kind-call-signature" href="#init-1">init</a><span class="tsd-signature-symbol">(</span><span class="tsd-kind-parameter">options</span><span class="tsd-signature-symbol">?:</span> <a href="Loxer.LoxerOptions.html" class="tsd-signature-type tsd-kind-interface">LoxerOptions</a><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">void</span><span class="tsd-signature-symbol">;</span><br/>    <a class="tsd-kind-call-signature" href="#getmodulelevel-1">getModuleLevel</a><span class="tsd-signature-symbol">(</span><span class="tsd-kind-parameter">moduleID</span><span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">string</span><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">:</span> <a href="../types/Loxer.LevelType.html" class="tsd-signature-type tsd-kind-type-alias">LevelType</a> <span class="tsd-signature-symbol">|</span> <span class="tsd-signature-type">-1</span><span class="tsd-signature-symbol">;</span><br/>    <a class="tsd-kind-property" href="#history">history</a><span class="tsd-signature-symbol">:</span> (<a href="../classes/Logs.OutputLox.html" class="tsd-signature-type tsd-kind-class">OutputLox</a> <span class="tsd-signature-symbol">|</span> <a href="../classes/Logs.ErrorLox.html" class="tsd-signature-type tsd-kind-class">ErrorLox</a>)<span class="tsd-signature-symbol">[]</span><span class="tsd-signature-symbol">;</span><br/><span class="tsd-signature-symbol">}</span></div>
+<div class="tsd-signature"><span class="tsd-signature-keyword">interface</span> <span class="tsd-kind-interface">LoxerCore</span> <span class="tsd-signature-symbol">{</span><br/>    <a class="tsd-kind-call-signature" href="#init-1">init</a><span class="tsd-signature-symbol">(</span><span class="tsd-kind-parameter">options</span><span class="tsd-signature-symbol">?:</span> <a href="Loxer.LoxerOptions.html" class="tsd-signature-type tsd-kind-interface">LoxerOptions</a><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">void</span><span class="tsd-signature-symbol">;</span><br/>    <a class="tsd-kind-call-signature" href="#getmodulelevel-1">getModuleLevel</a><span class="tsd-signature-symbol">(</span><span class="tsd-kind-parameter">moduleId</span><span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">string</span><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">:</span> <a href="../types/index.LogLevel.html" class="tsd-signature-type tsd-kind-type-alias">LogLevel</a> <span class="tsd-signature-symbol">|</span> <span class="tsd-signature-type">undefined</span><span class="tsd-signature-symbol">;</span><br/>    <a class="tsd-kind-property" href="#history">history</a><span class="tsd-signature-symbol">:</span> (<a href="../classes/Logs.ErrorLox.html" class="tsd-signature-type tsd-kind-class">ErrorLox</a> <span class="tsd-signature-symbol">|</span> <a href="../classes/Logs.OutputLox.html" class="tsd-signature-type tsd-kind-class">OutputLox</a>)<span class="tsd-signature-symbol">[]</span><span class="tsd-signature-symbol">;</span><br/><span class="tsd-signature-symbol">}</span></div>
 <section class="tsd-panel-group tsd-index-group">
 <section class="tsd-panel tsd-index-panel">
 <details class="tsd-index-content tsd-accordion" open><summary class="tsd-accordion-summary tsd-index-summary"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true"><use href="../assets/icons.svg#icon-chevronDown"></use></svg>
@@ -34,7 +34,7 @@
 <section>
 <section class="tsd-panel tsd-member">
 <h3 class="tsd-anchor-link" id="history"><span>history</span><a href="#history" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
-<div class="tsd-signature"><span class="tsd-kind-property">history</span><span class="tsd-signature-symbol">:</span> (<a href="../classes/Logs.OutputLox.html" class="tsd-signature-type tsd-kind-class">OutputLox</a> <span class="tsd-signature-symbol">|</span> <a href="../classes/Logs.ErrorLox.html" class="tsd-signature-type tsd-kind-class">ErrorLox</a>)<span class="tsd-signature-symbol">[]</span></div>
+<div class="tsd-signature"><span class="tsd-kind-property">history</span><span class="tsd-signature-symbol">:</span> (<a href="../classes/Logs.ErrorLox.html" class="tsd-signature-type tsd-kind-class">ErrorLox</a> <span class="tsd-signature-symbol">|</span> <a href="../classes/Logs.OutputLox.html" class="tsd-signature-type tsd-kind-class">OutputLox</a>)<span class="tsd-signature-symbol">[]</span></div>
 <div class="tsd-comment tsd-typography"><h2 id="get-the-log-history" class="tsd-anchor-link">Get the log History<a href="#get-the-log-history" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h2>
 <p>This is a list of all logs / boxes / errors that occurred in the past. It must be enabled by initialization.</p>
 <ul>
@@ -75,21 +75,26 @@ one of the &quot;disabled&quot; options in the config(<a href="Loxer.LoxerConfig
 <h3 class="tsd-anchor-link" id="getmodulelevel"><span>get<wbr/>Module<wbr/>Level</span><a href="#getmodulelevel" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
 <ul class="tsd-signatures">
 <li class="">
-<div class="tsd-signature tsd-anchor-link" id="getmodulelevel-1"><span class="tsd-kind-call-signature">getModuleLevel</span><span class="tsd-signature-symbol">(</span><span class="tsd-kind-parameter">moduleID</span><span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">string</span><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">:</span> <a href="../types/Loxer.LevelType.html" class="tsd-signature-type tsd-kind-type-alias">LevelType</a> <span class="tsd-signature-symbol">|</span> <span class="tsd-signature-type">-1</span><a href="#getmodulelevel-1" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></div>
+<div class="tsd-signature tsd-anchor-link" id="getmodulelevel-1"><span class="tsd-kind-call-signature">getModuleLevel</span><span class="tsd-signature-symbol">(</span><span class="tsd-kind-parameter">moduleId</span><span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">string</span><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">:</span> <a href="../types/index.LogLevel.html" class="tsd-signature-type tsd-kind-type-alias">LogLevel</a> <span class="tsd-signature-symbol">|</span> <span class="tsd-signature-type">undefined</span><a href="#getmodulelevel-1" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></div>
 <div class="tsd-description">
-<div class="tsd-comment tsd-typography"><h2 id="get-a-modules-loglevel" class="tsd-anchor-link">Get a module's LogLevel<a href="#get-a-modules-loglevel" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h2>
-<h4 id="returns-the-configured-loglevel-of-the-given-s-corresponding-module" class="tsd-anchor-link">Returns the configured LogLevel (<code>number</code>) of the given <code>moduleIs</code>s corresponding Module.<a href="#returns-the-configured-loglevel-of-the-given-s-corresponding-module" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h4>
+<div class="tsd-comment tsd-typography"><h2 id="get-the-level-a-module-logs-up-to" class="tsd-anchor-link">Get the level a module logs up to<a href="#get-the-level-a-module-logs-up-to" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h2>
+<h4 id="returns-the-loglevel-the-given-s-corresponding-module-logs-up-to" class="tsd-anchor-link">Returns the <a href="../types/index.LogLevel.html" class="tsd-kind-type-alias">LogLevel</a> the given <code>moduleId</code>s corresponding Module logs up to.<a href="#returns-the-loglevel-the-given-s-corresponding-module-logs-up-to" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h4>
 <ul>
 <li>is dependent on the environment: returns actual level (prod || dev)</li>
-<li>returns <code>-1</code> if there is no corresponding module for the given <code>moduleID</code></li>
+<li>returns <code>undefined</code> if there is no corresponding module for the given <code>moduleId</code></li>
+<li>if the <a href="index.LoxerModuleRegistry.html" class="tsd-kind-interface">LoxerModuleRegistry</a> is augmented, then probing an id that is deliberately
+<em>not</em> a registered module (to get the <code>undefined</code>) needs a cast:
+<code>getModuleLevel(id as ModuleId)</code></li>
 </ul>
 <hr>
 </div>
 <div class="tsd-parameters">
 <h4 class="tsd-parameters-title">Parameters</h4>
 <ul class="tsd-parameter-list">
-<li><span><span class="tsd-kind-parameter">moduleID</span>: <span class="tsd-signature-type">string</span></span></li></ul></div>
-<h4 class="tsd-returns-title">Returns <a href="../types/Loxer.LevelType.html" class="tsd-signature-type tsd-kind-type-alias">LevelType</a> <span class="tsd-signature-symbol">|</span> <span class="tsd-signature-type">-1</span></h4></div></li></ul></section></section></details></div>
+<li><span><span class="tsd-kind-parameter">moduleId</span>: <span class="tsd-signature-type">string</span></span>
+<div class="tsd-comment tsd-typography"><p>the corresponding key of a module from <a href="Loxer.LoxerOptions.html#modules" class="tsd-kind-property">LoxerOptions.modules</a> declared in <code>Loxer.init(options)</code></p>
+</div></li></ul></div>
+<h4 class="tsd-returns-title">Returns <a href="../types/index.LogLevel.html" class="tsd-signature-type tsd-kind-type-alias">LogLevel</a> <span class="tsd-signature-symbol">|</span> <span class="tsd-signature-type">undefined</span></h4></div></li></ul></section></section></details></div>
 <div class="col-sidebar">
 <div class="page-menu">
 <div class="tsd-navigation settings">
@@ -121,10 +126,10 @@ one of the &quot;disabled&quot; options in the config(<a href="Loxer.LoxerConfig
 <ul>
 <li><a href="#is-a-required-function-to-initialize-loxer"><span>Is a required function to initialize <wbr/>Loxer.</span></a></li></ul></li></ul></li></ul></li></ul><a href="#getmodulelevel"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="Method"><use href="../assets/icons.svg#icon-2048"></use></svg><span>get<wbr/>Module<wbr/>Level</span></a>
 <ul>
-<li><a href="#get-a-modules-loglevel"><span>Get a module&#39;s <wbr/>Log<wbr/>Level</span></a></li>
+<li><a href="#get-the-level-a-module-logs-up-to"><span>Get the level a module logs up to</span></a></li>
 <li>
 <ul>
-<li><a href="#returns-the-configured-loglevel-of-the-given-s-corresponding-module"><span>Returns the configured <wbr/>Log<wbr/>Level () of the given s corresponding <wbr/>Module.</span></a></li></ul></li></ul></div></details></div></details></div>
+<li><a href="#returns-the-loglevel-the-given-s-corresponding-module-logs-up-to"><span>Returns the <wbr/>Log<wbr/>Level the given s corresponding <wbr/>Module logs up to.</span></a></li></ul></li></ul></div></details></div></details></div>
 <div class="site-menu">
 <nav class="tsd-navigation"><a href="../modules.html">Loxer - v3.0.0</a>
 <ul class="tsd-small-nested-navigation" id="tsd-nav-container">

@@ -3,9 +3,9 @@ import { Loxer } from '../dist/index.js';
 Loxer.init({
   dev: true,
   modules: {
-    AUTH: { color: '#f00', fullName: 'Authentication', devLevel: 1, prodLevel: 1 },
-    CART: { color: '#00ff00', fullName: 'Shopping cart', devLevel: 1, prodLevel: 1 },
-    PAY: { color: 'rgb(0, 120, 255)', fullName: 'Payment', devLevel: 1, prodLevel: 1 },
+    AUTH: { color: '#f00', fullName: 'Authentication', devLevel: 'info', prodLevel: 'info' },
+    CART: { color: '#00ff00', fullName: 'Shopping cart', devLevel: 'info', prodLevel: 'info' },
+    PAY: { color: 'rgb(0, 120, 255)', fullName: 'Payment', devLevel: 'info', prodLevel: 'info' },
   },
 });
 

@@ -1,4 +1,4 @@
-import { LogLevelType } from './types.js';
+import { BoxLevel, ModuleId } from './types.js';
 
 export type TraceHighlight = 'open' | 'close' | 'all';
 
@@ -90,10 +90,18 @@ export interface TraceOptions<
   openMessage?: FunctionOpenMessage<Args>;
   /** controls the successful closing trace message */
   closeMessage?: FunctionCloseMessage<Result>;
-  /** the corresponding key of a `LoxerModule` provided during `Loxer.init()` */
-  moduleId?: string;
-  /** the level of the log. defaults to `1` */
-  level?: LogLevelType;
+  /** the corresponding key of a `LoxerModule` provided during `Loxer.init()`
+   *
+   * Is a `string` by default. Augment the `LoxerModuleRegistry` (exported from `loxer`) to have the
+   * accepted ids autocompleted and typo-checked against the modules of your project.
+   */
+  moduleId?: ModuleId;
+  /** the {@link BoxLevel} of the trace box. defaults to `'info'`
+   *
+   * `'error'` is not accepted, because a trace opens and closes a box while an error is a single
+   * event.
+   */
+  level?: BoxLevel;
   /** which lifecycle messages should be highlighted */
   highlight?: TraceHighlight;
   /** appends the arguments as the opening log item */

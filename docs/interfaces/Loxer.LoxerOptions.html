@@ -14,7 +14,7 @@
 <section class="tsd-panel tsd-comment">
 <div class="tsd-comment tsd-typography"><p>Options for the <a href="Loxer.LoxerCore.html#init" class="tsd-kind-method">Loxer.init</a> method</p>
 </div></section>
-<div class="tsd-signature"><span class="tsd-signature-keyword">interface</span> <span class="tsd-kind-interface">LoxerOptions</span> <span class="tsd-signature-symbol">{</span><br/>    <a class="tsd-kind-property" href="#modules">modules</a><span class="tsd-signature-symbol">?:</span> <a href="../types/Loxer.LoxerModules.html" class="tsd-signature-type tsd-kind-type-alias">LoxerModules</a><span class="tsd-signature-symbol">;</span><br/>    <a class="tsd-kind-property" href="#dev">dev</a><span class="tsd-signature-symbol">?:</span> <span class="tsd-signature-type">boolean</span><span class="tsd-signature-symbol">;</span><br/>    <a class="tsd-kind-property" href="#callbacks">callbacks</a><span class="tsd-signature-symbol">?:</span> <a href="Loxer.LoxerCallbacks.html" class="tsd-signature-type tsd-kind-interface">LoxerCallbacks</a><span class="tsd-signature-symbol">;</span><br/>    <a class="tsd-kind-property" href="#config">config</a><span class="tsd-signature-symbol">?:</span> <a href="Loxer.LoxerConfig.html" class="tsd-signature-type tsd-kind-interface">LoxerConfig</a><span class="tsd-signature-symbol">;</span><br/>    <a class="tsd-kind-property" href="#defaultlevels">defaultLevels</a><span class="tsd-signature-symbol">?:</span> <span class="tsd-signature-symbol">{</span> <span class="tsd-kind-property">devLevel</span><span class="tsd-signature-symbol">:</span> <a href="../types/Loxer.LevelType.html" class="tsd-signature-type tsd-kind-type-alias">LevelType</a><span class="tsd-signature-symbol">;</span> <span class="tsd-kind-property">prodLevel</span><span class="tsd-signature-symbol">:</span> <a href="../types/Loxer.LevelType.html" class="tsd-signature-type tsd-kind-type-alias">LevelType</a> <span class="tsd-signature-symbol">}</span><span class="tsd-signature-symbol">;</span><br/><span class="tsd-signature-symbol">}</span></div>
+<div class="tsd-signature"><span class="tsd-signature-keyword">interface</span> <span class="tsd-kind-interface">LoxerOptions</span> <span class="tsd-signature-symbol">{</span><br/>    <a class="tsd-kind-property" href="#modules">modules</a><span class="tsd-signature-symbol">?:</span> <a href="../types/Loxer.LoxerModules.html" class="tsd-signature-type tsd-kind-type-alias">LoxerModules</a><span class="tsd-signature-symbol">;</span><br/>    <a class="tsd-kind-property" href="#dev">dev</a><span class="tsd-signature-symbol">?:</span> <span class="tsd-signature-type">boolean</span><span class="tsd-signature-symbol">;</span><br/>    <a class="tsd-kind-property" href="#callbacks">callbacks</a><span class="tsd-signature-symbol">?:</span> <a href="Loxer.LoxerCallbacks.html" class="tsd-signature-type tsd-kind-interface">LoxerCallbacks</a><span class="tsd-signature-symbol">;</span><br/>    <a class="tsd-kind-property" href="#config">config</a><span class="tsd-signature-symbol">?:</span> <a href="Loxer.LoxerConfig.html" class="tsd-signature-type tsd-kind-interface">LoxerConfig</a><span class="tsd-signature-symbol">;</span><br/>    <a class="tsd-kind-property" href="#defaultlevels">defaultLevels</a><span class="tsd-signature-symbol">?:</span> <span class="tsd-signature-symbol">{</span> <span class="tsd-kind-property">devLevel</span><span class="tsd-signature-symbol">:</span> <a href="../types/index.LogLevel.html" class="tsd-signature-type tsd-kind-type-alias">LogLevel</a><span class="tsd-signature-symbol">;</span> <span class="tsd-kind-property">prodLevel</span><span class="tsd-signature-symbol">:</span> <a href="../types/index.LogLevel.html" class="tsd-signature-type tsd-kind-type-alias">LogLevel</a> <span class="tsd-signature-symbol">}</span><span class="tsd-signature-symbol">;</span><br/><span class="tsd-signature-symbol">}</span></div>
 <section class="tsd-panel-group tsd-index-group">
 <section class="tsd-panel tsd-index-panel">
 <details class="tsd-index-content tsd-accordion" open><summary class="tsd-accordion-summary tsd-index-summary"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true"><use href="../assets/icons.svg#icon-chevronDown"></use></svg>
@@ -36,7 +36,7 @@
 <div class="tsd-signature"><span class="tsd-kind-property">modules</span><span class="tsd-signature-symbol">?:</span> <a href="../types/Loxer.LoxerModules.html" class="tsd-signature-type tsd-kind-type-alias">LoxerModules</a></div>
 <div class="tsd-comment tsd-typography"><h2 id="an-object-containing-all-loggable-modules" class="tsd-anchor-link">An object containing all loggable modules<a href="#an-object-containing-all-loggable-modules" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h2>
 <p>an exemplary module &quot;Persons&quot; would look like this:</p>
-<pre><code class="typescript"><span class="hl-2">  </span><span class="hl-10">PERS</span><span class="hl-2">: { </span><span class="hl-10">fullName</span><span class="hl-2">: </span><span class="hl-4">&#39;Persons&#39;</span><span class="hl-2">, </span><span class="hl-10">color</span><span class="hl-2">: </span><span class="hl-4">&#39;#0ff&#39;</span><span class="hl-2">, </span><span class="hl-10">devLevel</span><span class="hl-2">: </span><span class="hl-5">3</span><span class="hl-2">, </span><span class="hl-10">prodLevel</span><span class="hl-2">: </span><span class="hl-5">1</span><span class="hl-2"> }</span>
+<pre><code class="typescript"><span class="hl-2">  </span><span class="hl-10">PERS</span><span class="hl-2">: { </span><span class="hl-10">fullName</span><span class="hl-2">: </span><span class="hl-4">&#39;Persons&#39;</span><span class="hl-2">, </span><span class="hl-10">color</span><span class="hl-2">: </span><span class="hl-4">&#39;#0ff&#39;</span><span class="hl-2">, </span><span class="hl-10">devLevel</span><span class="hl-2">: </span><span class="hl-4">&#39;debug&#39;</span><span class="hl-2">, </span><span class="hl-10">prodLevel</span><span class="hl-2">: </span><span class="hl-4">&#39;warn&#39;</span><span class="hl-2"> }</span>
 </code><button type="button">Copy</button></pre>
 
 <ul>
@@ -44,22 +44,22 @@
 <li>the fullName will be (possibly sliced - see <a href="Loxer.LoxerConfig.html#moduletextslice" class="tsd-kind-property">LoxerConfig.moduleTextSlice</a>) displayed as the very first
 string at the output</li>
 <li>the color will be applied to the module name and its box layout</li>
-<li>the levels are activation boundaries for the specified logs. All logs that have a level higher than the current
-module level will therefore not be logged.</li>
+<li>the levels say how far down the <a href="../types/index.LogLevel.html" class="tsd-kind-type-alias">LogLevel</a> list this module logs: a module at <code>'info'</code>
+logs <code>'error'</code>, <code>'warn'</code> and <code>'info'</code> logs and stops before <code>'debug'</code></li>
 </ul>
 <h2 id="given-default-modules" class="tsd-anchor-link">Given Default Modules<a href="#given-default-modules" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h2>
 <p>Some default modules will be set and can be overwritten here:</p>
 <h3 id="the-none-module" class="tsd-anchor-link">The NONE module<a href="#the-none-module" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
 <p>will be automatically set when there is no <code>.module(...)</code> chained on <code>Loxer.log()</code>, <code>Loxer.open()</code> or <code>Loxer.of()</code>
 when the opening log had no module too. The default is defined as:</p>
-<pre><code class="typescript"><span class="hl-2">  </span><span class="hl-10">NONE</span><span class="hl-2">: { </span><span class="hl-10">fullName</span><span class="hl-2">: </span><span class="hl-4">&#39;&#39;</span><span class="hl-2">, </span><span class="hl-10">color</span><span class="hl-2">: </span><span class="hl-4">&#39;#fff&#39;</span><span class="hl-2">, </span><span class="hl-10">devLevel</span><span class="hl-2">: </span><span class="hl-5">1</span><span class="hl-2">, </span><span class="hl-10">prodLevel</span><span class="hl-2">: </span><span class="hl-5">1</span><span class="hl-2"> }</span>
+<pre><code class="typescript"><span class="hl-2">  </span><span class="hl-10">NONE</span><span class="hl-2">: { </span><span class="hl-10">fullName</span><span class="hl-2">: </span><span class="hl-4">&#39;&#39;</span><span class="hl-2">, </span><span class="hl-10">color</span><span class="hl-2">: </span><span class="hl-4">&#39;#fff&#39;</span><span class="hl-2">, </span><span class="hl-10">devLevel</span><span class="hl-2">: </span><span class="hl-4">&#39;info&#39;</span><span class="hl-2">, </span><span class="hl-10">prodLevel</span><span class="hl-2">: </span><span class="hl-4">&#39;error&#39;</span><span class="hl-2"> }</span>
 </code><button type="button">Copy</button></pre>
 
 <p>This module will not have a module name or a box layout at the output.</p>
 <h3 id="the-default-module" class="tsd-anchor-link">The DEFAULT module<a href="#the-default-module" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
 <p>will be automatically set when <code>Loxer.log()</code> or <code>Loxer.open()</code> logs are chained with an empty <code>.module()</code>.
 The default is defined as:</p>
-<pre><code class="typescript"><span class="hl-2">  </span><span class="hl-10">DEFAULT</span><span class="hl-2">: { </span><span class="hl-10">fullName</span><span class="hl-2">: </span><span class="hl-4">&#39;&#39;</span><span class="hl-2">, </span><span class="hl-10">color</span><span class="hl-2">: </span><span class="hl-4">&#39;#fff&#39;</span><span class="hl-2">, </span><span class="hl-10">devLevel</span><span class="hl-2">: </span><span class="hl-5">1</span><span class="hl-2">, </span><span class="hl-10">prodLevel</span><span class="hl-2">: </span><span class="hl-5">1</span><span class="hl-2"> }</span>
+<pre><code class="typescript"><span class="hl-2">  </span><span class="hl-10">DEFAULT</span><span class="hl-2">: { </span><span class="hl-10">fullName</span><span class="hl-2">: </span><span class="hl-4">&#39;&#39;</span><span class="hl-2">, </span><span class="hl-10">color</span><span class="hl-2">: </span><span class="hl-4">&#39;#fff&#39;</span><span class="hl-2">, </span><span class="hl-10">devLevel</span><span class="hl-2">: </span><span class="hl-4">&#39;info&#39;</span><span class="hl-2">, </span><span class="hl-10">prodLevel</span><span class="hl-2">: </span><span class="hl-4">&#39;error&#39;</span><span class="hl-2"> }</span>
 </code><button type="button">Copy</button></pre>
 
 <p>This module will have an empty module name, but a box layout at the output.</p>
@@ -68,7 +68,7 @@ The default is defined as:</p>
 <code>Loxer.init(options)</code>. This module is a visual indicator for misspelled or missing moduleIds. <strong>Additionally this
 module is serves as a fallback mechanism and should therefore never be overwritten with <code>undefined</code>!</strong>
 The default is defined as:</p>
-<pre><code class="typescript"><span class="hl-2">  </span><span class="hl-10">INVALID</span><span class="hl-2">: { </span><span class="hl-10">fullName</span><span class="hl-2">: </span><span class="hl-4">&#39;INVALIDMODULE&#39;</span><span class="hl-2">, </span><span class="hl-10">color</span><span class="hl-2">: </span><span class="hl-4">&#39;#f00&#39;</span><span class="hl-2">, </span><span class="hl-10">devLevel</span><span class="hl-2">: </span><span class="hl-5">1</span><span class="hl-2">, </span><span class="hl-10">prodLevel</span><span class="hl-2">: </span><span class="hl-5">0</span><span class="hl-2"> }</span>
+<pre><code class="typescript"><span class="hl-2">  </span><span class="hl-10">INVALID</span><span class="hl-2">: { </span><span class="hl-10">fullName</span><span class="hl-2">: </span><span class="hl-4">&#39;INVALIDMODULE&#39;</span><span class="hl-2">, </span><span class="hl-10">color</span><span class="hl-2">: </span><span class="hl-4">&#39;#f00&#39;</span><span class="hl-2">, </span><span class="hl-10">devLevel</span><span class="hl-2">: </span><span class="hl-4">&#39;info&#39;</span><span class="hl-2">, </span><span class="hl-10">prodLevel</span><span class="hl-2">: </span><span class="hl-4">&#39;error&#39;</span><span class="hl-2"> }</span>
 </code><button type="button">Copy</button></pre>
 
 <p>This module will have a moduleName (<code>INVALIDMODULE</code>), but no box layout at the output.</p>
@@ -103,24 +103,23 @@ The output stream is divided into 4 different streams, depending on the environm
 </div></section>
 <section class="tsd-panel tsd-member">
 <h3 class="tsd-anchor-link" id="defaultlevels"><code class="tsd-tag">Optional</code><span>default<wbr/>Levels</span><a href="#defaultlevels" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
-<div class="tsd-signature"><span class="tsd-kind-property">defaultLevels</span><span class="tsd-signature-symbol">?:</span> <span class="tsd-signature-symbol">{</span> <span class="tsd-kind-property">devLevel</span><span class="tsd-signature-symbol">:</span> <a href="../types/Loxer.LevelType.html" class="tsd-signature-type tsd-kind-type-alias">LevelType</a><span class="tsd-signature-symbol">;</span> <span class="tsd-kind-property">prodLevel</span><span class="tsd-signature-symbol">:</span> <a href="../types/Loxer.LevelType.html" class="tsd-signature-type tsd-kind-type-alias">LevelType</a> <span class="tsd-signature-symbol">}</span></div>
-<div class="tsd-comment tsd-typography"><p>The default levels to show logs in production or development. These will automatically be adapted to the default
-module <code>NONE</code> and <code>DEFAULT</code>. If you want to set them differently, then you have to override them in the <code>modules</code>
-option.</p>
+<div class="tsd-signature"><span class="tsd-kind-property">defaultLevels</span><span class="tsd-signature-symbol">?:</span> <span class="tsd-signature-symbol">{</span> <span class="tsd-kind-property">devLevel</span><span class="tsd-signature-symbol">:</span> <a href="../types/index.LogLevel.html" class="tsd-signature-type tsd-kind-type-alias">LogLevel</a><span class="tsd-signature-symbol">;</span> <span class="tsd-kind-property">prodLevel</span><span class="tsd-signature-symbol">:</span> <a href="../types/index.LogLevel.html" class="tsd-signature-type tsd-kind-type-alias">LogLevel</a> <span class="tsd-signature-symbol">}</span></div>
+<div class="tsd-comment tsd-typography"><p>The levels the default modules <code>NONE</code> and <code>DEFAULT</code> log up to, in production or development. If
+you want them set differently, override those modules in the <code>modules</code> option.</p>
 <ul>
-<li>both default to <code>devLevel: 1</code> and <code>prodLevel: 0</code></li>
+<li>they default to <code>devLevel: 'info'</code> and <code>prodLevel: 'error'</code></li>
 </ul>
 </div>
 <div class="tsd-type-declaration">
 <h4>Type Declaration</h4>
 <ul class="tsd-parameters">
 <li class="tsd-parameter">
-<h5><span class="tsd-kind-property">devLevel</span><span class="tsd-signature-symbol">: </span><a href="../types/Loxer.LevelType.html" class="tsd-signature-type tsd-kind-type-alias">LevelType</a></h5>
-<div class="tsd-comment tsd-typography"><p>the actual level to show logs in development mode</p>
+<h5><span class="tsd-kind-property">devLevel</span><span class="tsd-signature-symbol">: </span><a href="../types/index.LogLevel.html" class="tsd-signature-type tsd-kind-type-alias">LogLevel</a></h5>
+<div class="tsd-comment tsd-typography"><p>the level to log up to in development mode</p>
 </div></li>
 <li class="tsd-parameter">
-<h5><span class="tsd-kind-property">prodLevel</span><span class="tsd-signature-symbol">: </span><a href="../types/Loxer.LevelType.html" class="tsd-signature-type tsd-kind-type-alias">LevelType</a></h5>
-<div class="tsd-comment tsd-typography"><p>the actual level to show logs in production mode</p>
+<h5><span class="tsd-kind-property">prodLevel</span><span class="tsd-signature-symbol">: </span><a href="../types/index.LogLevel.html" class="tsd-signature-type tsd-kind-type-alias">LogLevel</a></h5>
+<div class="tsd-comment tsd-typography"><p>the level to log up to in production mode</p>
 </div></li></ul></div></section></section></details></div>
 <div class="col-sidebar">
 <div class="page-menu">

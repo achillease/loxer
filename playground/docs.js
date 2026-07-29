@@ -3,9 +3,9 @@ import { Loxer, NamedError } from '../dist/index.js';
 Loxer.init({
   dev: true,
   modules: {
-    PERS: { color: '#f00', fullName: 'Persons', devLevel: 1, prodLevel: 1 },
-    CART: { color: '#00ff00', fullName: 'Shopping cart', devLevel: 1, prodLevel: 1 },
-    BILLING: { color: 'rgb(0, 120, 255)', fullName: 'Billing', devLevel: 1, prodLevel: 1 },
+    PERS: { color: '#f00', fullName: 'Persons', devLevel: 'info', prodLevel: 'info' },
+    CART: { color: '#00ff00', fullName: 'Shopping cart', devLevel: 'info', prodLevel: 'info' },
+    BILLING: { color: 'rgb(0, 120, 255)', fullName: 'Billing', devLevel: 'info', prodLevel: 'info' },
   },
 });
 

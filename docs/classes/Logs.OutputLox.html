@@ -14,7 +14,7 @@
 <section class="tsd-panel tsd-comment">
 <div class="tsd-comment tsd-typography"><p>This is a log streamed to the <code>devLog</code>or <code>prodLog</code> output stream defined at the LoxerCallbacks.</p>
 </div></section>
-<section class="tsd-panel tsd-hierarchy" data-refl="270">
+<section class="tsd-panel tsd-hierarchy" data-refl="424">
 <h4>Hierarchy (<a href="../hierarchy.html#Logs.OutputLox">View Summary</a>)</h4>
 <ul class="tsd-hierarchy">
 <li class="tsd-hierarchy-item"><span class="tsd-signature-type">Lox</span>
@@ -91,8 +91,8 @@
 <p>Inherited from Lox.itemOptions</p></aside></section>
 <section class="tsd-panel tsd-member tsd-is-inherited">
 <h3 class="tsd-anchor-link" id="type"><span>type</span><a href="#type" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
-<div class="tsd-signature"><span class="tsd-kind-property">type</span><span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">LoxType</span></div>
-<div class="tsd-comment tsd-typography"><p>the LoxType type of the log</p>
+<div class="tsd-signature"><span class="tsd-kind-property">type</span><span class="tsd-signature-symbol">:</span> <a href="../types/index.LoxType.html" class="tsd-signature-type tsd-kind-type-alias">LoxType</a></div>
+<div class="tsd-comment tsd-typography"><p>the <a href="../types/index.LoxType.html" class="tsd-kind-type-alias">type</a> of the log</p>
 </div><aside class="tsd-sources">
 <p>Inherited from Lox.type</p></aside></section>
 <section class="tsd-panel tsd-member tsd-is-inherited">
@@ -108,8 +108,14 @@
 <p>Inherited from Lox.moduleId</p></aside></section>
 <section class="tsd-panel tsd-member tsd-is-inherited">
 <h3 class="tsd-anchor-link" id="level"><span>level</span><a href="#level" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
-<div class="tsd-signature"><span class="tsd-kind-property">level</span><span class="tsd-signature-symbol">:</span> <a href="../types/Loxer.LevelType.html" class="tsd-signature-type tsd-kind-type-alias">LevelType</a></div>
-<div class="tsd-comment tsd-typography"><p>the log level that was given with <code>Loxer.level(number)</code> or <code>Loxer.l(number)</code></p>
+<div class="tsd-signature"><span class="tsd-kind-property">level</span><span class="tsd-signature-symbol">:</span> <a href="../types/index.LogLevel.html" class="tsd-signature-type tsd-kind-type-alias">LogLevel</a></div>
+<div class="tsd-comment tsd-typography"><p>the <a href="../types/index.LogLevel.html" class="tsd-kind-type-alias">LogLevel</a> of the log</p>
+<ul>
+<li><code>'error'</code> for every <code>Loxer.error()</code> / <code>Loxer.of(...).error()</code></li>
+<li><code>'info'</code> for <code>Loxer.log()</code> / <code>Loxer.open()</code></li>
+<li>the named level for <code>Loxer.warn/info/debug(...)</code> and their <code>.open()</code></li>
+<li>the opening log's level for <code>Loxer.of(...).add()</code> / <code>.close()</code></li>
+</ul>
 </div><aside class="tsd-sources">
 <p>Inherited from Lox.level</p></aside></section>
 <section class="tsd-panel tsd-member tsd-is-inherited">
@@ -120,7 +126,7 @@
 <p>Inherited from Lox.timestamp</p></aside></section>
 <section class="tsd-panel tsd-member">
 <h3 class="tsd-anchor-link" id="box"><span>box</span><a href="#box" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
-<div class="tsd-signature"><span class="tsd-kind-property">box</span><span class="tsd-signature-symbol">:</span> <a href="../types/Formatting.Box.html" class="tsd-signature-type tsd-kind-type-alias">Box</a><span class="tsd-signature-symbol"> = []</span></div>
+<div class="tsd-signature"><span class="tsd-kind-property">box</span><span class="tsd-signature-symbol">:</span> <a href="../types/index.Box.html" class="tsd-signature-type tsd-kind-type-alias">Box</a><span class="tsd-signature-symbol"> = []</span></div>
 <div class="tsd-comment tsd-typography"><p>the box layout of the log which an array of <code>type { box: keyof BoxSymbol; color: string }</code>, where:</p>
 <ul>
 <li><code>keyof BoxSymbol</code> is a string which represents the form of the box segment (character)</li>
@@ -146,11 +152,15 @@
 <section class="tsd-panel tsd-member">
 <h3 class="tsd-anchor-link" id="hidden"><span>hidden</span><a href="#hidden" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
 <div class="tsd-signature"><span class="tsd-kind-property">hidden</span><span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">boolean</span><span class="tsd-signature-symbol"> = false</span></div>
-<div class="tsd-comment tsd-typography"><p>determines if the log has not fulfilled the level that the corresponding module has set</p>
+<div class="tsd-comment tsd-typography"><p>determines if the log's level sits past the level its module logs up to — a hidden log enters
+neither the history nor the visible box layout</p>
+<ul>
+<li>always <code>false</code> on an <a href="Logs.ErrorLox.html" class="tsd-kind-class">ErrorLox</a>: errors are output whatever the level says</li>
+</ul>
 </div></section>
 <section class="tsd-panel tsd-member">
 <h3 class="tsd-anchor-link" id="module"><span>module</span><a href="#module" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
-<div class="tsd-signature"><span class="tsd-kind-property">module</span><span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">ExtendedModule</span><span class="tsd-signature-symbol"> = DEFAULT_EXTENDED_MODULE</span></div>
+<div class="tsd-signature"><span class="tsd-kind-property">module</span><span class="tsd-signature-symbol">:</span> <a href="../types/index.ExtendedModule.html" class="tsd-signature-type tsd-kind-type-alias">ExtendedModule</a><span class="tsd-signature-symbol"> = DEFAULT_EXTENDED_MODULE</span></div>
 <div class="tsd-comment tsd-typography"><p>the corresponding module of this Lox</p>
 </div></section></section></details>
 <details class="tsd-panel-group tsd-member-group tsd-accordion" open><summary class="tsd-accordion-summary" data-key="section-Accessors"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true"><use href="../assets/icons.svg#icon-chevronDown"></use></svg>

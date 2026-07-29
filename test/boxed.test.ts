@@ -34,12 +34,12 @@ beforeEach(() => {
       prodLog,
     },
     defaultLevels: {
-      devLevel: 2,
-      prodLevel: 0,
+      devLevel: 'info',
+      prodLevel: 'error',
     },
     modules: {
-      ONE: { color: '#ff0', devLevel: 1, prodLevel: 0, fullName: 'Module 1' },
-      TWO: { color: '#00f', devLevel: 2, prodLevel: 0, fullName: 'Module 2' },
+      ONE: { color: '#ff0', devLevel: 'info', prodLevel: 'error', fullName: 'Module 1' },
+      TWO: { color: '#00f', devLevel: 'debug', prodLevel: 'error', fullName: 'Module 2' },
     },
     config: {
       moduleTextSlice: 10,
@@ -266,19 +266,28 @@ test('highlighting', () => {
 });
 
 test('leveling', () => {
+  // the DEFAULT module is at devLevel 'info', so 'debug' is the hidden end here
   const id1 = Loxer.open('open');
-  const id2 = Loxer.l(3).open('open2');
-  // append to not existing box
-  Loxer.l(1).of(id2).add('add2');
-  // auto level 3
+  const id2 = Loxer.debug.open('open2');
+  // append to a hidden box: naming a more severe level cannot pull the log back into view
+  Loxer.of(id2).info('add2');
+  // auto 'debug'
   Loxer.of(id2).close('close2');
-  Loxer.l(3).of(id1).add('add');
+  Loxer.of(id1).debug('add');
   // no leveling on errors
-  Loxer.l(3).of(id1).error('error');
-  Loxer.l(2).of(id1).close('close');
+  Loxer.of(id1).error('error');
+  Loxer.of(id1).close('close');
 
   expect(devLogs.length).toBe(3);
   expect(devErrors.length).toBe(1);
+
+  // the visible logs keep the levels they were emitted at ...
+  expect(devLogs[1].message).toBe('open');
+  expect(devLogs[1].level).toBe('info');
+  // ... and `close` inherits its open's level rather than its own default
+  expect(devLogs[2].message).toBe('close');
+  expect(devLogs[2].level).toBe('info');
+  expect(devErrors[0].level).toBe('error');
 
   // hidden (leveled-out) logs must not enter history; only init, open, error and close remain
   expect(Loxer.history.length).toBe(4);
@@ -298,6 +307,35 @@ test('leveling', () => {
   checkBoxes(['open.DEFAULT.<-open', 'error.DEFAULT.T-error', 'close.DEFAULT.>-close']);
 });
 
+test('of(id).add inherits the box level, of(id).close always matches its open', () => {
+  // module TWO is at devLevel 'debug', so the whole box stays visible
+  const id = Loxer.m('TWO').debug.open('open');
+  Loxer.of(id).add('add');
+  Loxer.of(id).close('close');
+
+  expect(devLogs.length).toBe(4);
+  expect(devLogs[1].level).toBe('debug');
+  // `add` is NOT the `Loxer.log()` ≡ `info` alias - it inherits
+  expect(devLogs[2].level).toBe('debug');
+  // `close` takes no level at all and is always the open's
+  expect(devLogs[3].level).toBe('debug');
+});
+
+test('an explicit level on an added log never moves back up the level list', () => {
+  const id = Loxer.m('TWO').open('open');
+  Loxer.of(id).debug('further down');
+  Loxer.of(id).warn('further up');
+  Loxer.of(id).close('close');
+
+  expect(devLogs.length).toBe(5);
+  expect(devLogs[1].level).toBe('info');
+  // further down the list than the box: taken as given
+  expect(devLogs[2].level).toBe('debug');
+  // further up than the box: replaced by the box's level, so it never out-lives its column
+  expect(devLogs[3].level).toBe('info');
+  expect(devLogs[4].level).toBe('info');
+});
+
 test('module boxing', () => {
   const id1 = Loxer.m('ONE').open('open');
   Loxer.m('ONE').of(id1).add('add');
@@ -306,7 +344,8 @@ test('module boxing', () => {
   Loxer.m('TWO').of(id2).add('add2');
   Loxer.m('ONE').of(id1).close('close');
   Loxer.m('TWO').of(id2).close('close2');
-  const id3 = Loxer.m('ONE').l(2).open('open3');
+  // module ONE is at devLevel 'info', so this box is hidden
+  const id3 = Loxer.m('ONE').debug.open('open3');
   Loxer.m('ONE').of(id3).error('error3');
   Loxer.m('ONE').of(id3).close('close3');
   /*

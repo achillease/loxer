@@ -14,10 +14,18 @@ const traceRuntimeUrl = asDataModule(
     'export const __observeTraceResult = (...args) => globalThis.__loxerObserveTraceResult(...args);' +
     'export const __setTraceFunctionLength = (...args) => globalThis.__loxerSetFunctionLength(...args);'
 );
+// The proxy re-reads `globalThis.__loxerTraceLoxer` on every access so a `resetLoxer()` between
+// tests is observed. It re-binds methods for `this`, and then copies the function's own properties
+// across: a level's log method also carries `.open`, and `Function.prototype.bind` would otherwise
+// drop it.
 const loxerRuntimeUrl = asDataModule(
   'export const Loxer = new Proxy({}, { get: (_target, property) => {' +
-    'const value = globalThis.__loxerTraceLoxer[property];' +
-    'return typeof value === "function" ? value.bind(globalThis.__loxerTraceLoxer) : value;' +
+    'const target = globalThis.__loxerTraceLoxer;' +
+    'const value = target[property];' +
+    'if (typeof value !== "function") return value;' +
+    'const bound = value.bind(target);' +
+    'Object.assign(bound, value);' +
+    'return bound;' +
     '} });'
 );
 
@@ -37,10 +45,10 @@ beforeEach(() => {
         devLogs.push(log);
       },
     },
-    defaultLevels: { devLevel: 2, prodLevel: 0 },
+    defaultLevels: { devLevel: 'info', prodLevel: 'error' },
     modules: {
-      TRACE: { color: '#00ff99', devLevel: 2, prodLevel: 0, fullName: 'Trace' },
-      ORDER: { color: '#ffcc00', devLevel: 2, prodLevel: 0, fullName: 'Order' },
+      TRACE: { color: '#00ff99', devLevel: 'info', prodLevel: 'error', fullName: 'Trace' },
+      ORDER: { color: '#ffcc00', devLevel: 'info', prodLevel: 'error', fullName: 'Order' },
     },
   });
   devLogs = [];
@@ -61,7 +69,7 @@ afterEach(() => {
 test('a transformed function preserves sync result, modifier chains, and its box ID', async () => {
   const traced = await loadTracedModule(`
     function calculate(value) {
-      Loxer.m('ORDER').h(true).l(2).log('calculating:' + value);
+      Loxer.m('ORDER').h(true).warn('calculating:' + value);
       return value * 2;
     }
     trace(calculate, {
@@ -802,7 +810,7 @@ test('argsAsItem, resultAsItem, level, and highlight apply uniformly across a sh
     const third = (value) => value + 3;
     trace([first, second, third], {
       moduleId: 'TRACE',
-      level: 2,
+      level: 'warn',
       highlight: 'all',
       argsAsItem: true,
       resultAsItem: true,
@@ -819,7 +827,7 @@ test('argsAsItem, resultAsItem, level, and highlight apply uniformly across a sh
   expect(opens.map((log) => log.message)).toEqual(['first()', 'second()', 'third()']);
   expect(closes.map((log) => log.message)).toEqual(['first done', 'second done', 'third done']);
   for (const log of [...opens, ...closes]) {
-    expect(log.level).toBe(2);
+    expect(log.level).toBe('warn');
     expect(log.highlighted).toBe(true);
   }
   expect(opens.map((log) => log.item)).toEqual([[1], [1], [1]]);
@@ -1140,7 +1148,7 @@ test('disabled traces are silent and pre-init traces replay when Loxer initializ
         devLogs.push(log);
       },
     },
-    modules: { TRACE: { color: '#00ff99', devLevel: 2, prodLevel: 0, fullName: 'Trace' } },
+    modules: { TRACE: { color: '#00ff99', devLevel: 'info', prodLevel: 'error', fullName: 'Trace' } },
   });
   expect(devLogs.map((log) => log.message)).toEqual([
     'Loxer initialized',
@@ -1164,13 +1172,13 @@ test('an omitted trace level remains visible while a hidden trace leaves no visi
   const defaultLevel = __startTrace('defaultLevel', [], { moduleId: 'TRACE' });
   defaultLevel.success('visible');
   expect(devLogs.map((log) => [log.message, log.level])).toEqual([
-    ['defaultLevel()', 1],
-    ['defaultLevel done', 1],
+    ['defaultLevel()', 'info'],
+    ['defaultLevel done', 'info'],
   ]);
 
   devLogs = [];
   const historyLength = Loxer.history.length;
-  const hidden = __startTrace('hiddenLevel', [], { level: 3, moduleId: 'TRACE' });
+  const hidden = __startTrace('hiddenLevel', [], { level: 'debug', moduleId: 'TRACE' });
   hidden.success('hidden');
   expect(devLogs).toEqual([]);
   expect(Loxer.history).toHaveLength(historyLength);
@@ -1247,7 +1255,7 @@ test('shadowed Array and Object bindings do not affect generated trace helpers',
 test('a hidden direct modifier log does not enter history and leaves a visible trace box', async () => {
   const traced = await loadTracedModule(`
     function hiddenDetail() {
-      Loxer.m('ORDER').l(3).log('not visible');
+      Loxer.m('ORDER').debug('not visible');
       return 'ok';
     }
     trace(hiddenDetail, { moduleId: 'TRACE' });
@@ -1261,6 +1269,72 @@ test('a hidden direct modifier log does not enter history and leaves a visible t
     ['close', 'hiddenDetail done', 'TRACE'],
   ]);
   expect(Loxer.history).toHaveLength(historyLength + 2);
+});
+
+test('direct level calls link to the trace box while a level .open() starts its own', async () => {
+  const traced = await loadTracedModule(`
+    function checkout() {
+      Loxer.warn('warned');
+      Loxer.m('ORDER').info('informed');
+      Loxer.debug('detail');
+      const inner = Loxer.info.open('inner');
+      Loxer.of(inner).close('inner done');
+      return 'ok';
+    }
+    trace(checkout, { moduleId: 'TRACE' });
+    export { checkout };
+  `);
+
+  expect(traced.checkout()).toBe('ok');
+
+  const byMessage = (message: string) => devLogs.find((log) => log.message === message);
+  const traceId = byMessage('checkout()')?.id;
+  expect(traceId).toBeDefined();
+
+  // `.warn(...)` was rewritten onto the trace box. 'warn' sits above the box's own 'info', so the
+  // box's level wins - a linked log must never out-live the column its box reserved.
+  expect(byMessage('warned')).toMatchObject({ id: traceId, level: 'info', type: 'single' });
+  // `.info(...)` behind a module modifier is linked too, and keeps the explicit module
+  expect(byMessage('informed')).toMatchObject({
+    id: traceId,
+    level: 'info',
+    moduleId: 'ORDER',
+    type: 'single',
+  });
+  // `.debug(...)` sits below the box, so it keeps 'debug' and every module here drops it
+  expect(byMessage('detail')).toBeUndefined();
+
+  // a level's `.open()` is a two-level member callee and is NOT linked: it opens its own box
+  const inner = byMessage('inner');
+  expect(inner?.type).toBe('open');
+  expect(inner?.id).not.toBe(traceId);
+  expect(byMessage('inner done')?.id).toBe(inner?.id);
+});
+
+test('a shadowed Loxer binding is never linked, not even through a level method', async () => {
+  const traced = await loadTracedModule(`
+    function shadowed() {
+      const calls = [];
+      const Loxer = {
+        debug(message) { calls.push('debug:' + message); },
+        warn(message) { calls.push('warn:' + message); },
+        info: { open() { calls.push('open'); return { close() {} }; } },
+      };
+      Loxer.debug('local');
+      Loxer.warn('local');
+      Loxer.info.open();
+      return calls;
+    }
+    trace(shadowed, { moduleId: 'TRACE' });
+    export { shadowed };
+  `);
+
+  expect(traced.shadowed()).toEqual(['debug:local', 'warn:local', 'open']);
+  // the local object handled every call; only the trace's own box reached the real Loxer
+  expect(devLogs.map((log) => [log.type, log.message])).toEqual([
+    ['open', 'shadowed()'],
+    ['close', 'shadowed done'],
+  ]);
 });
 
 test('initialization does not require a global process object', () => {

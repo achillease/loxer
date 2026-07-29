@@ -1,3 +1,4 @@
+import { resolveBoxLevel } from './core/Levels.js';
 import { Loxer } from './Loxer.js';
 import {
   FunctionCloseMessage,
@@ -85,13 +86,14 @@ export function __startTrace(
   args: any[],
   options: TraceOptions = {}
 ): FunctionTrace {
-  const { highlight, level = 1, moduleId } = options;
+  const { highlight, moduleId } = options;
+  const level = resolveBoxLevel(options.level);
   const openMessage = getOpenMessage(functionName, args, options.openMessage);
   const item = options.argsAsItem ? args : undefined;
+  // every level exposes the same `LevelMethods` shape, so the dispatch is a plain index
   const id = Loxer.h(isHighlighted(highlight, 'open'))
-    .l(level)
     .m(moduleId)
-    .open(openMessage, item).id;
+    [level].open(openMessage, item).id;
 
   return {
     id,

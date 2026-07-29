@@ -54,17 +54,35 @@ test('initialization', () => {
       prodLog,
     },
     defaultLevels: {
-      devLevel: 2,
-      prodLevel: 0,
+      devLevel: 'info',
+      prodLevel: 'error',
     },
     modules: {
-      TEST: { color: '#ff0', devLevel: 1, prodLevel: 0, fullName: 'TestModule' },
+      TEST: { color: '#ff0', devLevel: 'info', prodLevel: 'error', fullName: 'TestModule' },
     },
     config: {
       moduleTextSlice: 10,
       historyCacheSize: 1,
     },
   });
+  expect(devLogs.length).toBe(1);
+  expect(devLogs[0].message).toBe('Loxer initialized');
+});
+
+test('defaultLevels do not leak into a later Loxer instance', () => {
+  Loxer.init({
+    dev: true,
+    callbacks: { devLog, devError },
+    defaultLevels: { devLevel: 'error', prodLevel: 'error' },
+  });
+  // the init log is 'info' and therefore muted by the given default level
+  expect(devLogs.length).toBe(0);
+
+  resetLoxer();
+  devLogs = [];
+  Loxer.init({ dev: true, callbacks: { devLog, devError } });
+  // the built-in 'info' default is back: the previous init must not have rewritten the shared
+  // DEFAULT_MODULES const for the rest of the process
   expect(devLogs.length).toBe(1);
   expect(devLogs[0].message).toBe('Loxer initialized');
 });
@@ -116,6 +134,56 @@ test('queueing logs', () => {
   expect(devErrors[0].message).toBe('error');
 });
 
+test('queued logs resolve their level against the module table given at init', () => {
+  // nothing is registered yet - these are levelled against whatever `init` supplies later
+  Loxer.m().warn('queued warn');
+  Loxer.m().info('queued info');
+  Loxer.m().debug('queued debug');
+  Loxer.m().error('queued error');
+  Loxer.info('queued NONE info');
+
+  expect(devLogs.length).toBe(0);
+  expect(devErrors.length).toBe(0);
+
+  Loxer.init({
+    dev: true,
+    callbacks: { devLog, devError },
+    defaultLevels: { devLevel: 'info', prodLevel: 'error' },
+  });
+
+  // 'debug' sits past the 'info' threshold the module table was initialized with, so it is
+  // dropped on replay - the level gate runs at replay time, not at enqueue time
+  expect(devLogs.map((l) => l.message)).toEqual([
+    'Loxer initialized',
+    'queued warn',
+    'queued info',
+    'queued NONE info',
+  ]);
+  expect(devLogs.map((l) => l.level)).toEqual(['info', 'warn', 'info', 'info']);
+  // a dropped log stays out of history, exactly like a live one would
+  expect(Loxer.history.some((l) => l.message === 'queued debug')).toBe(false);
+  // an error replays whatever the initialized threshold says
+  expect(devErrors.map((l) => l.message)).toEqual(['queued error']);
+});
+
+test('a queued log is hidden by a threshold that only the init call introduces', () => {
+  Loxer.m().warn('queued warn');
+  Loxer.m().info('queued info');
+  Loxer.m().error('queued error');
+
+  Loxer.init({
+    dev: true,
+    callbacks: { devLog, devError },
+    // stricter than the built-in 'info' default: an 'info' log that would have been visible at
+    // enqueue time must now be dropped, which is only possible if the table used is this one
+    defaultLevels: { devLevel: 'warn', prodLevel: 'error' },
+  });
+
+  // the 'Loxer initialized' log is itself an 'info' log and goes with them
+  expect(devLogs.map((l) => l.message)).toEqual(['queued warn']);
+  expect(devErrors.map((l) => l.message)).toEqual(['queued error']);
+});
+
 test('OutputStreams', () => {
   (console.log as Mock).mockClear();
   let os = new OutputStreams({ disableColors: true, endTitleOpacity: 1 });
@@ -124,7 +192,7 @@ test('OutputStreams', () => {
     id: 0,
     item: 'item',
     itemOptions: undefined,
-    level: 1,
+    level: 'info',
     message: 'log',
     moduleId: 'NONE',
     type: 'open',
@@ -134,7 +202,7 @@ test('OutputStreams', () => {
     id: 0,
     item: undefined,
     itemOptions: undefined,
-    level: 1,
+    level: 'info',
     message: 'log',
     moduleId: 'NONE',
     type: 'close',
@@ -145,7 +213,7 @@ test('OutputStreams', () => {
       id: 1,
       item: 'item',
       itemOptions: undefined,
-      level: 1,
+      level: 'info',
       message: 'error',
       moduleId: 'NONE',
       type: 'error',
@@ -158,7 +226,7 @@ test('OutputStreams', () => {
       id: 2,
       item: undefined,
       itemOptions: undefined,
-      level: 1,
+      level: 'info',
       message: 'error2',
       moduleId: 'NONE',
       type: 'error',
@@ -213,7 +281,7 @@ test('Rest', () => {
     id: 0,
     item: undefined,
     itemOptions: undefined,
-    level: 1,
+    level: 'info',
     message: 'm',
     moduleId: 'wrong',
     type: 'single',

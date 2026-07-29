@@ -7,10 +7,11 @@
 - [2. Simple logs - `Loxer.log()`](#2-simple-logs---loxerlog)
 - [3. Error logs - `Loxer.error()`](#3-error-logs---loxererror)
 - [4. Highlighting - `Loxer.highlight()`](#4-highlighting---loxerhighlight)
-- [5. Levels - `Loxer.level()`](#5-levels---loxerlevel)
+- [5. Levels - `Loxer.warn()` / `Loxer.info()` / `Loxer.debug()`](#5-levels---loxerwarn--loxerinfo--loxerdebug)
 - [6. Modules - `Loxer.module()`](#6-modules---loxermodule)
 - [7. Output - `LoxerCallbacks`](#7-output---loxercallbacks)
 - [8. Boxes](#8-boxes)
+- [Appendix: Migrating from Loxer 2](#appendix-migrating-from-loxer-2)
 
 Instructions on how to use the Item can be found **[on the Item documentation][itemDocs]**.
 
@@ -43,10 +44,12 @@ trace(submitOrder, {
 ```
 
 The transform removes the marker, opens one box per invocation, links direct `Loxer.log`,
-`Loxer.error`, and `Loxer.namedError` calls in that function body, and closes the box on return or
-rejection. Direct `.h()`/`.highlight()`, `.l()`/`.level()`, and `.m()`/`.module()` chains retain their
-normal observable behavior. The function keeps its original `this`, synchronous return value, Promise
-identity, and thrown or rejected value.
+`Loxer.warn`, `Loxer.info`, `Loxer.debug`, `Loxer.error`, and `Loxer.namedError` calls in that
+function body, and closes the box on return or rejection. A level's `.open()`
+(`Loxer.debug.open(...)`) is not linked, because it opens a box of its own. Direct
+`.h()`/`.highlight()` and `.m()`/`.module()` chains retain their normal observable behavior. The
+function keeps its original `this`, synchronous return value, Promise identity, and thrown or
+rejected value.
 
 `trace` supports named function declarations and named variables initialized with a function expression
 or arrow function. It does not trace generators, async generators, aliases, or separately declared or
@@ -169,7 +172,8 @@ Loxer.init();
 This method can be called anywhere in your application.
 
 > - There is also a method decorator `@initLoxer(options?: LoxerOptions)` that does the same thing.
-> - It is recommended to declare a separate `const options: LoxerOptions` that is passed to the init method, because the more detailed the configuration, the larger the parameter.
+> - It is recommended to declare a separate `const options = { ... } satisfies LoxerOptions` that is passed to the init method, because the more detailed the configuration, the larger the parameter.
+>   Use `satisfies`, not a `: LoxerOptions` annotation: an annotation widens the keys of your `modules` to `string`, which silently switches off the typed module ids you get from augmenting `LoxerModuleRegistry` (see the `LoxerModuleRegistry` entry in the API reference).
 
 ### LoxerOptions:
 
@@ -184,12 +188,12 @@ Anyways, the options are an object with the following structure:
   callbacks?: LoxerCallbacks;
   // The configuration of Loxer
   config?: LoxerConfig;
-  // The default levels to show logs in production or development
+  // The default levels of the built-in modules, in production or development
   defaultLevels?: {
-    // the actual level to show logs in development mode
-    devLevel: LevelType;
-    // the actual level to show logs in production mode
-    prodLevel: LevelType;
+    // the threshold to show logs at in development mode
+    devLevel: LogLevel;
+    // the threshold to show logs at in production mode
+    prodLevel: LogLevel;
   };
 ```
 
@@ -320,54 +324,97 @@ Loxer.h(shouldHighlight).log('This message will be conditionally highlighted');
 
 > - The highlight methods can be chained with **any other logging** method like `Loxer.error()`, `Loxer.open()` and `Loxer.of()`.
 > - highlighting error logs will append the stack to the output stream
-> - They can also be chained with **any other chaining method** like `.level()` and `module()` in **any order**.
+> - They can also be chained with `.module()` / `.m()` and in front of a level, in **any order** - e.g. `Loxer.h().m('CART').debug.open(...)`.
 > - The highlighting will only take effect on the `colored.message` property on the output streams logs / errors.
 
 <!-- ------------------------------------------------------------------------------------------- -->
 
-# 5. Levels - [`Loxer.level()`][loxer.level]
+# 5. Levels - `Loxer.warn()` / `Loxer.info()` / `Loxer.debug()`
 
-Giving levels is a common feature for any logger. Loxer provides a simple, but extendable solution for this case.
+Every log has a **level** saying how severe it is. There are four, ordered from the most to the least
+severe ([`LogLevel`][loxer.loglevel]):
+
+| level     | meaning                                          |
+| --------- | ------------------------------------------------ |
+| `'error'` | something failed                                 |
+| `'warn'`  | something is suspicious but recoverable          |
+| `'info'`  | the ordinary log                                 |
+| `'debug'` | detail that is only interesting while debugging   |
 
 ### Levels on logs
 
-Adding levels to logs is done in the same way as highlighting. Therefore you have to chain them with `level(level: number)` or `l(level: number)`.
-
-Possible Levels are `type LogLevelType = 1 | 2 | 3` where 1 = high, 2 = medium and 3 = low.
-
-###### Example
+The level belongs to the call that writes the log, the way `console.warn` does. There is one method
+per level:
 
 ```typescript
-Loxer.level(3).log('this log has the level 3 = low');
-Loxer.l(2).log('this has the level 2 = medium');
-Loxer.l(1).log('this has the default level 1 = high');
-Loxer.log('this too, because 1 is default');
+Loxer.error(new Error('payment declined')); // level 'error'
+Loxer.warn('retrying the request'); // level 'warn'
+Loxer.info('user loaded'); // level 'info'
+Loxer.debug('cache miss'); // level 'debug'
 ```
 
-> You can also add levels to the logging methods `Loxer.open()` and `Loxer.of().add()`. `Loxer.of().close()` will always receive the level of it's opening log to prevent leaving boxes unclosed. Giving `Loxer.error()` a level is no problem, but has no effect on whether it is logged. It always will.
+`Loxer.log()` writes at `'info'`, so `Loxer.log('user loaded')` and `Loxer.info('user loaded')` are
+the same log.
 
-### Default levels (and module levels)
+`warn`, `info` and `debug` each carry an `.open()` as well, which opens a box at that level
+([`LevelMethods`][loxer.levelmethods]):
 
-Providing logs with levels would make no sense if you couldn't set which level the logger should display / log. Therefore you have to declare the levels as part of the [`LoxerConfig`][loxerConfig] when you initialize `Loxer`.
+```typescript
+const box = Loxer.debug.open('recalculating cart');
+Loxer.of(box).debug('line 1 of 40');
+Loxer.of(box).close('done');
+```
 
-###### Example
+`Loxer.open()` opens at `'info'`, matching `Loxer.log()`.
+
+Because the level is a property rather than a call, the modifiers of the previous sections chain in
+front of it in any order:
+
+```typescript
+Loxer.h().m('CART').debug('cache rebuilt');
+Loxer.m('CART').h().debug.open('recalculating cart');
+```
+
+> - `Loxer.warn()` is an ordinary log and goes to the `devLog` / `prodLog` output stream. Only
+>   `Loxer.error()` writes to `devError` / `prodError`. A callback that wants to react to the level
+>   reads `outputLox.level`.
+> - `Loxer.error()` takes an `Error` rather than a message and opens no box, so it has no `.open()`.
+>   For the same reason the `level` trace option is a [`BoxLevel`][loxer.boxlevel] - every `LogLevel`
+>   except `'error'`.
+> - The levels of logs added to a box are described in [8. Boxes](#8-boxes).
+
+### The level a module logs up to
+
+A module says how far down that list it wants to go. A log is written when its level is at or before
+what the module logs up to:
+
+| the module logs up to | it writes                              | it drops                    |
+| --------------------- | -------------------------------------- | --------------------------- |
+| `'error'`             | `error`                                | `warn`, `info`, `debug`     |
+| `'warn'`              | `error`, `warn`                        | `info`, `debug`             |
+| `'info'`              | `error`, `warn`, `info`                | `debug`                     |
+| `'debug'`             | everything                             | —                           |
+
+Each module sets its own, separately for development and production, which is how you give different
+parts of an application different logging densities. The built-in modules `NONE` and `DEFAULT` take
+theirs from `defaultLevels` in the [`LoxerOptions`][loxerOptions]:
 
 ```typescript
 Loxer.init({
   defaultLevels: {
-    devLevel: 3, // the level in development environment
-    prodLevel: 1, // the level in production environment
+    devLevel: 'debug', // how far to go in development
+    prodLevel: 'warn', // how far to go in production
   },
 });
 ```
 
-Possible levels for Loxer and modules are `export type LevelType = 0 | 1 | 2 | 3;`, where 1, 2 and 3 like `LogLevelType` and 0 = no output.
+Without `defaultLevels` they use `devLevel: 'info'` and `prodLevel: 'error'`, so a development
+console shows everything except `debug()` and production stays quiet apart from errors.
 
-The default levels for logs are `1` (high) for development environment and `0` (off) for production environment. These will be used if any logging method is used without assigning a module.
-
-If you declare modules then you can set separate levels for every module, giving you the opportunity to separate their logging density from each other.
-
-> Setting the `prodLevel` to `0` (off) is an easy way of disabling logs in the production environment, though even without declared outputStreams the `console` will never be used.
+> **Errors are always written**, whatever the module logs up to. A module set to `'error'` therefore
+> reports its errors and nothing else - it is the quietest a module gets, and there is no `'off'` or
+> `'silent'` level. To switch logging off entirely use [`LoxerConfig`][loxerConfig]'s `disabled` or
+> `disabledInProductionMode`.
 
 <!-- ------------------------------------------------------------------------------------------- -->
 
@@ -376,13 +423,13 @@ If you declare modules then you can set separate levels for every module, giving
 Modules are one way of categorizing logs in order to:
 
 - To create clarity in the output (with coloring)
-- Set log levels for individual categories
+- Give individual categories their own threshold
 - Detect possible dependencies on services / domains
 - focussing error detection on the dedicated parts of your application
 
 ### Modules on logs
 
-Assigning modules to logs is again done in the same way as highlighting or leveling. Therefore you have to chain them with the `.module(moduleId: string)` or `.m(moduleId: string)`
+Assigning modules to logs is again done in the same way as highlighting. Therefore you have to chain them with the `.module(moduleId: string)` or `.m(moduleId: string)`
 
 ###### Example
 
@@ -411,15 +458,15 @@ A [`Module`][loxerModule] must be structured as :
 
 ```typescript
 {
-  devLevel: LevelType;
-  prodLevel: LevelType;
+  devLevel: LogLevel;
+  prodLevel: LogLevel;
   fullName: string;
   color: string;
   boxLayoutStyle?: BoxLayoutStyle;
 }
 ```
 
-The two levels are of the same type as the `defaultLevels` and the `fullName`, `color` and `boxLayoutStyle` will be used for the output.
+The two levels are of the same type as the `defaultLevels` (see [5. Levels](#5-levels---loxerwarn--loxerinfo--loxerdebug)) and the `fullName`, `color` and `boxLayoutStyle` will be used for the output.
 
 The `color` must be either structured in HEX (`'#ff1258'`) or RGB format (`'rgb(255, 0, 0)'`) that will be interpreted by the [color][pkg.color] package.
 
@@ -428,9 +475,9 @@ The `color` must be either structured in HEX (`'#ff1258'`) or RGB format (`'rgb(
 ```typescript
 Loxer.init({
   modules: {
-    PERS: { color: '#f00', fullName: 'Persons', devLevel: 1, prodLevel: 1 },
-    CART: { color: '#00ff00', fullName: 'Shopping cart', devLevel: 1, prodLevel: 1 },
-    BILLING: { color: 'rgb(0, 120, 255)', fullName: 'Billing', devLevel: 1, prodLevel: 1 },
+    PERS: { color: '#f00', fullName: 'Persons', devLevel: 'debug', prodLevel: 'warn' },
+    CART: { color: '#00ff00', fullName: 'Shopping cart', devLevel: 'info', prodLevel: 'warn' },
+    BILLING: { color: 'rgb(0, 120, 255)', fullName: 'Billing', devLevel: 'info', prodLevel: 'error' },
   },
 });
 ```
@@ -441,11 +488,21 @@ Loxer.init({
 
 ###### There are 3 default modules, that are predefined:
 
+This is Loxer's own internal declaration, shown for reference — not a template for your modules. When
+you declare your own, use `satisfies LoxerModules` rather than an annotation, so the keys stay
+literal.
+
 ```typescript
 export const DEFAULT_MODULES: LoxerModules = {
-  NONE: { fullName: '', color: '#fff', devLevel: 1, prodLevel: 0 },
-  DEFAULT: { fullName: '', color: '#fff', devLevel: 1, prodLevel: 0 },
-  INVALID: { fullName: 'INVALIDMODULE', color: '#f00', devLevel: 1, prodLevel: 0 },
+  NONE: { fullName: '', color: '#fff', devLevel: 'info', prodLevel: 'error', boxLayoutStyle: 'round' },
+  DEFAULT: { fullName: '', color: '#fff', devLevel: 'info', prodLevel: 'error', boxLayoutStyle: 'round' },
+  INVALID: {
+    fullName: 'INVALIDMODULE',
+    color: '#f00',
+    devLevel: 'info',
+    prodLevel: 'error',
+    boxLayoutStyle: 'round',
+  },
 };
 ```
 
@@ -472,7 +529,7 @@ Loxer.m('Wrong').log('this one to the INVALID module');
 > All default modules can be redefined in the `options.modules` by overwriting their keys.
 >
 > - **ATTENTION**: beware of forcefully setting any of these modules to a falsy value like `null` or `undefined` because this will definitely cause Loxer to crash.
-> - If you want to disable them, set their levels to `0`.
+> - If you want them to report errors only, set what they log up to to `'error'`.
 
 <!-- ------------------------------------------------------------------------------------------- -->
 
@@ -495,7 +552,7 @@ The `type LoxerCallbacks` has the following structure:
 }
 ```
 
-Whenever a log with its level fulfills the requirements of the default levels or its module level, it is forwarded (depending on the environment) to the `devLog` or` prodLog` output stream. Error logs are always forwarded to the corresponding output stream (`devError` or `prodError`). You can tell Loxer the environment as `options.dev: boolean` in the `Loxer.init(options)`. In the default case it is `dev = process.env.NODE_ENV === 'development'`.
+Whenever a log's level is within what its module logs up to, it is forwarded (depending on the environment) to the `devLog` or` prodLog` output stream. Error logs are always forwarded to the corresponding output stream (`devError` or `prodError`). You can tell Loxer the environment as `options.dev: boolean` in the `Loxer.init(options)`. In the default case it is `dev = process.env.NODE_ENV === 'development'`.
 
 The `devLog` and `devError` callbacks default to printing the colored logs to the console. `prodLog` and `prodError` default to log nothing in order to keep the application clean in production environment. This is expressed in the fact that the production streams only interact with the user-specific ones and have no defaults.
 
@@ -535,8 +592,8 @@ To symbolize that the logs are more than just simple messages, they are named `*
   type: LoxType;
   /** the corresponding key of a module from `LoxerOptions.modules` */
   moduleId: string;
-  /** the log level that was given with `Loxer.level(number)` or `Loxer.l(number)` */
-  level: LevelType;
+  /** the `LogLevel` of the log - the level it was written at, or the opening log's for `.of()` logs */
+  level: LogLevel;
   /** the time the log appeared */
   timestamp: Date;
   /** the box layout of the log */
@@ -545,7 +602,7 @@ To symbolize that the logs are more than just simple messages, they are named `*
   timeText: string | '' = '';
   /** the time consumption (in `ms`) from the opening log's `timestamp` until this log appeared */
   timeConsumption: number | undefined;
-  /** determines if the log has not fulfilled the level that the corresponding module has set */
+  /** determines if the log's level sits past the level its module logs up to */
   hidden: boolean = false;
   /** the corresponding module of this Lox (for module text / color / etc.) */
   module: ExtendedModule = DEFAULT_EXTENDED_MODULE;
@@ -659,7 +716,7 @@ In addition, a box layout is created that shows the course of the box, but with 
 
 ### Create boxes
 
-To use a box, it must be opened with `Loxer.open(message: string, item?: ItemType, itemOptions?: ItemOptions)`. The `.open()` method returns the `id: number` of the log, which is used to connect other logs to this one. The rest of the structure and functionality is analogous to the `.log()` method. It can also be chained with `.highlight()`, `.level()` and `.module()`, just like the rest of the log methods. **As a reminder**, if the box layout is to be generated, **a module** or at least the default module (`.m()`) **must be assigned** to the log that opens.
+To use a box, it must be opened with `Loxer.open(message: string, item?: ItemType, itemOptions?: ItemOptions)`. The `.open()` method returns the `id: number` of the log, which is used to connect other logs to this one. The rest of the structure and functionality is analogous to the `.log()` method. It can also be chained with `.highlight()` and `.module()`, just like the rest of the log methods, and `Loxer.debug.open(...)` / `.warn.open(...)` / `.info.open(...)` open the box at that level instead of `'info'`. **As a reminder**, if the box layout is to be generated, **a module** or at least the default module (`.m()`) **must be assigned** to the log that opens.
 
 ###### Open a box - [`Loxer.open()`][loxer.open]
 
@@ -699,8 +756,9 @@ Loxer.of(lox).add('this log is shown but as error');
 
 ![console_output](https://raw.githubusercontent.com/pcprinz/loxer/master/assets/docs_images/8-2.png)
 
-> - When using `Loxer.of()`, `.level()` and `.module()` do not necessarily have to be specified again, since `.of()` automatically uses the values of the opening log as default.
-> - Otherwise, `.level()` can be chained **before** the `.of`.
+> - When using `Loxer.of()`, a level and `.module()` do not have to be specified again: `.add()` and `.close()` automatically use the values of the opening log.
+> - `Loxer.of(id).warn()` / `.info()` / `.debug()` name a level themselves. A box that already goes further down the level list keeps its own, so an added log is never written into a box column that its dropped opening log never reserved.
+> - `Loxer.of(id).close()` takes no level at all: it is always the opening log's, or a box could be left unclosed.
 > - It is not possible to specify a different `.module()`, since **always** the module of the opening log is used!
 
 ### The Box Layout
@@ -778,6 +836,60 @@ const myBoxString = outputLox.box
   .join('');
 ```
 
+<!-- ------------------------------------------------------------------------------------------- -->
+
+# Appendix: Migrating from Loxer 2
+
+Everything above describes Loxer 3 on its own terms. This appendix exists only for projects coming
+from Loxer 2, and is safe to skip otherwise.
+
+Loxer 2 expressed levels as the numbers `0 | 1 | 2 | 3` (`LevelType` / `LogLevelType`) and attached
+them to a log with the `.level()` / `.l()` modifiers. Loxer 3 replaces both with the names in
+[5. Levels](#5-levels---loxerwarn--loxerinfo--loxerdebug), and drops the modifiers.
+
+There are no compatibility shims: every `.l()` call and every numeric module literal is a compile
+error until it is translated. That is on purpose — a number would keep old code compiling while
+quietly changing what it means.
+
+### Module and default levels
+
+| Loxer 2         | Loxer 3                         | why                                                                             |
+| --------------- | ------------------------------- | ------------------------------------------------------------------------------- |
+| `devLevel: 0`   | `devLevel: 'error'`             | behavior is unchanged: `0` never suppressed errors either                       |
+| `devLevel: 1`   | `devLevel: 'info'`              | **not** `'warn'` — `log()` writes at `'info'` and has to keep coming through     |
+| `devLevel: 2`   | `devLevel: 'info'` or `'debug'` | choose by whether `debug()` should come through                                 |
+| `devLevel: 3`   | `devLevel: 'debug'`             | everything                                                                      |
+
+The same applies to `prodLevel` and to both members of `defaultLevels`.
+
+TypeScript rejects a number here, so the translation cannot be forgotten. A JavaScript project has
+no such gate: a module left holding a number, or any other value that is not one of the four names,
+logs up to `'info'` — the same fallback a module that declares no threshold at all gets. It is
+neither muted to `'error'` nor opened up to `'debug'`, so an untranslated `0` writes more than the
+errors it used to mean. Translate the literal rather than relying on the fallback.
+
+### Logs
+
+| Loxer 2                   | Loxer 3                              | why                                                          |
+| ------------------------- | ------------------------------------ | ------------------------------------------------------------ |
+| `Loxer.l(1).log(msg)`     | `Loxer.log(msg)` or `Loxer.info(msg)` |                                                             |
+| `Loxer.l(2).log(msg)`     | `Loxer.warn(msg)`                    |                                                              |
+| `Loxer.l(3).log(msg)`     | `Loxer.debug(msg)`                   |                                                              |
+| `Loxer.l(3).open(msg)`    | `Loxer.debug.open(msg)`              | `Loxer.open(msg)` stays at `'info'`                          |
+| `Loxer.l(3).of(id).add()` | `Loxer.of(id).debug()`               | bare `add()` still takes the box's level                     |
+| `Loxer.l(n).error(...)`   | `Loxer.error(...)`                   | a level never affected an error; the log now carries `'error'` |
+
+### Types and returns
+
+| Loxer 2                              | Loxer 3                                  |
+| ------------------------------------ | ---------------------------------------- |
+| `LevelType`, `LogLevelType`          | [`LogLevel`][loxer.loglevel] for both    |
+| `Loxer.getModuleLevel(...)` → `-1`   | → `undefined` for an unknown module id   |
+| `TraceOptions.level: 1 \| 2 \| 3`    | [`BoxLevel`][loxer.boxlevel]             |
+
+If you use `babel-plugin-loxer-trace`, note that the level methods are linked to their trace box just
+like `Loxer.log` is: `Loxer.debug('…')` inside a traced body becomes part of that box.
+
 <!------------------------------------------ REFERENCES ------------------------------------------>
 
 [itemDocs]: https://github.com/pcprinz/loxer/blob/master/documentation/item.md
@@ -804,5 +916,7 @@ const myBoxString = outputLox.box
 [loxer.of]: https://pcprinz.github.io/loxer/interfaces/Loxer.LogMethods.html#of
 [ofLoxes]: https://pcprinz.github.io/loxer/interfaces/Loxer.OfLoxes.html
 [loxer.highlight]: https://pcprinz.github.io/loxer/interfaces/Loxer.Modifiers.html#highlight
-[loxer.level]: https://pcprinz.github.io/loxer/interfaces/Loxer.Modifiers.html#level
+[loxer.loglevel]: https://pcprinz.github.io/loxer/types/index.LogLevel.html
+[loxer.boxlevel]: https://pcprinz.github.io/loxer/types/index.BoxLevel.html
+[loxer.levelmethods]: https://pcprinz.github.io/loxer/interfaces/Loxer.LevelMethods.html
 [loxer.module]: https://pcprinz.github.io/loxer/interfaces/Loxer.Modifiers.html#module

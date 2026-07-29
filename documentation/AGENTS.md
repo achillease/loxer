@@ -11,6 +11,12 @@ artifacts. It is distinct from generated TypeDoc HTML in `docs/`.
   Markdown is meant to render outside the repository.
 - `index.md` is the main usage guide, `item.md` explains rich item printing, and `Performance.md`
   records benchmark methodology and results.
+- `debt.md` is the standing register of known-but-unfixed defects and design compromises. Append to
+  it — never re-create it — whenever a pass decides to *leave* a real problem in place; a bug found
+  and fixed within one change belongs in that change's worklog instead. It is a maintainer document,
+  not a guide: describing what is broken and why is its whole job, so the "document the current
+  design" register that governs the guides does not apply to it. Move an entry to its `Resolved`
+  section rather than deleting it.
 - Specs live in `specs/`. Each implementation plan and its `worklog.md` live together in
   `plans/<date>-<slug>/`.
 - `docs/` is generated TypeDoc output. Never place authored guides, specs, plans, or worklogs

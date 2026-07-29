@@ -1,10 +1,25 @@
 import type { NodePath } from '@babel/core';
 import type * as BabelTypes from '@babel/types';
 
-const SUPPORTED_MODIFIERS = new Set(['highlight', 'h', 'level', 'l', 'module', 'm']);
+const SUPPORTED_MODIFIERS = new Set(['highlight', 'h', 'module', 'm']);
 
+/**
+ * Direct `Loxer` calls that a traced body redirects onto its own box, mapped to the `OfLoxes`
+ * member they become.
+ *
+ * The per-level methods are listed individually rather than folded into `add`, so a level stays a
+ * level: `Loxer.debug('…')` becomes `Loxer.of(id, true).debug('…')`, not an `add()` that would
+ * silently take the box's level. `log` maps to `add` because `Loxer.of(...).add()` is the
+ * level-inheriting equivalent of the plain `Loxer.log()`.
+ *
+ * `open` is deliberately absent — including a level's `Loxer.debug.open(...)` — because a nested box
+ * opens a box of its own.
+ */
 const LINKED_METHODS = new Map([
   ['log', 'add'],
+  ['warn', 'warn'],
+  ['info', 'info'],
+  ['debug', 'debug'],
   ['error', 'error'],
   ['namedError', 'namedError'],
 ]);
@@ -301,6 +316,9 @@ function isDirectLoxerChain(
     );
   }
 
+  // Only a modifier *call* continues the chain. A bare member expression does not — which is what
+  // ends the walk at a level property such as the `Loxer.debug` of `Loxer.debug.open(...)`, since a
+  // level is a property rather than a modifier call.
   if (
     !t.isCallExpression(expression) ||
     !t.isMemberExpression(expression.callee) ||

@@ -7,6 +7,7 @@ import {
   sanitizeErrorMessage,
 } from './core/Error.js';
 import { ItemType, ItemOptions } from './core/Item.js';
+import { BoxLevel, moreVerbose } from './core/Levels.js';
 import { Loxes } from './core/Loxes.js';
 import { LoxHistory } from './core/LoxHistory.js';
 import { Modules } from './core/Modules.js';
@@ -17,12 +18,30 @@ import { Lox, LoxType } from './loxes/Lox.js';
 import { OutputLox } from './loxes/OutputLox.js';
 import {
   ErrorType,
-  LogLevelType,
+  LevelMethods,
   Loxer as LoxerType,
   LoxerOptions,
+  ModuleId,
   OfLoxes,
   OpenedLox,
 } from './types.js';
+
+/** The inert box handle handed out while Loxer is disabled: every member is a no-op. */
+function disabledOfLoxes(): OfLoxes {
+  const noop = () => {
+    /* do nothing */
+  };
+
+  return {
+    add: noop,
+    warn: noop,
+    info: noop,
+    debug: noop,
+    close: noop,
+    error: noop,
+    namedError: noop,
+  };
+}
 
 /**
  * This is the main class of Loxer. It works "static" because it's a singleton instance though you
@@ -78,13 +97,12 @@ class LoxerInstance implements LoxerType {
     return this._history.stack;
   }
 
-  getModuleLevel(moduleId: string) {
+  getModuleLevel(moduleId: ModuleId) {
     return this._modules.getLevel(moduleId);
   }
 
   private resetState() {
     this._isHighlighted = false;
-    this._level = undefined;
     this._moduleId = 'NONE';
   }
 
@@ -100,17 +118,27 @@ class LoxerInstance implements LoxerType {
     return this;
   }
 
-  // level ##################################################################
+  // levels #################################################################
 
-  private _level: LogLevelType | undefined;
-  level(level: LogLevelType) {
-    return this.l(level);
-  }
-  l(level: LogLevelType) {
-    this._level = level;
+  /** Builds one level's {@link LevelMethods}: `Loxer.debug(...)` plus `Loxer.debug.open(...)`.
+   *
+   * The closure captures only the level and reads the chain state at *call* time, so reading the
+   * property logs nothing and resets nothing — that is what keeps
+   * `Loxer.h().m('DB').debug.open(...)` (and a hoisted `const d = Loxer.debug`) correct.
+   */
+  private makeLevel(level: BoxLevel): LevelMethods {
+    const methods = ((message: string = '', item?: ItemType, itemOptions?: ItemOptions) => {
+      this.logAtLevel(level, message, item, itemOptions);
+    }) as LevelMethods;
+    methods.open = (message: string, item?: ItemType, itemOptions?: ItemOptions) =>
+      this.openAtLevel(level, message, item, itemOptions);
 
-    return this;
+    return methods;
   }
+
+  readonly warn: LevelMethods = this.makeLevel('warn');
+  readonly info: LevelMethods = this.makeLevel('info');
+  readonly debug: LevelMethods = this.makeLevel('debug');
 
   // moduleId ###############################################################
 
@@ -129,6 +157,10 @@ class LoxerInstance implements LoxerType {
   // log functions ##########################################################
 
   log(message: string = '', item?: ItemType, itemOptions?: ItemOptions) {
+    this.logAtLevel('info', message, item, itemOptions);
+  }
+
+  private logAtLevel(level: BoxLevel, message: string, item?: ItemType, itemOptions?: ItemOptions) {
     if (this._isDisabled) {
       return;
     }
@@ -138,7 +170,7 @@ class LoxerInstance implements LoxerType {
         highlighted: this._isHighlighted,
         item,
         itemOptions,
-        level: this._level ?? 1,
+        level,
         message,
         moduleId: this._moduleId,
         type: 'single',
@@ -182,7 +214,9 @@ class LoxerInstance implements LoxerType {
         highlighted: this._isHighlighted,
         item,
         itemOptions,
-        level: this._level ?? 1,
+        // errors are output whatever the module allows, so this records the log's level rather than
+        // a threshold the error has to pass
+        level: 'error',
         message: messagePrefix + sanitizeErrorMessage(getErrorMessage(sureError)),
         moduleId,
         type: 'error',
@@ -192,29 +226,24 @@ class LoxerInstance implements LoxerType {
   }
 
   open(message: string, item?: ItemType, itemOptions?: ItemOptions) {
+    return this.openAtLevel('info', message, item, itemOptions);
+  }
+
+  private openAtLevel(
+    level: BoxLevel,
+    message: string,
+    item?: ItemType,
+    itemOptions?: ItemOptions
+  ): OpenedLox {
     if (this._isDisabled) {
-      return {
-        id: 0,
-        add: () => {
-          /* do nothing */
-        },
-        close: () => {
-          /* do nothing */
-        },
-        error: () => {
-          /* do nothing */
-        },
-        namedError: () => {
-          /* do nothing */
-        },
-      };
+      return { id: 0, ...disabledOfLoxes() };
     }
     const lox = new Lox({
       id: undefined,
       highlighted: this._isHighlighted,
       item,
       itemOptions,
-      level: this._level ?? 1,
+      level,
       message,
       moduleId: this._moduleId !== 'NONE' ? this._moduleId : 'DEFAULT',
       type: 'open',
@@ -230,44 +259,29 @@ class LoxerInstance implements LoxerType {
   of(opened: number | OpenedLox, preserveCurrentModule: boolean = false): OfLoxes {
     const id = typeof opened === 'number' ? opened : opened.id;
     if (this._isDisabled) {
-      return {
-        add: () => {
-          /* do nothing */
-        },
-        close: () => {
-          /* do nothing */
-        },
-        error: () => {
-          /* do nothing */
-        },
-        namedError: () => {
-          /* do nothing */
-        },
-      };
+      return disabledOfLoxes();
     }
     const openLox = this._loxes.findOpenLox(id);
     if (!is(openLox)) {
+      /** reports a call on a box that is gone, naming the method the consumer actually used */
+      const missing =
+        (method: string) => (message: string, item?: ItemType, itemOptions?: ItemOptions) => {
+          this.internalError(
+            new LoxerError(message),
+            id,
+            undefined,
+            `${method}() on a not (anymore) existing Lox. MESSAGE: `,
+            item,
+            itemOptions
+          );
+        };
+
       return {
-        add: (message: string, item?: ItemType, itemOptions?: ItemOptions) => {
-          this.internalError(
-            new LoxerError(message),
-            id,
-            undefined,
-            'add() on a not (anymore) existing Lox. MESSAGE: ',
-            item,
-            itemOptions
-          );
-        },
-        close: (message: string, item?: ItemType, itemOptions?: ItemOptions) => {
-          this.internalError(
-            new LoxerError(message),
-            id,
-            undefined,
-            'close() on a not (anymore) existing Lox. MESSAGE: ',
-            item,
-            itemOptions
-          );
-        },
+        add: missing('add'),
+        warn: missing('warn'),
+        info: missing('info'),
+        debug: missing('debug'),
+        close: missing('close'),
         error: (error: ErrorType, item?: ItemType, itemOptions?: ItemOptions) => {
           this.internalError(
             error,
@@ -300,12 +314,28 @@ class LoxerInstance implements LoxerType {
     const moduleId =
       preserveCurrentModule && this._moduleId !== 'NONE' ? this._moduleId : openLox.moduleId;
 
+    /** appends a single log at an explicit level, or - without one - at the box's own level */
+    const append =
+      (level: BoxLevel | undefined) =>
+      (message: string, item?: ItemType, itemOptions?: ItemOptions) => {
+        this.appendToOpenLox('single', openLox, moduleId, message, level, item, itemOptions);
+      };
+
     return {
-      add: (message: string, item?: ItemType, itemOptions?: ItemOptions) => {
-        this.appendToOpenLox('single', openLox, moduleId, message, item, itemOptions);
-      },
+      add: append(undefined),
+      warn: append('warn'),
+      info: append('info'),
+      debug: append('debug'),
       close: (message: string, item?: ItemType, itemOptions?: ItemOptions) => {
-        this.appendToOpenLox('close', openLox, openLox.moduleId, message, item, itemOptions);
+        this.appendToOpenLox(
+          'close',
+          openLox,
+          openLox.moduleId,
+          message,
+          undefined,
+          item,
+          itemOptions
+        );
       },
       error: (error: ErrorType, item?: ItemType, itemOptions?: ItemOptions) => {
         this.internalError(error, openLox.id, moduleId, undefined, item, itemOptions);
@@ -334,15 +364,17 @@ class LoxerInstance implements LoxerType {
     openLox: Lox,
     moduleId: string,
     message: string,
+    requestedLevel: BoxLevel | undefined,
     item?: ItemType,
     itemOptions?: ItemOptions
   ) {
     const { id, level: openLevel } = openLox;
-    // close level must be open level + added logs must not have a lower level, though the open box could possibly not exist
+    // A `close` is *always* the open's level: `proceedOpenLox` frees the box's visible column
+    // regardless of `hidden`, so a hidden close on a visible open would strand the box with no
+    // closing glyph. An added log may only ever move further down the level list, never up, so it
+    // can never emit a mid-box glyph into a column its hidden open never reserved.
     const level =
-      type === 'single'
-        ? (Math.max(openLevel, this._level ?? openLevel) as LogLevelType)
-        : openLevel;
+      type === 'single' && requestedLevel ? moreVerbose(openLevel, requestedLevel) : openLevel;
     this.switchOutput(
       new Lox({
         id,

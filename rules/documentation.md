@@ -10,6 +10,34 @@
   JSDoc, not `documentation/`.
 - When a feature adds a concept or option a user must learn, update the relevant guide in
   `documentation/` in the same change.
+- Write every guide as if the current design had always been the design. State what a thing is
+  and does, not what it used to be or why it changed. Ban the diff-narrating register — "now",
+  "no longer", "instead of", "was removed", "still", "also" — and rationale that argues against a
+  rejected or previous design; that belongs in a plan folder (`documentation/plans/`) or the
+  migration appendix (see the next rule), never in a teaching section.
+- Prefer plain description over coining a new noun. If a term is genuinely needed, define it at
+  its first use and keep it to exactly one meaning throughout — never let two sentences use the
+  same word for two different things. A coined term that has leaked into an exported type name is
+  a signal to rename the type, not to teach the term: `LevelChannel` became `LevelMethods` in
+  `src/types.ts` for exactly that reason.
+- Keep the level/threshold distinction consistent wherever a guide discusses `LogLevel`: a log
+  **has a level**; a module **logs up to** a level (its threshold). Never use the same word in
+  prose for both roles — this is a wording rule, not a rule about the exported names
+  (`LogLevel`, `BoxLevel`, `lox.level`, `Module.devLevel`/`prodLevel`, `defaultLevels`,
+  `getModuleLevel`), which stay as they are.
+- Confine upgrade/migration content (version-to-version tables, before/after mappings) to a
+  dedicated appendix after the guide's last teaching section, opening with a line telling readers
+  on the current major that it's safe to skip — see `documentation/index.md`'s
+  "Appendix: Migrating from Loxer 2". A numbered/teaching section must never reference a previous
+  major version.
+- When an example's code changes, re-read every comment adjacent to it — a stale comment (e.g.
+  one that names an action the code no longer performs) teaches the old model and is worse than
+  no comment.
+- Before attributing a `pnpm docs` page rename or removal to your change, regenerate from an
+  unmodified checkout and compare — `docs/` is committed but wholesale-replaced per run, so it
+  routinely drifts from `src/` between regenerations and a rename can predate your change
+  entirely. A new link reference added under `documentation/` must point at a page name confirmed
+  in a freshly generated `docs/` tree, never a guessed path.
 - Put documentation images under `assets/docs_images/`; use stable GitHub raw URLs for images in
   Markdown meant to render outside the repo (README, npm page).
 - Regenerate the API reference with `pnpm docs` (`typedoc --options typedoc.json`) after a JSDoc
@@ -49,6 +77,9 @@
 - `documentation/index.md` — main usage guide.
 - `documentation/item.md` — rich item printing.
 - `documentation/Performance.md` — benchmark methodology and results.
+- `documentation/debt.md` — standing register of known-but-unfixed defects. Append; don't re-create.
+  A maintainer document, not a guide — the "describe the current design" rules above govern the
+  guides and do not apply to it.
 
 ## Reference
 

@@ -11,18 +11,64 @@
 <li><a href="../modules/Loxer.html">Loxer</a></li>
 <li><a href="" aria-current="page">LogMethods</a></li></ul>
 <h1>Interface LogMethods</h1></div>
-<div class="tsd-signature"><span class="tsd-signature-keyword">interface</span> <span class="tsd-kind-interface">LogMethods</span> <span class="tsd-signature-symbol">{</span><br/>    <a class="tsd-kind-call-signature" href="#log-1">log</a><span class="tsd-signature-symbol">(</span><span class="tsd-kind-parameter">message</span><span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">string</span><span class="tsd-signature-symbol">,</span> <span class="tsd-kind-parameter">item</span><span class="tsd-signature-symbol">?:</span> <a href="../types/Formatting.ItemType.html" class="tsd-signature-type tsd-kind-type-alias">ItemType</a><span class="tsd-signature-symbol">,</span> <span class="tsd-kind-parameter">itemOptions</span><span class="tsd-signature-symbol">?:</span> <a href="Formatting.ItemOptions.html" class="tsd-signature-type tsd-kind-interface">ItemOptions</a><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">void</span><span class="tsd-signature-symbol">;</span><br/>    <a class="tsd-kind-call-signature" href="#error-1">error</a><span class="tsd-signature-symbol">(</span><span class="tsd-kind-parameter">error</span><span class="tsd-signature-symbol">:</span> <a href="../types/Loxer.ErrorType.html" class="tsd-signature-type tsd-kind-type-alias">ErrorType</a><span class="tsd-signature-symbol">,</span> <span class="tsd-kind-parameter">item</span><span class="tsd-signature-symbol">?:</span> <a href="../types/Formatting.ItemType.html" class="tsd-signature-type tsd-kind-type-alias">ItemType</a><span class="tsd-signature-symbol">,</span> <span class="tsd-kind-parameter">itemOptions</span><span class="tsd-signature-symbol">?:</span> <a href="Formatting.ItemOptions.html" class="tsd-signature-type tsd-kind-interface">ItemOptions</a><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">void</span><span class="tsd-signature-symbol">;</span><br/>    <a class="tsd-kind-call-signature" href="#open-1">open</a><span class="tsd-signature-symbol">(</span><br/>        <span class="tsd-kind-parameter">message</span><span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">string</span><span class="tsd-signature-symbol">,</span><br/>        <span class="tsd-kind-parameter">item</span><span class="tsd-signature-symbol">?:</span> <a href="../types/Formatting.ItemType.html" class="tsd-signature-type tsd-kind-type-alias">ItemType</a><span class="tsd-signature-symbol">,</span><br/>        <span class="tsd-kind-parameter">itemOptions</span><span class="tsd-signature-symbol">?:</span> <a href="Formatting.ItemOptions.html" class="tsd-signature-type tsd-kind-interface">ItemOptions</a><span class="tsd-signature-symbol">,</span><br/>    <span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">:</span> <a href="Loxer.OpenedLox.html" class="tsd-signature-type tsd-kind-interface">OpenedLox</a><span class="tsd-signature-symbol">;</span><br/><span class="tsd-signature-symbol">}</span></div>
+<div class="tsd-signature"><span class="tsd-signature-keyword">interface</span> <span class="tsd-kind-interface">LogMethods</span> <span class="tsd-signature-symbol">{</span><br/>    <a class="tsd-kind-call-signature" href="#log-1">log</a><span class="tsd-signature-symbol">(</span><span class="tsd-kind-parameter">message</span><span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">string</span><span class="tsd-signature-symbol">,</span> <span class="tsd-kind-parameter">item</span><span class="tsd-signature-symbol">?:</span> <a href="../types/Formatting.ItemType.html" class="tsd-signature-type tsd-kind-type-alias">ItemType</a><span class="tsd-signature-symbol">,</span> <span class="tsd-kind-parameter">itemOptions</span><span class="tsd-signature-symbol">?:</span> <a href="Formatting.ItemOptions.html" class="tsd-signature-type tsd-kind-interface">ItemOptions</a><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">void</span><span class="tsd-signature-symbol">;</span><br/>    <a class="tsd-kind-property" href="#warn">warn</a><span class="tsd-signature-symbol">:</span> <a href="Loxer.LevelMethods.html" class="tsd-signature-type tsd-kind-interface">LevelMethods</a><span class="tsd-signature-symbol">;</span><br/>    <a class="tsd-kind-property" href="#info">info</a><span class="tsd-signature-symbol">:</span> <a href="Loxer.LevelMethods.html" class="tsd-signature-type tsd-kind-interface">LevelMethods</a><span class="tsd-signature-symbol">;</span><br/>    <a class="tsd-kind-property" href="#debug">debug</a><span class="tsd-signature-symbol">:</span> <a href="Loxer.LevelMethods.html" class="tsd-signature-type tsd-kind-interface">LevelMethods</a><span class="tsd-signature-symbol">;</span><br/>    <a class="tsd-kind-call-signature" href="#error-1">error</a><span class="tsd-signature-symbol">(</span><span class="tsd-kind-parameter">error</span><span class="tsd-signature-symbol">:</span> <a href="../types/Loxer.ErrorType.html" class="tsd-signature-type tsd-kind-type-alias">ErrorType</a><span class="tsd-signature-symbol">,</span> <span class="tsd-kind-parameter">item</span><span class="tsd-signature-symbol">?:</span> <a href="../types/Formatting.ItemType.html" class="tsd-signature-type tsd-kind-type-alias">ItemType</a><span class="tsd-signature-symbol">,</span> <span class="tsd-kind-parameter">itemOptions</span><span class="tsd-signature-symbol">?:</span> <a href="Formatting.ItemOptions.html" class="tsd-signature-type tsd-kind-interface">ItemOptions</a><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">void</span><span class="tsd-signature-symbol">;</span><br/>    <a class="tsd-kind-call-signature" href="#open-1">open</a><span class="tsd-signature-symbol">(</span><br/>        <span class="tsd-kind-parameter">message</span><span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">string</span><span class="tsd-signature-symbol">,</span><br/>        <span class="tsd-kind-parameter">item</span><span class="tsd-signature-symbol">?:</span> <a href="../types/Formatting.ItemType.html" class="tsd-signature-type tsd-kind-type-alias">ItemType</a><span class="tsd-signature-symbol">,</span><br/>        <span class="tsd-kind-parameter">itemOptions</span><span class="tsd-signature-symbol">?:</span> <a href="Formatting.ItemOptions.html" class="tsd-signature-type tsd-kind-interface">ItemOptions</a><span class="tsd-signature-symbol">,</span><br/>    <span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">:</span> <a href="Loxer.OpenedLox.html" class="tsd-signature-type tsd-kind-interface">OpenedLox</a><span class="tsd-signature-symbol">;</span><br/><span class="tsd-signature-symbol">}</span></div>
 <section class="tsd-panel-group tsd-index-group">
 <section class="tsd-panel tsd-index-panel">
 <details class="tsd-index-content tsd-accordion" open><summary class="tsd-accordion-summary tsd-index-summary"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true"><use href="../assets/icons.svg#icon-chevronDown"></use></svg>
 <h5 class="tsd-index-heading uppercase">Index</h5></summary>
 <div class="tsd-accordion-details">
 <section class="tsd-index-section">
+<h3 class="tsd-index-heading tsd-anchor-link" id="properties">Properties<a href="#properties" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
+<div class="tsd-index-list"><a href="#warn" class="tsd-index-link"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="Property"><use href="../assets/icons.svg#icon-1024"></use></svg><span>warn</span></a>
+<a href="#info" class="tsd-index-link"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="Property"><use href="../assets/icons.svg#icon-1024"></use></svg><span>info</span></a>
+<a href="#debug" class="tsd-index-link"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="Property"><use href="../assets/icons.svg#icon-1024"></use></svg><span>debug</span></a>
+</div></section>
+<section class="tsd-index-section">
 <h3 class="tsd-index-heading tsd-anchor-link" id="methods">Methods<a href="#methods" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
 <div class="tsd-index-list"><a href="#log" class="tsd-index-link"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="Method"><use href="../assets/icons.svg#icon-2048"></use></svg><span>log</span></a>
 <a href="#error" class="tsd-index-link"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="Method"><use href="../assets/icons.svg#icon-2048"></use></svg><span>error</span></a>
 <a href="#open" class="tsd-index-link"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="Method"><use href="../assets/icons.svg#icon-2048"></use></svg><span>open</span></a>
 </div></section></div></details></section></section>
+<details class="tsd-panel-group tsd-member-group tsd-accordion" open><summary class="tsd-accordion-summary" data-key="section-Properties"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true"><use href="../assets/icons.svg#icon-chevronDown"></use></svg>
+<h2 class="tsd-anchor-link" id="properties-1">Properties<a href="#properties-1" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h2></summary>
+<section>
+<section class="tsd-panel tsd-member">
+<h3 class="tsd-anchor-link" id="warn"><span>warn</span><a href="#warn" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
+<div class="tsd-signature"><span class="tsd-kind-property">warn</span><span class="tsd-signature-symbol">:</span> <a href="Loxer.LevelMethods.html" class="tsd-signature-type tsd-kind-interface">LevelMethods</a></div>
+<div class="tsd-comment tsd-typography"><h2 id="warning-log" class="tsd-anchor-link">Warning Log<a href="#warning-log" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h2>
+<pre><code class="typescript"><span class="hl-2">    </span><span class="hl-1">Loxer</span><span class="hl-2">.</span><span class="hl-3">warn</span><span class="hl-2">(</span><span class="hl-4">&#39;retrying the request&#39;</span><span class="hl-2">);</span><br/><span class="hl-2">    </span><span class="hl-1">Loxer</span><span class="hl-2">.</span><span class="hl-1">warn</span><span class="hl-2">.</span><span class="hl-3">open</span><span class="hl-2">(</span><span class="hl-4">&#39;degraded mode&#39;</span><span class="hl-2">);</span>
+</code><button type="button">Copy</button></pre>
+
+<h4 id="behaves-like-logmethodslog-at-level-see-levelmethods" class="tsd-anchor-link">Behaves like <a href="#log" class="tsd-kind-method">LogMethods.log</a>, at level <code>'warn'</code>. See <a href="Loxer.LevelMethods.html" class="tsd-kind-interface">LevelMethods</a>.<a href="#behaves-like-logmethodslog-at-level-see-levelmethods" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h4>
+<ul>
+<li>it is an ordinary log, streamed to <code>devLog</code> / <code>prodLog</code>. Only <a href="#error" class="tsd-kind-method">LogMethods.error</a> writes
+to <code>devError</code> / <code>prodError</code>, and no <code>Error</code> is created for a warning</li>
+<li>a callback that wants to react to the level reads <code>outputLox.level</code></li>
+</ul>
+</div></section>
+<section class="tsd-panel tsd-member">
+<h3 class="tsd-anchor-link" id="info"><span>info</span><a href="#info" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
+<div class="tsd-signature"><span class="tsd-kind-property">info</span><span class="tsd-signature-symbol">:</span> <a href="Loxer.LevelMethods.html" class="tsd-signature-type tsd-kind-interface">LevelMethods</a></div>
+<div class="tsd-comment tsd-typography"><h2 id="info-log" class="tsd-anchor-link">Info Log<a href="#info-log" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h2>
+<pre><code class="typescript"><span class="hl-2">    </span><span class="hl-1">Loxer</span><span class="hl-2">.</span><span class="hl-3">info</span><span class="hl-2">(</span><span class="hl-4">&#39;user loaded&#39;</span><span class="hl-2">);</span><br/><span class="hl-2">    </span><span class="hl-1">Loxer</span><span class="hl-2">.</span><span class="hl-1">info</span><span class="hl-2">.</span><span class="hl-3">open</span><span class="hl-2">(</span><span class="hl-4">&#39;loading user&#39;</span><span class="hl-2">);</span>
+</code><button type="button">Copy</button></pre>
+
+<h4 id="behaves-like-logmethodslog-at-level-see-levelmethods-1" class="tsd-anchor-link">Behaves like <a href="#log" class="tsd-kind-method">LogMethods.log</a>, at level <code>'info'</code>. See <a href="Loxer.LevelMethods.html" class="tsd-kind-interface">LevelMethods</a>.<a href="#behaves-like-logmethodslog-at-level-see-levelmethods-1" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h4>
+<p><code>'info'</code> is the level <a href="#log" class="tsd-kind-method">LogMethods.log</a> and <a href="#open" class="tsd-kind-method">LogMethods.open</a> use themselves, so
+<code>Loxer.info(...)</code> writes the same log as <code>Loxer.log(...)</code> and <code>Loxer.info.open(...)</code> the same box
+as <code>Loxer.open(...)</code>.</p>
+</div></section>
+<section class="tsd-panel tsd-member">
+<h3 class="tsd-anchor-link" id="debug"><span>debug</span><a href="#debug" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
+<div class="tsd-signature"><span class="tsd-kind-property">debug</span><span class="tsd-signature-symbol">:</span> <a href="Loxer.LevelMethods.html" class="tsd-signature-type tsd-kind-interface">LevelMethods</a></div>
+<div class="tsd-comment tsd-typography"><h2 id="debug-log" class="tsd-anchor-link">Debug Log<a href="#debug-log" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h2>
+<pre><code class="typescript"><span class="hl-2">    </span><span class="hl-1">Loxer</span><span class="hl-2">.</span><span class="hl-3">debug</span><span class="hl-2">(</span><span class="hl-4">&#39;cache miss&#39;</span><span class="hl-2">);</span><br/><span class="hl-2">    </span><span class="hl-1">Loxer</span><span class="hl-2">.</span><span class="hl-1">debug</span><span class="hl-2">.</span><span class="hl-3">open</span><span class="hl-2">(</span><span class="hl-4">&#39;recalculating&#39;</span><span class="hl-2">);</span>
+</code><button type="button">Copy</button></pre>
+
+<h4 id="behaves-like-logmethodslog-at-level-see-levelmethods-2" class="tsd-anchor-link">Behaves like <a href="#log" class="tsd-kind-method">LogMethods.log</a>, at level <code>'debug'</code>. See <a href="Loxer.LevelMethods.html" class="tsd-kind-interface">LevelMethods</a>.<a href="#behaves-like-logmethodslog-at-level-see-levelmethods-2" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h4>
+<p><code>'debug'</code> is the last level a module reaches, so a module has to ask for it with
+<code>devLevel: 'debug'</code>; the built-in modules stop at <code>'info'</code>.</p>
+</div></section></section></details>
 <details class="tsd-panel-group tsd-member-group tsd-accordion" open><summary class="tsd-accordion-summary" data-key="section-Methods"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true"><use href="../assets/icons.svg#icon-chevronDown"></use></svg>
 <h2 class="tsd-anchor-link" id="methods-1">Methods<a href="#methods-1" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h2></summary>
 <section>
@@ -43,10 +89,12 @@
 <li>the output will be streamed out to the <a href="Loxer.LoxerOptions.html#callbacks" class="tsd-kind-property">LoxerOptions.callbacks</a> declared in <code>Loxer.init(options)</code></li>
 <li>if no callbacks are given at the initialization, all logs will be logged with <code>console.log(message, item)</code>,
 but only in development mode</li>
+<li>it logs at level <code>'info'</code>, exactly like <a href="#info" class="tsd-kind-property">Loxer.info()</a></li>
 <li>can be chained with <code>.highlight().log(...)</code> or <code>.h().log(...)</code> to highlight the log</li>
-<li>can be chained with <code>.level().log(...)</code> or <code>.l().log(...)</code> to set a level to the log - otherwise it's <code>1</code> (high)</li>
 <li>can be chained with <code>.module().log(...)</code> or <code>.m().log(...)</code> to assign a module to the log - otherwise it's <code>NONE</code></li>
-<li>all functions can be chained in combination and different order like: <code>Loxer.h().l(2).m('Account').log(...)</code></li>
+<li>all functions can be chained in combination and different order like: <code>Loxer.h().m('Account').log(...)</code></li>
+<li>for another <a href="../types/index.LogLevel.html" class="tsd-kind-type-alias">LogLevel</a> use <a href="#warn" class="tsd-kind-property">Loxer.warn()</a>,
+<a href="#debug" class="tsd-kind-property">Loxer.debug()</a> or <a href="#error" class="tsd-kind-method">Loxer.error()</a></li>
 </ul>
 <hr>
 </div>
@@ -70,7 +118,7 @@ but only in development mode</li>
 <div class="tsd-signature tsd-anchor-link" id="error-1"><span class="tsd-kind-call-signature">error</span><span class="tsd-signature-symbol">(</span><span class="tsd-kind-parameter">error</span><span class="tsd-signature-symbol">:</span> <a href="../types/Loxer.ErrorType.html" class="tsd-signature-type tsd-kind-type-alias">ErrorType</a><span class="tsd-signature-symbol">,</span> <span class="tsd-kind-parameter">item</span><span class="tsd-signature-symbol">?:</span> <a href="../types/Formatting.ItemType.html" class="tsd-signature-type tsd-kind-type-alias">ItemType</a><span class="tsd-signature-symbol">,</span> <span class="tsd-kind-parameter">itemOptions</span><span class="tsd-signature-symbol">?:</span> <a href="Formatting.ItemOptions.html" class="tsd-signature-type tsd-kind-interface">ItemOptions</a><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">void</span><a href="#error-1" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></div>
 <div class="tsd-description">
 <div class="tsd-comment tsd-typography"><h2 id="advanced-error-log" class="tsd-anchor-link">Advanced error Log<a href="#advanced-error-log" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h2>
-<pre><code class="typescript"><span class="hl-2">    </span><span class="hl-1">Loxer</span><span class="hl-2">.</span><span class="hl-3">error</span><span class="hl-2">(</span><span class="hl-6">new</span><span class="hl-2"> </span><span class="hl-3">Error</span><span class="hl-2">(</span><span class="hl-4">&#39;Goodbye World!&#39;</span><span class="hl-2">));</span>
+<pre><code class="typescript"><span class="hl-2">    </span><span class="hl-1">Loxer</span><span class="hl-2">.</span><span class="hl-3">error</span><span class="hl-2">(</span><span class="hl-5">new</span><span class="hl-2"> </span><span class="hl-3">Error</span><span class="hl-2">(</span><span class="hl-4">&#39;Goodbye World!&#39;</span><span class="hl-2">));</span>
 </code><button type="button">Copy</button></pre>
 
 <h4 id="works-similar-to-but-1" class="tsd-anchor-link">Works similar to <code>console.error()</code>, but:<a href="#works-similar-to-but-1" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h4>
@@ -89,8 +137,11 @@ will be created and appended</li>
 it's <code>NONE</code></li>
 <li>chaining with <code>.highlight().error(...)</code> or <code>.h().error(...)</code> does not color the message differently but append
 the stack to the default console output</li>
-<li>chaining with <code>.level().error(...)</code> or <code>.l().error(...)</code> will
-not take any effect on the error log (except that <code>level</code> will be a property of the output)</li>
+<li>errors are output whatever <a href="../types/index.LogLevel.html" class="tsd-kind-type-alias">LogLevel</a> their module allows, so a module at
+<code>devLevel: 'error'</code> reports its errors and nothing else. The emitted log carries
+<code>level: 'error'</code>.</li>
+<li>there is no <code>Loxer.error.open()</code>: an error is a single event rather than a box (see
+<a href="../types/index.BoxLevel.html" class="tsd-kind-type-alias">BoxLevel</a>)</li>
 </ul>
 <hr>
 </div>
@@ -114,7 +165,7 @@ not take any effect on the error log (except that <code>level</code> will be a p
 <div class="tsd-signature tsd-anchor-link" id="open-1"><span class="tsd-kind-call-signature">open</span><span class="tsd-signature-symbol">(</span><span class="tsd-kind-parameter">message</span><span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">string</span><span class="tsd-signature-symbol">,</span> <span class="tsd-kind-parameter">item</span><span class="tsd-signature-symbol">?:</span> <a href="../types/Formatting.ItemType.html" class="tsd-signature-type tsd-kind-type-alias">ItemType</a><span class="tsd-signature-symbol">,</span> <span class="tsd-kind-parameter">itemOptions</span><span class="tsd-signature-symbol">?:</span> <a href="Formatting.ItemOptions.html" class="tsd-signature-type tsd-kind-interface">ItemOptions</a><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">:</span> <a href="Loxer.OpenedLox.html" class="tsd-signature-type tsd-kind-interface">OpenedLox</a><a href="#open-1" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></div>
 <div class="tsd-description">
 <div class="tsd-comment tsd-typography"><h2 id="open-a-boxed-log" class="tsd-anchor-link">Open a boxed Log<a href="#open-a-boxed-log" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h2>
-<pre><code class="typescript"><span class="hl-2">    </span><span class="hl-6">const</span><span class="hl-2"> </span><span class="hl-7">loxId</span><span class="hl-2"> = </span><span class="hl-1">Loxer</span><span class="hl-2">.</span><span class="hl-3">open</span><span class="hl-2">(</span><span class="hl-4">&#39;Open World!&#39;</span><span class="hl-2">)</span>
+<pre><code class="typescript"><span class="hl-2">    </span><span class="hl-5">const</span><span class="hl-2"> </span><span class="hl-6">loxId</span><span class="hl-2"> = </span><span class="hl-1">Loxer</span><span class="hl-2">.</span><span class="hl-3">open</span><span class="hl-2">(</span><span class="hl-4">&#39;Open World!&#39;</span><span class="hl-2">)</span>
 </code><button type="button">Copy</button></pre>
 
 <h4 id="opens-a-boxed-log-to-assign-other-logs-errors-to-it" class="tsd-anchor-link">Opens a boxed log to assign other logs / errors to it.<a href="#opens-a-boxed-log-to-assign-other-logs-errors-to-it" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h4>
@@ -127,9 +178,10 @@ not take any effect on the error log (except that <code>level</code> will be a p
 <li>if no callbacks are given at the initialization, all logs will be logged with <code>console.log(message, item)</code>,
 but only in development mode</li>
 <li>can be chained with <code>.highlight().open(...)</code> or <code>.h().open(...)</code> to highlight the log</li>
-<li>can be chained with <code>.level().open(...)</code> or <code>.l().open(...)</code> to set a level to the log - otherwise it's <code>1</code> (high)</li>
+<li>it opens the box at level <code>'info'</code>. For another level use that level's <code>.open()</code>, e.g.
+<code>Loxer.debug.open(...)</code> — see <a href="Loxer.LevelMethods.html" class="tsd-kind-interface">LevelMethods</a></li>
 <li>can be chained with <code>.module().open(...)</code> or <code>.m().open(...)</code> to assign a module to the log - otherwise it's <code>NONE</code></li>
-<li>all functions can be chained in combination and different order like: <code>Loxer.h().l(2).m('Account').open(...)</code></li>
+<li>all functions can be chained in combination and different order like: <code>Loxer.h().m('Account').debug.open(...)</code></li>
 </ul>
 <hr>
 </div>
@@ -161,6 +213,31 @@ but only in development mode</li>
 <details open class="tsd-accordion tsd-page-navigation"><summary class="tsd-accordion-summary"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true"><use href="../assets/icons.svg#icon-chevronDown"></use></svg>
 <h3>On This Page</h3></summary>
 <div class="tsd-accordion-details">
+<details open class="tsd-accordion tsd-page-navigation-section"><summary class="tsd-accordion-summary" data-key="section-Properties"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true"><use href="../assets/icons.svg#icon-chevronDown"></use></svg>Properties</summary>
+<div><a href="#warn"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="Property"><use href="../assets/icons.svg#icon-1024"></use></svg><span>warn</span></a>
+<ul>
+<li>
+<ul>
+<li><a href="#warning-log"><span>Warning <wbr/>Log</span></a></li>
+<li>
+<ul>
+<li>
+<ul>
+<li><a href="#behaves-like-logmethodslog-at-level-see-levelmethods"><span>Behaves like <wbr/>Log<wbr/>Methods.log, at level . <wbr/>See <wbr/>Level<wbr/>Methods.</span></a></li></ul></li></ul></li></ul></li></ul><a href="#info"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="Property"><use href="../assets/icons.svg#icon-1024"></use></svg><span>info</span></a>
+<ul>
+<li>
+<ul>
+<li><a href="#info-log"><span>Info <wbr/>Log</span></a></li>
+<li>
+<ul>
+<li>
+<ul>
+<li><a href="#behaves-like-logmethodslog-at-level-see-levelmethods-1"><span>Behaves like <wbr/>Log<wbr/>Methods.log, at level . <wbr/>See <wbr/>Level<wbr/>Methods.</span></a></li></ul></li></ul></li></ul></li></ul><a href="#debug"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="Property"><use href="../assets/icons.svg#icon-1024"></use></svg><span>debug</span></a>
+<ul>
+<li><a href="#debug-log"><span>Debug <wbr/>Log</span></a></li>
+<li>
+<ul>
+<li><a href="#behaves-like-logmethodslog-at-level-see-levelmethods-2"><span>Behaves like <wbr/>Log<wbr/>Methods.log, at level . <wbr/>See <wbr/>Level<wbr/>Methods.</span></a></li></ul></li></ul></div></details>
 <details open class="tsd-accordion tsd-page-navigation-section"><summary class="tsd-accordion-summary" data-key="section-Methods"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true"><use href="../assets/icons.svg#icon-chevronDown"></use></svg>Methods</summary>
 <div><a href="#log"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="Method"><use href="../assets/icons.svg#icon-2048"></use></svg><span>log</span></a>
 <ul>

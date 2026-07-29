@@ -78,7 +78,7 @@ test('BoxLayout', () => {
 const lox0 = new OutputLox({
   highlighted: false,
   id: 0,
-  level: 0,
+  level: 'info',
   message: 'Lox1!',
   moduleId: 'Module',
   type: 'open',
@@ -92,7 +92,7 @@ lox0.setTime(123);
 const lox1 = new OutputLox({
   highlighted: false,
   id: 0,
-  level: 0,
+  level: 'info',
   message: 'Lox1!',
   moduleId: 'Module',
   type: 'close',
@@ -106,7 +106,7 @@ lox1.setTime(123);
 const lox2 = new OutputLox({
   highlighted: true,
   id: 0,
-  level: 0,
+  level: 'info',
   message: 'Lox2!',
   moduleId: 'Module',
   type: 'single',

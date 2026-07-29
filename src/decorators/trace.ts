@@ -1,6 +1,8 @@
+import { resolveBoxLevel } from '../core/Levels.js';
 import { is } from '../Helpers.js';
 import { Loxer } from '../Loxer.js';
 import { TraceOptions } from '../tracing-types.js';
+import { ModuleId } from '../types.js';
 
 export type { TraceOptions } from '../tracing-types.js';
 
@@ -30,7 +32,7 @@ export interface TraceMethodDecorator {
  * @returns a Decorator for class level methods
  */
 export function trace<Args extends readonly unknown[] = readonly unknown[], Result = unknown>(
-  options?: TraceOptions<Args, Result> | string
+  options?: TraceOptions<Args, Result> | ModuleId
 ): TraceMethodDecorator {
   return function (
     valueOrTarget: TracedMethod | any,
@@ -62,7 +64,10 @@ export function trace<Args extends readonly unknown[] = readonly unknown[], Resu
 function createTracedMethod<Args extends readonly unknown[] = readonly unknown[], Result = unknown>(
   original: TracedMethod,
   propertyKey: string | symbol,
-  options?: TraceOptions<Args, Result> | string
+  // carries the public `ModuleId` shorthand through, so the `.m(moduleId)` call below stays valid
+  // in a program that augments the `LoxerModuleRegistry` - without it, `moduleId` would widen to
+  // `string` here and only that program (never this package's own build) would fail
+  options?: TraceOptions<Args, Result> | ModuleId
 ): TracedMethod {
   const propertyName = methodName(propertyKey);
 
@@ -76,7 +81,7 @@ function createTracedMethod<Args extends readonly unknown[] = readonly unknown[]
       moduleId = o?.moduleId;
     }
 
-    const level = o?.level ?? 1;
+    const level = resolveBoxLevel(o?.level);
     const h = o?.highlight;
     const needsClassName =
       o?.openMessage === 'className.functionName' || o?.closeMessage === 'className.functionName';
@@ -87,10 +92,10 @@ function createTracedMethod<Args extends readonly unknown[] = readonly unknown[]
 
     // open the lox
     const item = o?.argsAsItem ? args : undefined;
+    // every level exposes the same `LevelMethods` shape, so the dispatch is a plain index
     const loxId = Loxer.h(h === 'all' || h === 'open')
-      .l(level)
       .m(moduleId)
-      .open(openMessage, item);
+      [level].open(openMessage, item);
 
     // call the function
     const result = original.call(this, ...args);

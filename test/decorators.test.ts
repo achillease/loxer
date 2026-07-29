@@ -1,3 +1,4 @@
+import type { LogLevel } from '../src';
 import { initLoxer, Loxer, resetLoxer, trace } from '../src';
 import { ErrorLox, OutputLox } from '../src/loxes';
 import { DecoratorMode, installTraced, traceCases } from './trace-cases';
@@ -214,7 +215,7 @@ test.each(traceCases)(
     const expected = testCase.expectedLogs.map((log) => ({
       highlighted: log.highlighted ?? false,
       item: log.item,
-      level: log.level ?? 1,
+      level: log.level ?? 'info',
       message: log.message,
       moduleId: expectedModuleId(log.moduleId),
       type: log.type,
@@ -434,7 +435,7 @@ interface TraceCaseResult {
   records: Array<{
     highlighted: boolean;
     item: unknown;
-    level: number;
+    level: LogLevel;
     message: string;
     moduleId: string;
     type: string;
@@ -481,7 +482,7 @@ function resetAndInitialize(): void {
     dev: true,
     callbacks: { devLog, devError, prodLog, prodError },
     modules: {
-      LEVEL: { color: '#fff', devLevel: 2, fullName: 'Level', prodLevel: 0 },
+      LEVEL: { color: '#fff', devLevel: 'debug', fullName: 'Level', prodLevel: 'error' },
     },
   });
   devLogs = [];

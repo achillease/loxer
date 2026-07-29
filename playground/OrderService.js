@@ -9,7 +9,8 @@
 //  Features showcased (all of the public API except the @initLoxer / @trace decorators):
 //    - init() with modules (colors, per-module levels, per-module box layout styles) + config
 //    - log() / open() / of().add() / of().close() / of().error() / of().namedError() / error()
-//    - modifiers: .m()/.module(), .l()/.level(), .h()/.highlight()  (chained in any order)
+//    - modifiers: .m()/.module(), .h()/.highlight()  (chained in any order)
+//    - levels: warn() / info() / debug(), and each level's own .open() for a leveled box
 //    - level-based hiding of verbose logs per module
 //    - rich item printing with every ItemOptions field (depth, keys, indent, showVerticalLines,
 //      printFunction, shortenClasses)
@@ -34,14 +35,27 @@ function banner(title) {
 
 // The modules of our "app". Each maps to a subsystem, gets its own color, its own visibility
 // levels for dev/prod, and (optionally) its own box layout style.
+// A module logs up to a level and drops what comes after it: error, warn, info, debug.
 const MODULES = {
-  HTTP: { color: '#00bcd4', fullName: 'http', devLevel: 1, prodLevel: 1, boxLayoutStyle: 'heavy' },
-  AUTH: { color: '#ffca28', fullName: 'auth', devLevel: 3, prodLevel: 1 },
-  // database traces are noisy — devLevel 2 hides the level-3 "SQL" chatter in development
-  DB: { color: '#8e24aa', fullName: 'database', devLevel: 2, prodLevel: 0, boxLayoutStyle: 'light' },
-  CART: { color: '#43a047', fullName: 'cart', devLevel: 3, prodLevel: 1, boxLayoutStyle: 'double' },
-  PAY: { color: '#e53935', fullName: 'payment', devLevel: 3, prodLevel: 1 },
-  SHIP: { color: '#1e88e5', fullName: 'shipping', devLevel: 3, prodLevel: 1 },
+  HTTP: {
+    color: '#00bcd4',
+    fullName: 'http',
+    devLevel: 'info',
+    prodLevel: 'info',
+    boxLayoutStyle: 'heavy',
+  },
+  AUTH: { color: '#ffca28', fullName: 'auth', devLevel: 'debug', prodLevel: 'info' },
+  // database traces are noisy — devLevel 'info' hides the debug() "SQL" chatter in development
+  DB: {
+    color: '#8e24aa',
+    fullName: 'database',
+    devLevel: 'info',
+    prodLevel: 'error',
+    boxLayoutStyle: 'light',
+  },
+  CART: { color: '#43a047', fullName: 'cart', devLevel: 'debug', prodLevel: 'info' },
+  PAY: { color: '#e53935', fullName: 'payment', devLevel: 'debug', prodLevel: 'info' },
+  SHIP: { color: '#1e88e5', fullName: 'shipping', devLevel: 'debug', prodLevel: 'info' },
 };
 
 // A domain class — used to show `shortenClasses` in item printing.
@@ -79,9 +93,10 @@ async function authenticate(userId, token, httpBox) {
     throw new NamedError('AuthError', 'authentication failed');
   }
 
-  // level-2 detail: visible in dev (AUTH devLevel is 3) but useful to keep out of the hot path.
-  // Modifiers (.l/.h/.m) come *before* .of() — .of() itself only returns add/close/error.
-  Loxer.l(2).of(box).add('claims resolved', { sub: user.id, tier: user.tier, scope: ['checkout'] });
+  // debug detail: visible in dev (AUTH's devLevel is 'debug') but kept out of the hot path.
+  // A level belongs to the call that emits the log, so it is a member of .of(box) — alongside
+  // add() (which inherits the box's level) and close() (which always takes it).
+  Loxer.of(box).debug('claims resolved', { sub: user.id, tier: user.tier, scope: ['checkout'] });
   Loxer.of(box).close(`authenticated ${user.name}`);
   return user;
 }
@@ -90,9 +105,9 @@ async function loadCart(user, httpBox) {
   Loxer.of(httpBox).add('→ load cart');
   const box = Loxer.m('CART').open(`restore cart for ${user.name}`);
 
-  // A level-3 "SQL" trace assigned to DB (devLevel 2) — intentionally hidden in dev to prove
-  // that leveling works. Bump DB's devLevel to 3 in MODULES and it reappears.
-  Loxer.m('DB').l(3).log(`SELECT * FROM carts WHERE user_id = '${user.id}'`);
+  // A debug "SQL" trace assigned to DB (devLevel 'info') — intentionally hidden in dev to prove
+  // that leveling works. Bump DB's devLevel to 'debug' in MODULES and it reappears.
+  Loxer.m('DB').debug(`SELECT * FROM carts WHERE user_id = '${user.id}'`);
   await delay(jitter(20, 60));
 
   const cart = {
@@ -118,7 +133,9 @@ async function reserveInventory(cart, httpBox) {
   await delay(jitter(25, 70));
 
   for (const item of cart.items) {
-    Loxer.l(2).of(box).add(`reserve ${item.qty}× ${item.sku}`);
+    // an explicit 'info' matches DB's threshold, so these stay visible — .debug() here would be
+    // hidden exactly like the SQL trace above
+    Loxer.of(box).info(`reserve ${item.qty}× ${item.sku}`);
   }
   Loxer.of(box).close('inventory reserved');
 }
@@ -213,8 +230,10 @@ async function developmentPhase() {
 
   banner('PHASE 1 — development mode (built-in console rendering)');
 
-  // A couple of standalone logs before the traffic starts.
+  // A couple of standalone logs before the traffic starts. log() ≡ info().
   Loxer.log('server listening on :3000');
+  Loxer.warn('running with the in-memory data layer — not for production');
+  Loxer.debug("this one is hidden: NONE is at devLevel 'info'");
   Loxer.highlight().m('HTTP').log('accepting connections');
 
   // Two requests handled concurrently — watch the AUTH/CART/PAY/SHIP boxes interleave.
@@ -239,10 +258,15 @@ async function developmentPhase() {
   banner('PHASE 1 — results & introspection');
   Loxer.log('request outcomes', [ok, declined, unauth]);
 
-  // getModuleLevel reflects the *active* environment (dev here).
+  // getModuleLevel reflects the *active* environment (dev here) and is `undefined` for an
+  // unregistered module id.
   Loxer.log(
     'active dev levels',
-    { HTTP: Loxer.getModuleLevel('HTTP'), DB: Loxer.getModuleLevel('DB'), unknown: Loxer.getModuleLevel('NOPE') },
+    {
+      HTTP: Loxer.getModuleLevel('HTTP'),
+      DB: Loxer.getModuleLevel('DB'),
+      unknown: Loxer.getModuleLevel('NOPE'),
+    },
     { showVerticalLines: false }
   );
 
@@ -274,7 +298,7 @@ async function productionPhase() {
   Loxer.init({
     dev: false,
     modules: MODULES,
-    defaultLevels: { devLevel: 1, prodLevel: 1 },
+    defaultLevels: { devLevel: 'info', prodLevel: 'info' },
     config: { historyCacheSize: 25 },
     callbacks: {
       // Only prod streams are wired; devLog/devError stay unset (dev keeps the console fallback).

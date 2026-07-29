@@ -9,8 +9,8 @@
 **Loxer** is a middleware logger that allows you to:
 
 - distribute logs to different output streams (dev / prod / log / error)
-- add levels to logs
-- categorize logs in modules (with their own levels)
+- write logs at a level (`error` / `warn` / `info` / `debug`)
+- categorize logs in modules (each logging up to its own threshold)
 - connect logs to each other to "boxes"
 - improve error logs (with more information)
 - get significantly better visualization of the logs
@@ -39,14 +39,14 @@ Loxer.init();
 // simple log
 Loxer.log('my message');
 
-// error log
-Loxer.error('something bad happened');
-
 // highlight logs
 Loxer.highlight().log('my message');
 
-// set levels
-Loxer.level(2).log('not that necessary log');
+// use different levels
+Loxer.error('that is serious');
+Loxer.warn('still working, but something is wrong');
+Loxer.info('an alias for .log(...)');
+Loxer.debug('just informative');
 
 // set modules
 Loxer.module('AUTH').log('user logged in');
@@ -58,10 +58,10 @@ Loxer.of(lox).error('appended error');
 Loxer.of(lox).close('closing log');
 
 // combine everything like you want
-Loxer.module('AUTH').level(3).highlight().log('highlighted level 3 log for module Authentication');
+Loxer.module('AUTH').highlight().debug('highlighted debug log for module Authentication');
 
-// use shortcuts for the methods
-const lox2 = Loxer.l(1).h().m('AUTH').open('highlighted level 1 log for module Authentication');
+// use shortcuts for the methods - every level opens a box too
+const lox2 = Loxer.h().m('AUTH').debug.open('highlighted debug box for module Authentication');
 ```
 
 For a complete guide on how to use everything, definitely take a look at the **[Documentation](https://github.com/pcprinz/loxer/blob/master/documentation/index.md)**
@@ -95,7 +95,7 @@ import { trace } from 'loxer/trace';
 
 Loxer.init({
   modules: {
-    ORDER: { color: '#00ff99', fullName: 'Order', devLevel: 2, prodLevel: 0 },
+    ORDER: { color: '#00ff99', fullName: 'Order', devLevel: 'info', prodLevel: 'error' },
   },
 });
 
@@ -160,4 +160,4 @@ The log messages are exactly the same, but with a litte configuration you can se
 
 ## Deps
 
-just [color](https://www.npmjs.com/package/color)
+none - Loxer ships with zero runtime dependencies.

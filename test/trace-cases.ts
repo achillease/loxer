@@ -1,4 +1,4 @@
-import type { TraceOptions } from '../src';
+import type { LogLevel, TraceOptions } from '../src';
 import { trace } from '../src';
 
 export type DecoratorMode = 'legacy' | 'standard';
@@ -18,7 +18,7 @@ export interface TraceCase {
     item?: any;
     highlighted?: boolean;
     moduleId?: string;
-    level?: number;
+    level?: LogLevel;
   }>;
 }
 
@@ -160,7 +160,7 @@ export const traceCases: TraceCase[] = [
     original() {
       return 'done';
     },
-    options: { moduleId: 'LEVEL', level: 2, highlight: 'close' },
+    options: { moduleId: 'LEVEL', level: 'debug', highlight: 'close' },
     args: [],
     expectedResult: 'done',
     expectedLogs: [
@@ -169,14 +169,14 @@ export const traceCases: TraceCase[] = [
         message: 'closeOnly()',
         highlighted: false,
         moduleId: 'LEVEL',
-        level: 2,
+        level: 'debug',
       },
       {
         type: 'close',
         message: 'closeOnly done',
         highlighted: true,
         moduleId: 'LEVEL',
-        level: 2,
+        level: 'debug',
       },
     ],
   },

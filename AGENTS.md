@@ -1,7 +1,7 @@
 # Loxer
 
 Loxer is a TypeScript logging library, not an application (`package.json` name `loxer`, version
-2.0.0, MIT, author Christian Prinz). It exposes a singleton `Loxer` logger with chainable
+3.0.0, MIT, author Christian Prinz). It exposes a singleton `Loxer` logger with chainable
 modifiers, custom output callbacks, error wrapping, rich item printing, and box-style trace
 visualization for nested or async data flow.
 
@@ -32,7 +32,7 @@ pre-commit hook (`.husky/pre-commit`) runs `pnpm lint`.
 - `src/` is the package source. `src/index.ts` is the public export surface.
 - `src/Loxer.ts` owns the singleton logger, chaining state, initialization, queueing, level
   checks, history, and output dispatch.
-- `src/core/` contains the formatting, module, history, output, box, item, and error helpers,
+- `src/core/` contains the formatting, module, level, history, output, box, item, and error helpers,
   plus `src/core/color/` (vendored color parsing, replacing the former `color` dependency).
 - `src/loxes/` contains the `Lox`, `OutputLox`, and `ErrorLox` value classes.
 - `src/decorators/` contains the `@initLoxer` and `@trace` decorators.
@@ -52,14 +52,46 @@ pre-commit hook (`.husky/pre-commit`) runs `pnpm lint`.
 
 ## Behavior
 
-- `Loxer` is a singleton with intentionally one-shot modifier state (`highlight`, `level`,
-  `module`) that resets after each logging operation.
+- `Loxer` is a singleton with intentionally one-shot modifier state (`highlight`, `module`) that
+  resets after each logging operation. A level is **not** modifier state: `warn` / `info` / `debug`
+  are properties (`Loxer.debug(...)` / `Loxer.debug.open(...)`) whose closures read the live chain
+  state at call time, so reading the property logs nothing and resets nothing.
+- Levels are the names `'error' | 'warn' | 'info' | 'debug'` (`LogLevel`), never numbers. `log()`
+  writes at `'info'`; `warn()` is an ordinary log on the `devLog`/`prodLog` stream — only `error()`
+  goes to `devError`/`prodError`.
 - Logs created before `Loxer.init()` are queued and replayed on init; uninitialized logging must
   not silently disappear.
 - Production output defaults to silence — user callbacks are the production integration point.
-- Errors are always output when enabled, even when their level would hide a normal log.
+- Errors are always output when enabled, even when their level would hide a normal log. A module
+  that logs up to `'error'` therefore reports errors only, which is why no `'off'` level exists.
 - Hidden normal logs must not enter history or the visible open-box buffer, but open/close state
-  stays consistent for later `.of(...)` calls.
+  stays consistent for later `.of(...)` calls. `Loxer.of(id).close()` always takes the opening log's
+  level (it accepts none), and `.of(id).warn/info/debug()` may only move further down the level list
+  than the box, never up — a shown log must never sit in a column its hidden `open` never reserved.
+
+## Workspace Safety
+
+This is a pnpm workspace (`pnpm-workspace.yaml`: `packages/*`, `examples/*`). Every workspace
+package's `node_modules`, and the root `node_modules/.pnpm` tree, contain pnpm self-links back to
+sibling packages and to the repo root itself. This means a link-following recursive delete
+anywhere under any `node_modules` can reach `.git` and `src/`, even when the delete target looks
+like it's outside this repo (e.g. a `git worktree` under a temp dir with a symlinked
+`node_modules` inside it).
+
+- Never create a symlink or junction pointing from outside this repo into it — that is what turns
+  "delete a scratch directory" into "delete the project." Run tools inside the repo instead, or
+  give the temp location its own installed dependencies rather than linking back here.
+- Never run a link-following recursive force-delete (`rmdir /s /q`, `Remove-Item -Recurse -Force`,
+  `rm -rf`) on a directory that may contain a workspace link, including a `git worktree`. Remove
+  the link itself first, or use a tool that doesn't traverse links.
+- Two consecutive delete failures on the same path mean it isn't what you think it is — `ls -la` it
+  and look for a link before trying a stronger delete. Escalating past repeated failures is what
+  causes repo loss here, not the failures themselves.
+- On Windows, Git Bash `ln -s` on a directory produces a junction that `cmd.exe`'s `rmdir /s`
+  traverses — a link made with one toolchain still gets followed by a delete from another.
+- Before any destructive or irreversible operation, confirm work is committed **and** pushed:
+  `git log origin/master..HEAD` and `git stash list`. Local-only commits and stashes are
+  unrecoverable if the operation goes wrong.
 
 ## Steering Docs
 

@@ -39,6 +39,8 @@ export default tseslint.config(
       '@typescript-eslint/no-shadow': 'error',
       '@typescript-eslint/no-inferrable-types': 'off',
       '@typescript-eslint/no-explicit-any': 'off',
+      // `LoxerModuleRegistry` is a declaration-merging extension point and is empty by design.
+      '@typescript-eslint/no-empty-object-type': ['error', { allowWithName: 'Registry$' }],
     },
   }
 );

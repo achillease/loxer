@@ -8,7 +8,7 @@
 <div class="col-content">
 <div class="tsd-page-title">
 <ul class="tsd-breadcrumb" aria-label="Breadcrumb">
-<li><a href="../modules/Formatting.html">Formatting</a></li>
+<li><a href="../modules/index.html">index</a></li>
 <li><a href="" aria-current="page">BoxFactory</a></li></ul>
 <h1>Class BoxFactory</h1></div>
 <section class="tsd-panel tsd-comment">
@@ -31,7 +31,7 @@
 <h3 class="tsd-anchor-link" id="getmarkerdepth"><code class="tsd-tag">Static</code><span>get<wbr/>Marker<wbr/>Depth</span><a href="#getmarkerdepth" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
 <ul class="tsd-signatures">
 <li class="">
-<div class="tsd-signature tsd-anchor-link" id="getmarkerdepth-1"><span class="tsd-kind-call-signature">getMarkerDepth</span><span class="tsd-signature-symbol">(</span><span class="tsd-kind-parameter">box</span><span class="tsd-signature-symbol">:</span> <a href="../types/Formatting.Box.html" class="tsd-signature-type tsd-kind-type-alias">Box</a><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">number</span><a href="#getmarkerdepth-1" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></div>
+<div class="tsd-signature tsd-anchor-link" id="getmarkerdepth-1"><span class="tsd-kind-call-signature">getMarkerDepth</span><span class="tsd-signature-symbol">(</span><span class="tsd-kind-parameter">box</span><span class="tsd-signature-symbol">:</span> <a href="../types/index.Box.html" class="tsd-signature-type tsd-kind-type-alias">Box</a><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">number</span><a href="#getmarkerdepth-1" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></div>
 <div class="tsd-description">
 <div class="tsd-comment tsd-typography"><p>The column, relative to the start of the box, at which this log's own marker sits — i.e. the
 edge / single segment (<code>openEdge</code>, <code>single</code> or <code>closeEdge</code>) produced by <code>getOpenLogBox</code> /
@@ -42,7 +42,7 @@ the log's box column (branching off the box layout) instead of floating out at t
 <div class="tsd-parameters">
 <h4 class="tsd-parameters-title">Parameters</h4>
 <ul class="tsd-parameter-list">
-<li><span><span class="tsd-kind-parameter">box</span>: <a href="../types/Formatting.Box.html" class="tsd-signature-type tsd-kind-type-alias">Box</a></span>
+<li><span><span class="tsd-kind-parameter">box</span>: <a href="../types/index.Box.html" class="tsd-signature-type tsd-kind-type-alias">Box</a></span>
 <div class="tsd-comment tsd-typography"><p>the <code>Box</code> of an <code>OutputLox</code> or <code>ErrorLox</code></p>
 </div></li></ul></div>
 <h4 class="tsd-returns-title">Returns <span class="tsd-signature-type">number</span></h4><p>the index of the log's marker, or <code>0</code> for a box without one (<code>NONE</code> / hidden logs)</p>
@@ -51,18 +51,18 @@ the log's box column (branching off the box layout) instead of floating out at t
 <h3 class="tsd-anchor-link" id="getboxstring"><code class="tsd-tag">Static</code><span>get<wbr/>Box<wbr/>String</span><a href="#getboxstring" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
 <ul class="tsd-signatures">
 <li class="">
-<div class="tsd-signature tsd-anchor-link" id="getboxstring-1"><span class="tsd-kind-call-signature">getBoxString</span><span class="tsd-signature-symbol">(</span><span class="tsd-kind-parameter">box</span><span class="tsd-signature-symbol">:</span> <a href="../types/Formatting.Box.html" class="tsd-signature-type tsd-kind-type-alias">Box</a><span class="tsd-signature-symbol">,</span> <span class="tsd-kind-parameter">colored</span><span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">boolean</span> <span class="tsd-signature-symbol">|</span> <span class="tsd-signature-type">undefined</span><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">string</span><a href="#getboxstring-1" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></div>
+<div class="tsd-signature tsd-anchor-link" id="getboxstring-1"><span class="tsd-kind-call-signature">getBoxString</span><span class="tsd-signature-symbol">(</span><span class="tsd-kind-parameter">box</span><span class="tsd-signature-symbol">:</span> <a href="../types/index.Box.html" class="tsd-signature-type tsd-kind-type-alias">Box</a><span class="tsd-signature-symbol">,</span> <span class="tsd-kind-parameter">colored</span><span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">boolean</span> <span class="tsd-signature-symbol">|</span> <span class="tsd-signature-type">undefined</span><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">string</span><a href="#getboxstring-1" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></div>
 <div class="tsd-description">
 <div class="tsd-comment tsd-typography"><p>Creates a string version of the given <code>*Lox</code> box.</p>
 <h2 id="single-usage" class="tsd-anchor-link">Single Usage<a href="#single-usage" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h2>
-<pre><code class="typescript"><span class="hl-6">const</span><span class="hl-2"> </span><span class="hl-7">lox</span><span class="hl-2">: </span><span class="hl-9">OutputLox</span><span class="hl-2"> = ... </span><span class="hl-0">// the lox in an output callback (also `ErrorLox`)</span><br/><span class="hl-6">const</span><span class="hl-2"> </span><span class="hl-7">box</span><span class="hl-2"> = </span><span class="hl-1">BoxFactory</span><span class="hl-2">.</span><span class="hl-3">getBoxString</span><span class="hl-2">(</span><span class="hl-1">lox</span><span class="hl-2">.</span><span class="hl-1">box</span><span class="hl-2">, !</span><span class="hl-6">this</span><span class="hl-2">.</span><span class="hl-1">_colorsDisabled</span><span class="hl-2">);</span>
+<pre><code class="typescript"><span class="hl-5">const</span><span class="hl-2"> </span><span class="hl-6">lox</span><span class="hl-2">: </span><span class="hl-8">OutputLox</span><span class="hl-2"> = ... </span><span class="hl-0">// the lox in an output callback (also `ErrorLox`)</span><br/><span class="hl-5">const</span><span class="hl-2"> </span><span class="hl-6">box</span><span class="hl-2"> = </span><span class="hl-1">BoxFactory</span><span class="hl-2">.</span><span class="hl-3">getBoxString</span><span class="hl-2">(</span><span class="hl-1">lox</span><span class="hl-2">.</span><span class="hl-1">box</span><span class="hl-2">, !</span><span class="hl-5">this</span><span class="hl-2">.</span><span class="hl-1">_colorsDisabled</span><span class="hl-2">);</span>
 </code><button type="button">Copy</button></pre>
 
 </div>
 <div class="tsd-parameters">
 <h4 class="tsd-parameters-title">Parameters</h4>
 <ul class="tsd-parameter-list">
-<li><span><span class="tsd-kind-parameter">box</span>: <a href="../types/Formatting.Box.html" class="tsd-signature-type tsd-kind-type-alias">Box</a></span>
+<li><span><span class="tsd-kind-parameter">box</span>: <a href="../types/index.Box.html" class="tsd-signature-type tsd-kind-type-alias">Box</a></span>
 <div class="tsd-comment tsd-typography"><p>the <code>Box</code> of an <code>OutputLox</code> or <code>ErrorLox</code></p>
 </div></li>
 <li><span><span class="tsd-kind-parameter">colored</span>: <span class="tsd-signature-type">boolean</span> <span class="tsd-signature-symbol">|</span> <span class="tsd-signature-type">undefined</span></span>

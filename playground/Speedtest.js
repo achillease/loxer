@@ -42,13 +42,13 @@ function test1(logs, depth) {
   return boxes(logs, depth);
 }
 
-// logging when logs don't fulfill level
+// logging when logs don't fulfill level: 'debug' boxes against 'info' modules
 function test2(logs, depth) {
   Loxer.init({
     dev: false,
     defaultLevels: {
-      prodLevel: 1,
-      devLevel: 1,
+      prodLevel: 'info',
+      devLevel: 'info',
     },
     config: {
       historyCacheSize: 0,
@@ -62,8 +62,8 @@ function test3(logs, depth) {
   Loxer.init({
     dev: false,
     defaultLevels: {
-      prodLevel: 3,
-      devLevel: 3,
+      prodLevel: 'debug',
+      devLevel: 'debug',
     },
     config: {
       historyCacheSize: 0,
@@ -77,8 +77,8 @@ function test4(logs, depth) {
   Loxer.init({
     dev: true,
     defaultLevels: {
-      prodLevel: 3,
-      devLevel: 3,
+      prodLevel: 'debug',
+      devLevel: 'debug',
     },
     config: {
       historyCacheSize: 0,
@@ -92,7 +92,7 @@ function boxes(count, depth = count) {
   let offset = 0;
   while (offset + depth < count) {
     for (let start = offset + 1; start <= offset + depth; start++) {
-      Loxer.l(3).open('open log');
+      Loxer.debug.open('open log');
     }
     for (let middle = offset + 1; middle <= offset + depth; middle++) {
       Loxer.of(middle).add('append to log');
@@ -104,7 +104,7 @@ function boxes(count, depth = count) {
     offset += depth;
   }
   for (let start = offset + 1; start <= count; start++) {
-    Loxer.l(3).open('open log');
+    Loxer.debug.open('open log');
   }
   for (let middle = offset + 1; middle <= count; middle++) {
     Loxer.of(middle).add('append to log');

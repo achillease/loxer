@@ -6,12 +6,19 @@ small and behavior-preserving; most public contracts are asserted from `test/box
 
 ## Invariants
 
-- `Modules` merges user modules over `DEFAULT_MODULES`; never let `NONE`, `DEFAULT`, or `INVALID`
+- `Modules` merges user modules over a **per-instance clone** of `DEFAULT_MODULES`; never write into
+  `DEFAULT_MODULES` itself (it is module-scoped, so a `defaultLevels` write would leak into every
+  later `Loxer` of the process and survive `resetLoxer()`). Never let `NONE`, `DEFAULT`, or `INVALID`
   become missing/falsy modules.
 - `NONE` means no module text and no box layout. Empty `.module()` / `.m()` means `DEFAULT`, which
   can produce box layout with an empty module label.
 - `Modules.getModule()` owns sliced module text, environment-specific level visibility, and the
   resolved box layout style.
+- `Levels.ts` is the single home of the `LogLevel` ordering: `LEVEL_ORDER` (`error` 0 → `debug` 3;
+  a higher ordinal is dropped sooner), the strict-`>` gate `isHidden(level, threshold)`, and
+  `moreVerbose()`. Never re-derive the comparison anywhere else — it used to exist in three places
+  with three different encodings. A module that logs up to `'error'` reports *errors only*, not
+  nothing: errors bypass the gate entirely, so there is deliberately no `'off'` level.
 - `Loxes` stores both queued pre-init logs and currently open visible boxes. Be careful when
   changing `_shouldUseQueue`, because `.of(id)` must work for queued open logs before init.
 - `BoxFactory` builds layout from the current visible open-log buffer. Hidden logs return an empty

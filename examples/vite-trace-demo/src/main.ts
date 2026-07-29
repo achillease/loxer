@@ -1,6 +1,42 @@
-import { BoxFactory, BoxLayouts, Loxer } from 'loxer';
+import { BoxFactory, BoxLayouts, Loxer, type LoxerModules } from 'loxer';
 import { trace } from 'loxer/trace';
 import './style.css';
+
+// The loggable modules of this demo. `satisfies` is load-bearing: a `: LoxerModules` annotation
+// would widen the keys to `string`, which silently switches the id checking below back off.
+const modules = {
+  CALC: {
+    color: '#ffc857',
+    devLevel: 'debug',
+    fullName: 'Calculation',
+    prodLevel: 'error',
+  },
+  INVENTORY: {
+    color: '#59bfff',
+    devLevel: 'debug',
+    fullName: 'Inventory',
+    prodLevel: 'error',
+  },
+  ORDER: {
+    color: '#73e2a7',
+    devLevel: 'debug',
+    fullName: 'Order',
+    prodLevel: 'error',
+  },
+  PAYMENT: {
+    color: '#e68cff',
+    devLevel: 'debug',
+    fullName: 'Payment',
+    prodLevel: 'error',
+  },
+} satisfies LoxerModules;
+
+// Registering them types every module id in this app: the `moduleId: 'CALC'` trace options and
+// `Loxer.m(...)` / `Loxer.module(...)` now autocomplete these four ids, and a typo like 'CLAC' is a
+// compile error instead of a red INVALIDMODULE label at runtime.
+declare module 'loxer' {
+  interface LoxerModuleRegistry extends Record<keyof typeof modules, true> {}
+}
 
 type CallbackBox = Parameters<typeof BoxFactory.getBoxString>[0];
 
@@ -87,32 +123,7 @@ const records: TraceRecord[] = [];
 
 Loxer.init({
   dev: true,
-  modules: {
-    CALC: {
-      color: '#ffc857',
-      devLevel: 3,
-      fullName: 'Calculation',
-      prodLevel: 0,
-    },
-    INVENTORY: {
-      color: '#59bfff',
-      devLevel: 3,
-      fullName: 'Inventory',
-      prodLevel: 0,
-    },
-    ORDER: {
-      color: '#73e2a7',
-      devLevel: 3,
-      fullName: 'Order',
-      prodLevel: 0,
-    },
-    PAYMENT: {
-      color: '#e68cff',
-      devLevel: 3,
-      fullName: 'Payment',
-      prodLevel: 0,
-    },
-  },
+  modules,
   config: {
     boxLayoutStyle: 'round',
     disableColors: true,
@@ -126,7 +137,7 @@ Loxer.init({
 function calculateTotal(unitPrice: number, quantity: number): number {
   Loxer.log('Validating basket', { quantity, unitPrice });
   const total = unitPrice * quantity;
-  Loxer.h().l(2).log('Basket total calculated', total);
+  Loxer.h().debug('Basket total calculated', total);
 
   return total;
 }
@@ -143,7 +154,7 @@ trace(calculateTotal, {
 async function reserveInventory(orderId: number, delay: number): Promise<number> {
   Loxer.log(`Reserving inventory for order ${orderId}`);
   await wait(delay);
-  Loxer.l(2).log(`Inventory reserved for order ${orderId}`);
+  Loxer.debug(`Inventory reserved for order ${orderId}`);
 
   return orderId;
 }
@@ -161,7 +172,7 @@ async function chargePayment(orderId: number): Promise<number> {
     throw new Error('Payment provider rejected order 13');
   }
 
-  Loxer.l(2).log(`Payment approved for order ${orderId}`);
+  Loxer.debug(`Payment approved for order ${orderId}`);
 
   return orderId;
 }
@@ -175,7 +186,7 @@ async function submitOrder(orderId: number, delay: number): Promise<{ orderId: n
   Loxer.log(`Starting order workflow ${orderId}`);
   await reserveInventory(orderId, delay);
   await chargePayment(orderId);
-  Loxer.l(2).log(`Order ${orderId} is ready to submit`);
+  Loxer.debug(`Order ${orderId} is ready to submit`);
 
   return { orderId };
 }

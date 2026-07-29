@@ -40,5 +40,15 @@ jobs:
       - name: Test
         run: pnpm test
 
+      # `pnpm test` transpiles without type-checking, so this is what gates the test
+      # suite's types - including that module ids stay plain `string` for consumers
+      # who never augment LoxerModuleRegistry.
+      - name: Typecheck tests
+        run: pnpm typecheck:test
+
       - name: Build
         run: pnpm build
+
+      # Checks the emitted dist/*.d.ts, so it has to run after Build.
+      - name: Typecheck type-level tests
+        run: pnpm typecheck:types

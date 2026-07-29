@@ -1,6 +1,6 @@
 import { ItemOptions, ItemType } from '../core/Item.js';
+import type { LogLevel } from '../core/Levels.js';
 import { is } from '../Helpers.js';
-import { LevelType } from '../types.js';
 /** @module Lox */
 
 export type LoxType = 'single' | 'open' | 'close' | 'error';
@@ -14,7 +14,7 @@ export interface LoxProps {
   itemOptions: ItemOptions | undefined;
   type: LoxType;
   moduleId: string;
-  level: LevelType;
+  level: LogLevel;
 }
 
 /** The basic log that every {@link OutputLox} and {@link ErrorLox} extends */
@@ -39,8 +39,13 @@ export class Lox {
    * - will be `INVALID` if logged with a module that was not defined at {@link LoxerOptions.modules}
    */
   moduleId: string;
-  /** the log level that was given with `Loxer.level(number)` or `Loxer.l(number)` */
-  level: LevelType;
+  /** the {@link LogLevel} of the log
+   * - `'error'` for every `Loxer.error()` / `Loxer.of(...).error()`
+   * - `'info'` for `Loxer.log()` / `Loxer.open()`
+   * - the named level for `Loxer.warn/info/debug(...)` and their `.open()`
+   * - the opening log's level for `Loxer.of(...).add()` / `.close()`
+   */
+  level: LogLevel;
   /** the {@link Date} the log was declared */
   timestamp: Date;
 

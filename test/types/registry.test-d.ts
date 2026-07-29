@@ -1,0 +1,107 @@
+// Type-level test for the `LoxerModuleRegistry` augmentation.
+//
+// Run with `pnpm typecheck:types` AFTER `pnpm build`: it imports `loxer` by its own package name,
+// so it checks the emitted `dist/*.d.ts` that a consumer actually receives - through the same
+// `exports` map and with the same `declare module 'loxer'` recipe the documentation teaches.
+//
+// It deliberately lives outside `test/**/*.test.ts` and uses a `.test-d.ts` suffix, because a module
+// augmentation applies to the WHOLE TypeScript program: in the ordinary suites it would narrow
+// module ids for every other file too and break the ad-hoc ids they use ('ONE', 'IT', 'wrong', ...).
+//
+// Negative cases are pinned with `@ts-expect-error`, so a clean exit means the errors were really
+// produced - if the narrowing regresses, the unused directives fail the check.
+import {
+  Loxer,
+  trace as traceDecorator,
+  type LogLevel,
+  type LoxerModules,
+  type ModuleId,
+} from 'loxer';
+import { trace as traceMarker } from 'loxer/trace';
+
+// `satisfies`, NOT `: LoxerModules` - an annotation widens the keys to `string` and silently
+// disables every assertion below.
+const modules = {
+  PERS: { fullName: 'Persons', color: '#0ff', devLevel: 'debug', prodLevel: 'warn' },
+  DB: { fullName: 'Database', color: '#f0f', devLevel: 'info', prodLevel: 'error' },
+} satisfies LoxerModules;
+
+declare module 'loxer' {
+  interface LoxerModuleRegistry extends Record<keyof typeof modules, true> {}
+}
+
+Loxer.init({ modules });
+
+// --- the keys survive `satisfies` -------------------------------------------------------------
+// The function-parameter form is `any`-safe: a naive `[A] extends [B] ? [B] extends [A] …` reports
+// `true` for `Equals<any, string>`, so a regression that collapsed `ModuleId` to `any` (an
+// unresolved circular import, say - and this design does rely on a type-only `index` <-> `types`
+// cycle) would slip through it.
+type Equals<A, B> =
+  (<T>() => T extends A ? 1 : 2) extends <T>() => T extends B ? 1 : 2 ? true : false;
+const keysStayLiteral: Equals<keyof typeof modules, 'PERS' | 'DB'> = true;
+const idIsNarrowed: Equals<ModuleId, 'PERS' | 'DB' | 'NONE' | 'DEFAULT' | 'INVALID'> = true;
+
+// --- registered ids are accepted --------------------------------------------------------------
+Loxer.m('PERS').log('ok');
+Loxer.module('DB').log('ok');
+Loxer.highlight().m('PERS').open('ok');
+// the level methods are reachable through the chain, and carry their own `.open()`
+Loxer.highlight().m('PERS').debug('ok');
+Loxer.highlight().m('PERS').debug.open('ok');
+Loxer.warn('ok');
+Loxer.info.open('ok');
+Loxer.of(Loxer.debug.open('ok')).debug('ok');
+
+// --- the built-in ids stay valid --------------------------------------------------------------
+Loxer.m('NONE').log('ok');
+Loxer.m('DEFAULT').log('ok');
+Loxer.m('INVALID').log('ok');
+
+// --- an omitted id still means DEFAULT --------------------------------------------------------
+Loxer.m().log('ok');
+Loxer.module(undefined).log('ok');
+
+// --- typos are compile errors -----------------------------------------------------------------
+// @ts-expect-error 'PRES' is not a registered module id
+Loxer.m('PRES').log('typo');
+// @ts-expect-error 'PRES' is not a registered module id
+Loxer.module('PRES').log('typo');
+
+// --- getModuleLevel is narrowed too -----------------------------------------------------------
+const level: LogLevel | undefined = Loxer.getModuleLevel('PERS');
+// @ts-expect-error probing an unregistered id needs a cast now
+Loxer.getModuleLevel('PRES');
+// ... which stays available for the documented `undefined` return
+const missing: LogLevel | undefined = Loxer.getModuleLevel('PRES' as ModuleId);
+// a collapse to `any` would defeat every assertion above, so pin it directly
+type NotAny<T> = 0 extends 1 & T ? false : true;
+const moduleIdIsNotAny: NotAny<ModuleId> = true;
+
+// --- the deleted numeric level API stays deleted ----------------------------------------------
+// @ts-expect-error `.l()` / `.level()` were removed in favor of the per-level methods
+Loxer.l(2).log('gone');
+// @ts-expect-error `.level()` was removed in favor of the per-level methods
+Loxer.level(2).log('gone');
+// @ts-expect-error module thresholds are names, never numbers
+Loxer.init({ modules: { X: { fullName: 'X', color: '#fff', devLevel: 1, prodLevel: 0 } } });
+// @ts-expect-error 'off' / 'silent' do not exist - 'error' is the quietest a module gets
+Loxer.init({ defaultLevels: { devLevel: 'off', prodLevel: 'off' } });
+// @ts-expect-error an error is not a box, so there is no `Loxer.error.open()`
+Loxer.error.open('gone');
+// @ts-expect-error a trace opens a box, so `'error'` is not a `BoxLevel`
+traceMarker(load, { level: 'error' });
+
+// --- trace options (`loxer/trace` inherits the narrowing from one `loxer` augmentation) -------
+declare function load(id: string): Promise<string>;
+traceMarker(load, { moduleId: 'PERS' });
+// @ts-expect-error 'PRES' is not a registered module id
+traceMarker(load, { moduleId: 'PRES' });
+
+// --- the `@trace('MOD')` decorator shorthand --------------------------------------------------
+traceDecorator('PERS');
+traceDecorator({ moduleId: 'DB', openMessage: 'args' });
+// @ts-expect-error 'PRES' is not a registered module id
+traceDecorator('PRES');
+// @ts-expect-error 'PRES' is not a registered module id
+traceDecorator({ moduleId: 'PRES' });

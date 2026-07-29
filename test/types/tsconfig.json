@@ -1,0 +1,20 @@
+{
+  // Standalone program for the type-level tests - deliberately NOT extending ../../tsconfig.json,
+  // whose `include`/`rootDir`/`outDir` target the package build. `nodenext` is required so that
+  // `import ... from 'loxer'` resolves through this package's own `exports` map (Node
+  // self-reference) to the built `dist/*.d.ts`, which is what a consumer sees.
+  // Run `pnpm build` first: this checks `dist/`, not `src/`.
+  "compilerOptions": {
+    "noEmit": true,
+    "target": "ES2022",
+    "module": "nodenext",
+    "moduleResolution": "nodenext",
+    "lib": ["ESNext", "DOM"],
+    "types": ["node"],
+    "strict": true,
+    "experimentalDecorators": true,
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true
+  },
+  "include": ["**/*.test-d.ts"]
+}

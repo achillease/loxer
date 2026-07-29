@@ -18,7 +18,10 @@ export class OutputLox extends Lox {
    * - is `undefined` when the log is a single `Loxer.log()` or an opening log itself
    */
   timeConsumption: number | undefined;
-  /** determines if the log has not fulfilled the level that the corresponding module has set */
+  /** determines if the log's level sits past the level its module logs up to — a hidden log enters
+   * neither the history nor the visible box layout
+   * - always `false` on an {@link ErrorLox}: errors are output whatever the level says
+   */
   hidden: boolean = false;
   /** the corresponding module of this Lox */
   module: ExtendedModule = DEFAULT_EXTENDED_MODULE;

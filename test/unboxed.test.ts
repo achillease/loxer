@@ -31,12 +31,12 @@ beforeEach(() => {
       prodLog,
     },
     defaultLevels: {
-      devLevel: 2,
-      prodLevel: 0,
+      devLevel: 'info',
+      prodLevel: 'error',
     },
     modules: {
-      TEST: { color: '#ff0', devLevel: 1, prodLevel: 0, fullName: 'TestModule' },
-      MUTE: { color: '#f0f', devLevel: 0, prodLevel: 0, fullName: 'Muted' },
+      TEST: { color: '#ff0', devLevel: 'info', prodLevel: 'error', fullName: 'TestModule' },
+      MUTE: { color: '#f0f', devLevel: 'error', prodLevel: 'error', fullName: 'Muted' },
     },
     config: {
       moduleTextSlice: 10,
@@ -59,7 +59,10 @@ afterAll(() => {
 });
 
 test('getModuleLevel', () => {
-  expect(Loxer.getModuleLevel('TEST')).toBe(1);
+  expect(Loxer.getModuleLevel('TEST')).toBe('info');
+  expect(Loxer.getModuleLevel('MUTE')).toBe('error');
+  // an unknown module has no level at all - `undefined`, not a sentinel
+  expect(Loxer.getModuleLevel('nope')).toBeUndefined();
 });
 
 test('logging', () => {
@@ -83,25 +86,45 @@ test('highlight', () => {
   expect(devLogs[2].highlighted).toBeTruthy();
 });
 
-test('level', () => {
-  Loxer.log('shown level 1 log');
-  Loxer.log('shown automatic level 1 log');
-  Loxer.level(2).log('shown level 2 log');
-  Loxer.l(3).log('hidden level 3 log');
+test('levels', () => {
+  // the module threshold is 'info', so everything but 'debug' is visible
+  Loxer.log('shown info log');
+  Loxer.info('shown info log via info()');
+  Loxer.warn('shown warn log');
+  Loxer.debug('hidden debug log');
 
   expect(devLogs.length).toBe(4);
 
-  expect(devLogs[1].message).toBe('shown level 1 log');
-  expect(devLogs[1].level).toBe(1);
+  expect(devLogs[1].message).toBe('shown info log');
+  expect(devLogs[1].level).toBe('info');
 
-  expect(devLogs[2].message).toBe('shown automatic level 1 log');
-  expect(devLogs[2].level).toBe(1);
+  expect(devLogs[2].message).toBe('shown info log via info()');
+  expect(devLogs[2].level).toBe('info');
 
-  expect(devLogs[3].message).toBe('shown level 2 log');
-  expect(devLogs[3].level).toBe(2);
+  expect(devLogs[3].message).toBe('shown warn log');
+  expect(devLogs[3].level).toBe('warn');
 
-  expect(devLogs.length).toBe(4);
-  expect(devLogs[devLogs.length - 1].message).not.toBe('hidden level 3 log');
+  expect(devLogs[devLogs.length - 1].message).not.toBe('hidden debug log');
+});
+
+test('a hoisted level method reads the chain state at call time', () => {
+  // taken before any modifier ran - a level is a property, so this must still see them
+  const warn = Loxer.warn;
+
+  Loxer.h().m('TEST');
+  warn('hoisted');
+  const hoisted = devLogs[devLogs.length - 1];
+  expect(hoisted.message).toBe('hoisted');
+  expect(hoisted.highlighted).toBe(true);
+  expect(hoisted.moduleId).toBe('TEST');
+  expect(hoisted.level).toBe('warn');
+
+  // ... and the call itself reset the one-shot state, exactly like `Loxer.log()` does
+  warn('plain');
+  const plain = devLogs[devLogs.length - 1];
+  expect(plain.message).toBe('plain');
+  expect(plain.highlighted).toBe(false);
+  expect(plain.moduleId).toBe('NONE');
 });
 
 test('modules', () => {
@@ -170,29 +193,31 @@ test('errors', () => {
 });
 
 test('mixed', () => {
-  Loxer.h().m().l(2).log('1');
-  Loxer.h().l(2).m().log('2');
-  Loxer.m().h().l(2).log('3');
-  Loxer.m().l(2).h().log('4');
-  Loxer.l(2).h().m().log('5');
-  Loxer.l(2).m().h().log('6');
+  Loxer.h().m().log('1');
+  Loxer.m().h().log('2');
+  Loxer.h().m().warn('3');
+  Loxer.m().h().warn('4');
 
-  expect(devLogs.length).toBe(7);
+  expect(devLogs.length).toBe(5);
   for (let i = 1; i < devLogs.length; i++) {
     const log = devLogs[i];
     expect(log.message).toBe(i.toString());
     expect(log.highlighted).toBeTruthy();
     expect(log.moduleId).toBe('DEFAULT');
-    expect(log.level).toBe(2);
   }
+  // the method that writes the log decides the level, whatever order the modifiers came in
+  expect(devLogs[1].level).toBe('info');
+  expect(devLogs[2].level).toBe('info');
+  expect(devLogs[3].level).toBe('warn');
+  expect(devLogs[4].level).toBe('warn');
 });
 
 test('history', () => {
   Loxer.log('single log');
   Loxer.h().log('highlight log');
   Loxer.error('error log');
-  Loxer.l(2).log('level log');
-  Loxer.l(3).log('hidden level log');
+  Loxer.warn('warn log');
+  Loxer.debug('hidden debug log');
   Loxer.m('TEST').log('module log');
   Loxer.error('error log 2');
 
@@ -208,17 +233,16 @@ test('history', () => {
   expect(Loxer.history[0].message).toBe('error log 2');
   expect(Loxer.history[Loxer.history.length - 1].message).toBe('Loxer initialized');
   // the hidden (leveled-out) log must not enter history
-  expect(Loxer.history.some((l) => l.message === 'hidden level log')).toBe(false);
+  expect(Loxer.history.some((l) => l.message === 'hidden debug log')).toBe(false);
 });
 
 test('one-shot modifiers reset after each log', () => {
-  // DEFAULT module (devLevel 2) so the level-2 modified log is visible
-  Loxer.h().m().l(2).log('modified');
+  Loxer.h().m().warn('modified');
   const modified = devLogs[devLogs.length - 1];
   expect(modified.message).toBe('modified');
   expect(modified.highlighted).toBe(true);
   expect(modified.moduleId).toBe('DEFAULT');
-  expect(modified.level).toBe(2);
+  expect(modified.level).toBe('warn');
 
   // the next bare log must fall back to the defaults, proving the modifiers were reset
   Loxer.log('plain');
@@ -226,14 +250,22 @@ test('one-shot modifiers reset after each log', () => {
   expect(plain.message).toBe('plain');
   expect(plain.highlighted).toBe(false);
   expect(plain.moduleId).toBe('NONE');
-  expect(plain.level).toBe(1);
+  expect(plain.level).toBe('info');
 });
 
-test('a module with devLevel 0 is fully muted', () => {
+test("a module at devLevel 'error' emits only its errors", () => {
   Loxer.m('MUTE').log('hidden 1');
-  Loxer.m('MUTE').l(1).log('hidden 2');
-  // only the init log made it through; the MUTE logs are fully suppressed
+  Loxer.m('MUTE').warn('hidden 2');
+  Loxer.m('MUTE').debug('hidden 3');
+  // only the init log made it through; every normal MUTE log is suppressed
   expect(devLogs.length).toBe(1);
   expect(devLogs.some((l) => l.moduleId === 'MUTE')).toBe(false);
   expect(Loxer.history.some((l) => l.moduleId === 'MUTE')).toBe(false);
+
+  // a module at 'error' is the quietest a module gets, not an off switch: errors are never gated
+  Loxer.m('MUTE').error('still reported');
+  expect(devErrors.length).toBe(1);
+  expect(devErrors[0].moduleId).toBe('MUTE');
+  expect(devErrors[0].level).toBe('error');
+  expect(Loxer.history.some((l) => l.message === 'still reported')).toBe(true);
 });

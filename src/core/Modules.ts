@@ -1,7 +1,8 @@
 import { BoxLayoutStyle } from './index.js';
+import { isHidden, LogLevel, resolveThreshold } from './Levels.js';
 import { is } from '../Helpers.js';
 import { Lox } from '../loxes/Lox.js';
-import { LevelType, LoxerModules, LoxerOptions, Module } from '../types.js';
+import { LoxerModules, LoxerOptions, Module } from '../types.js';
 
 interface ModulesProps {
   isDev: boolean;
@@ -14,17 +15,24 @@ interface ModulesProps {
 export type ExtendedModule = Module & { slicedName: string; boxLayoutStyle: BoxLayoutStyle };
 
 export class Modules {
-  private _isDev: boolean = false;
-  private _modules: LoxerModules = DEFAULT_MODULES;
-  private _moduleTextSlice: number = 8;
+  private readonly _isDev: boolean = false;
+  private readonly _modules: LoxerModules = DEFAULT_MODULES;
+  private readonly _moduleTextSlice: number = 8;
 
   constructor(props?: ModulesProps) {
     this._isDev = props?.isDev ?? true;
+    // clone the built-ins, never write into them: DEFAULT_MODULES is module-scoped, so mutating it
+    // would leak one init's `defaultLevels` into every later Loxer instance of the process
+    const defaults: LoxerModules = {
+      NONE: { ...DEFAULT_MODULES.NONE },
+      DEFAULT: { ...DEFAULT_MODULES.DEFAULT },
+      INVALID: { ...DEFAULT_MODULES.INVALID },
+    };
     if (props?.defaultLevels) {
-      DEFAULT_MODULES.NONE.devLevel = props?.defaultLevels.devLevel;
-      DEFAULT_MODULES.DEFAULT.devLevel = props?.defaultLevels.devLevel;
-      DEFAULT_MODULES.NONE.prodLevel = props?.defaultLevels.prodLevel;
-      DEFAULT_MODULES.DEFAULT.prodLevel = props?.defaultLevels.prodLevel;
+      defaults.NONE.devLevel = props.defaultLevels.devLevel;
+      defaults.DEFAULT.devLevel = props.defaultLevels.devLevel;
+      defaults.NONE.prodLevel = props.defaultLevels.prodLevel;
+      defaults.DEFAULT.prodLevel = props.defaultLevels.prodLevel;
     }
     // assign default box layout
     const modules = props?.modules ?? {};
@@ -33,7 +41,7 @@ export class Modules {
     });
     // merge modules
     this._modules = {
-      ...DEFAULT_MODULES,
+      ...defaults,
       ...props?.modules,
     };
     this._moduleTextSlice = props?.moduleTextSlice ?? 8;
@@ -44,14 +52,15 @@ export class Modules {
   }
 
   /**
-   * @internal the level of a specific module || -1
+   * @internal the level of a specific module || undefined
    */
-  getLevel(moduleId: string): LevelType | -1 {
-    const level = this._isDev
-      ? this._modules[moduleId]?.devLevel
-      : this._modules[moduleId]?.prodLevel;
+  getLevel(moduleId: string): LogLevel | undefined {
+    const mod = this._modules[moduleId];
+    const level = this._isDev ? mod?.devLevel : mod?.prodLevel;
 
-    return level ?? -1;
+    // a module that declares no threshold reports none, but one that names an unusable level
+    // reports the level the gate falls back to - never a value outside `LogLevel`
+    return level === undefined ? undefined : resolveThreshold(level, 'info');
   }
 
   getModule(lox: Lox): { loxModule: ExtendedModule; hidden: boolean } {
@@ -66,9 +75,10 @@ export class Modules {
     for (let i = slicedName.length; i < moduleTextLength; i++) {
       slicedName += ' ';
     }
-    const dl = mod.devLevel ?? 1;
-    const pl = mod.prodLevel ?? 1;
-    const hidden = this._isDev ? dl === 0 || lox.level > dl : pl === 0 || lox.level > pl;
+    // the `'info'` fallback keeps a JS consumer's malformed module logging instead of silently
+    // muting it — a missing threshold, and an unusable one, both land there rather than at no gate
+    const threshold = resolveThreshold(this._isDev ? mod.devLevel : mod.prodLevel, 'info');
+    const hidden = isHidden(lox.level, threshold);
     const boxLayoutStyle = mod.boxLayoutStyle ?? 'round';
 
     return {
@@ -110,28 +120,29 @@ export class Modules {
 
     return is(module) && is(module.color) ? module.color : '';
   }
-
-  /**
-   * @deprecated
-   * @internal determines if a log does not fulfill it's level constraints
-   */
-  isLogHidden(lox: Lox): boolean {
-    const dl = this._modules[lox.moduleId]?.devLevel ?? 1;
-    const pl = this._modules[lox.moduleId]?.prodLevel ?? 1;
-
-    return this._isDev ? dl === 0 || lox.level > dl : pl === 0 || lox.level > pl;
-  }
 }
 
 /** @internal */
 export const DEFAULT_MODULES: LoxerModules = {
-  NONE: { fullName: '', color: '#fff', devLevel: 1, prodLevel: 0, boxLayoutStyle: 'round' },
-  DEFAULT: { fullName: '', color: '#fff', devLevel: 1, prodLevel: 0, boxLayoutStyle: 'round' },
+  NONE: {
+    fullName: '',
+    color: '#fff',
+    devLevel: 'info',
+    prodLevel: 'error',
+    boxLayoutStyle: 'round',
+  },
+  DEFAULT: {
+    fullName: '',
+    color: '#fff',
+    devLevel: 'info',
+    prodLevel: 'error',
+    boxLayoutStyle: 'round',
+  },
   INVALID: {
     fullName: 'INVALIDMODULE',
     color: '#f00',
-    devLevel: 1,
-    prodLevel: 0,
+    devLevel: 'info',
+    prodLevel: 'error',
     boxLayoutStyle: 'round',
   },
 };
@@ -139,8 +150,8 @@ export const DEFAULT_MODULES: LoxerModules = {
 export const DEFAULT_EXTENDED_MODULE: ExtendedModule = {
   fullName: 'INVALIDMODULE',
   color: '#f00',
-  devLevel: 1,
-  prodLevel: 0,
+  devLevel: 'info',
+  prodLevel: 'error',
   slicedName: '',
   boxLayoutStyle: 'round',
 };

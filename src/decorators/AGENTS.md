@@ -11,7 +11,9 @@ Decorators are optional public helpers layered on top of the singleton `Loxer` A
 - Promise-returning traced methods close the box after resolution and return the resolved payload.
   Current behavior does not add a catch handler; do not change rejection semantics accidentally.
 - A string `trace` option is treated as `moduleId`; object options can configure module, level,
-  highlight mode, message formatting, and item capture.
+  highlight mode, message formatting, and item capture. `level` is a `BoxLevel` (every `LogLevel`
+  except `'error'`, defaulting to `'info'`) and is applied by indexing the matching level's
+  `LevelMethods`: `Loxer.h(...).m(moduleId)[level].open(...)`.
 - Class names ending in `Class` are shortened for decorator-generated messages.
 
 ## Tests

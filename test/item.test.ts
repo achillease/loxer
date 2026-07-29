@@ -23,7 +23,7 @@ function initItems(colored: boolean) {
   Loxer.init({
     dev: true,
     callbacks: { prodLog, prodError },
-    modules: { IT: { fullName: 'Item', color: '#0f0', devLevel: 1, prodLevel: 0 } },
+    modules: { IT: { fullName: 'Item', color: '#0f0', devLevel: 'info', prodLevel: 'error' } },
     config: { disableColors: !colored },
   });
   (console.log as Mock).mockClear();

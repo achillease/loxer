@@ -36,6 +36,7 @@
   "scripts": {
     "build": "tsc && pnpm --recursive --filter \"./packages/**\" run build",
     "typecheck:test": "tsc -p test/tsconfig.json",
+    "typecheck:types": "tsc -p test/types/tsconfig.json",
     "watch": "tsc --watch",
     "test": "vitest run --coverage",
     "lint": "eslint .",

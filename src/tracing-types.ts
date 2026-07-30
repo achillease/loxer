@@ -14,7 +14,8 @@ export type TraceHighlight = 'open' | 'close' | 'all';
  * - `'types'` — `calculate(number, number)` (`typeof` each argument)
  *
  * A callback receives the call's argument tuple and must return the message string. `Args` is
- * inferred from the marked function for `trace()`; pass it explicitly on `@trace<Args, Result>()`.
+ * inferred from the target a `trace()` marker names; pass it explicitly on `@trace<Args, Result>()`
+ * and on `trace<Args, Result>(options)`.
  *
  * @example
  * ```ts
@@ -48,8 +49,9 @@ export type FunctionOpenMessage<Args extends readonly unknown[] = readonly unkno
  * - `'prettyResult'` — same as `'result'`, with indented JSON
  *
  * A callback receives that result and must return the message string. `Result` is inferred from the
- * marked function for `trace()`; pass it explicitly on `@trace<Args, Result>()`. Failures use a
- * fixed `… failed` close message and ignore this option.
+ * target a `trace()` marker names; pass it explicitly on `@trace<Args, Result>()` and on
+ * `trace<Args, Result>(options)`. Failures use a fixed `… failed` close message and ignore this
+ * option.
  *
  * ### for functions
  * ```ts
@@ -73,12 +75,13 @@ export type FunctionCloseMessage<Result = unknown> =
   | 'prettyResult';
 
 /**
- * Options shared by the `@trace()` method decorator and the `trace(target | [targets], options)`
- * function marker.
+ * Options shared by the `@trace()` method decorator and the `trace()` function marker in each of
+ * its forms.
  *
- * The plain-function marker infers `Args` and `Result` from its target — from the union of every
- * listed target when it marks a list. Decorators cannot infer a method's signature, so supply them
- * explicitly when formatter callbacks need precise types.
+ * A marker that names its target — `trace(target | [targets], options)` — infers `Args` and `Result`
+ * from it, from the union of every listed target when it marks a list. `@trace()` and the
+ * `trace(options)` marker inside a function have no signature in hand, so supply them explicitly
+ * when formatter callbacks need precise types.
  * `className.functionName` uses the class name for decorated methods and falls back to the function
  * name for plain functions.
  */
@@ -102,6 +105,18 @@ export interface TraceOptions<
    * event.
    */
   level?: BoxLevel;
+  /** the name a marked function reports in its box messages
+   *
+   * A function reached by a marker rather than by name — a literal passed to `trace()`, or the
+   * function a `trace(options)` statement sits in — is named after itself, or after the binding,
+   * assignment target, or property it belongs to: `const load = useCallback(trace(...), [])` reports
+   * `load`. Supply `name` where nothing names it, such as
+   * `useEffect(trace(() => { ... }, { name: 'syncOrders' }), [])`.
+   *
+   * Has to be a string literal, because the transform reads it while it builds. `@trace()` and
+   * `trace(namedFunction, options)` know their target's name and ignore it.
+   */
+  name?: string;
   /** which lifecycle messages should be highlighted */
   highlight?: TraceHighlight;
   /** appends the arguments as the opening log item */

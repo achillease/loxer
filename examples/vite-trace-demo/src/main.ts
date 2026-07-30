@@ -198,10 +198,19 @@ trace(submitOrder, {
   resultAsItem: true,
 });
 
-getElement<HTMLButtonElement>('sync-demo').addEventListener('click', () => {
-  const total = calculateTotal(19.95, 3);
-  setStatus(`Sync result preserved: ${total.toFixed(2)}`);
-});
+// A function literal handed straight to the marker is traced where it stands, so a callback needs no
+// declaration of its own to be traced. This one takes its box name from the binding it belongs to,
+// and its `Loxer.log` lands in the box the click opens.
+const runSyncDemo = trace(
+  () => {
+    const total = calculateTotal(19.95, 3);
+    Loxer.log(`Reporting ${total.toFixed(2)} to the status line`);
+    setStatus(`Sync result preserved: ${total.toFixed(2)}`);
+  },
+  { moduleId: 'CALC' }
+);
+
+getElement<HTMLButtonElement>('sync-demo').addEventListener('click', runSyncDemo);
 
 getElement<HTMLButtonElement>('failure-demo').addEventListener('click', async () => {
   setStatus('Running the rejected async invocation…');
@@ -214,18 +223,32 @@ getElement<HTMLButtonElement>('failure-demo').addEventListener('click', async ()
   }
 });
 
+// A marker written as the first statement of a function marks that function, so the listener below
+// stays the ordinary inline arrow `addEventListener` receives — nothing wraps it. Nothing names it
+// either, hence the `name` option, and its options are evaluated on every click, because they sit
+// inside the traced body.
 getElement<HTMLButtonElement>('overlap-demo').addEventListener('click', async () => {
+  trace({ moduleId: 'ORDER', name: 'runOverlapDemo' });
   setStatus('Running two overlapping invocations with different delays…');
+  Loxer.log('Starting two overlapping order workflows');
   const results = await Promise.all([submitOrder(101, 650), submitOrder(102, 250)]);
   setStatus(`Both invocations completed: ${results.map(({ orderId }) => orderId).join(', ')}`);
 });
 
-getElement<HTMLButtonElement>('clear-output').addEventListener('click', () => {
-  records.length = 0;
-  output.replaceChildren();
-  emptyOutput.hidden = false;
-  setStatus('Output cleared.');
-});
+// Nothing names a listener passed straight to `addEventListener`, so this one names itself with the
+// `name` option. Without it the build stops rather than invent a name for the box.
+getElement<HTMLButtonElement>('clear-output').addEventListener(
+  'click',
+  trace(
+    () => {
+      records.length = 0;
+      output.replaceChildren();
+      emptyOutput.hidden = false;
+      setStatus('Output cleared.');
+    },
+    { moduleId: 'ORDER', name: 'clearOutput' }
+  )
+);
 
 function record(kind: TraceRecord['kind'], lox: CallbackLox): void {
   records.push({

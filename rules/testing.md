@@ -13,6 +13,8 @@
   `test/`. It must include `vitest/globals` and use Vite-compatible
   `moduleResolution: "bundler"`; changes to that configuration are complete only when
   `pnpm typecheck:test` passes.
+- Keep extracted test suites as independently discovered `test/**/*.test.ts` files; do not hide
+  test registrations in imported case modules behind a thin entry test.
 - If a change touches global logger state, call `resetLoxer()` in `afterEach` and re-init `Loxer`
   in `beforeEach` — see `test/boxed.test.ts` for the pattern.
 - If a change alters box layout (open/close columns, trimming, visible slots), update or add

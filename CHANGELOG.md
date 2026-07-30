@@ -22,6 +22,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/), and this
   that function's box automatically.
 - Add tracing of several functions from one marker: `trace([placeOrder, ship], { moduleId: 'ORD' })`
   evaluates the shared options once and still gives each target its own box.
+- Add inline function trace markers: `trace((...) => ..., options)` traces an expression-position
+  function literal, and first-statement `trace(options)` traces its enclosing function without
+  wrapping it, so callbacks can stay inline for React hooks. Use the `name` option when a function
+  has no inferable name.
 - Add type-safe module ids: augment `LoxerModuleRegistry` with the keys of your modules and
   `Loxer.m()`, `Loxer.module()`, `Loxer.getModuleLevel()` and the `moduleId` trace option accept
   only those ids plus the built-ins — autocompleted, with a compile error on a typo. Leaving the

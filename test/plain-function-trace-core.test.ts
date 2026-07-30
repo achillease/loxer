@@ -1,70 +1,17 @@
-import { ErrorLox, OutputLox } from '../src/loxes';
-import { Loxer, resetLoxer } from '../src';
-import { __observeTraceResult, __setTraceFunctionLength, __startTrace, trace } from '../src/trace';
-import { transformLoxerTrace } from '../packages/babel-plugin-loxer-trace/src/transform';
 import { vi } from 'vitest';
-
-let devLogs: OutputLox[] = [];
-let devErrors: ErrorLox[] = [];
-let moduleCount = 0;
-
-const traceRuntimeUrl = asDataModule(
-  'export const trace = (...args) => globalThis.__loxerTraceMarker(...args);' +
-    'export const __startTrace = (...args) => globalThis.__loxerStartTrace(...args);' +
-    'export const __observeTraceResult = (...args) => globalThis.__loxerObserveTraceResult(...args);' +
-    'export const __setTraceFunctionLength = (...args) => globalThis.__loxerSetFunctionLength(...args);'
-);
-// The proxy re-reads `globalThis.__loxerTraceLoxer` on every access so a `resetLoxer()` between
-// tests is observed. It re-binds methods for `this`, and then copies the function's own properties
-// across: a level's log method also carries `.open`, and `Function.prototype.bind` would otherwise
-// drop it.
-const loxerRuntimeUrl = asDataModule(
-  'export const Loxer = new Proxy({}, { get: (_target, property) => {' +
-    'const target = globalThis.__loxerTraceLoxer;' +
-    'const value = target[property];' +
-    'if (typeof value !== "function") return value;' +
-    'const bound = value.bind(target);' +
-    'Object.assign(bound, value);' +
-    'return bound;' +
-    '} });'
-);
-
-beforeEach(() => {
-  (globalThis as any).__loxerTraceMarker = trace;
-  (globalThis as any).__loxerObserveTraceResult = __observeTraceResult;
-  (globalThis as any).__loxerSetFunctionLength = __setTraceFunctionLength;
-  (globalThis as any).__loxerStartTrace = __startTrace;
-  (globalThis as any).__loxerTraceLoxer = Loxer;
-  Loxer.init({
-    dev: true,
-    callbacks: {
-      devError(error) {
-        devErrors.push(error);
-      },
-      devLog(log) {
-        devLogs.push(log);
-      },
-    },
-    defaultLevels: { devLevel: 'info', prodLevel: 'error' },
-    modules: {
-      TRACE: { color: '#00ff99', devLevel: 'info', prodLevel: 'error', fullName: 'Trace' },
-      ORDER: { color: '#ffcc00', devLevel: 'info', prodLevel: 'error', fullName: 'Order' },
-    },
-  });
-  devLogs = [];
-  devErrors = [];
-});
-
-afterEach(() => {
-  devLogs = [];
-  devErrors = [];
-  delete (globalThis as any).__loxerTraceMarker;
-  delete (globalThis as any).__loxerObserveTraceResult;
-  delete (globalThis as any).__loxerSetFunctionLength;
-  delete (globalThis as any).__loxerStartTrace;
-  delete (globalThis as any).__loxerTraceLoxer;
-  resetLoxer();
-});
+import {
+  __startTrace,
+  devErrors,
+  devLogs,
+  imports,
+  loadTracedModule,
+  Loxer,
+  resetLoxer,
+  resetTraceLogs,
+  trace,
+  transformLoxerTrace,
+  transformOptions,
+} from './plain-function-trace.fixture';
 
 test('a transformed function preserves sync result, modifier chains, and its box ID', async () => {
   const traced = await loadTracedModule(`
@@ -1114,6 +1061,30 @@ test('custom formatter messages escape terminal control characters', () => {
   ]);
 });
 
+test('a resolved function name is sanitized before it reaches the open, close, and failure messages', () => {
+  const hostile = 'evil\u001b[31m\nFAKE LINE';
+
+  const succeeding = __startTrace(hostile, [], { moduleId: 'TRACE' });
+  succeeding.success('ok');
+  expect(devLogs.map((log) => log.message)).toEqual([
+    'evil\\u001b[31m\\u000aFAKE LINE()',
+    'evil\\u001b[31m\\u000aFAKE LINE done',
+  ]);
+
+  resetTraceLogs();
+  const failing = __startTrace(hostile, [], { moduleId: 'TRACE' });
+  failing.failure(new Error('boom'));
+  expect(devLogs.map((log) => log.message)).toEqual([
+    'evil\\u001b[31m\\u000aFAKE LINE()',
+    'evil\\u001b[31m\\u000aFAKE LINE failed',
+  ]);
+
+  resetTraceLogs();
+  const plain = __startTrace('ordinaryName', [], { moduleId: 'TRACE' });
+  plain.success('ok');
+  expect(devLogs.map((log) => log.message)).toEqual(['ordinaryName()', 'ordinaryName done']);
+});
+
 test('non-string formatters and control characters fall back to safe trace messages', () => {
   const fallback = __startTrace('fallback', [], {
     closeMessage: (() => 123) as any,
@@ -1148,7 +1119,9 @@ test('disabled traces are silent and pre-init traces replay when Loxer initializ
         devLogs.push(log);
       },
     },
-    modules: { TRACE: { color: '#00ff99', devLevel: 'info', prodLevel: 'error', fullName: 'Trace' } },
+    modules: {
+      TRACE: { color: '#00ff99', devLevel: 'info', prodLevel: 'error', fullName: 'Trace' },
+    },
   });
   expect(devLogs.map((log) => log.message)).toEqual([
     'Loxer initialized',
@@ -1156,7 +1129,7 @@ test('disabled traces are silent and pre-init traces replay when Loxer initializ
     'queued done',
   ]);
 
-  devLogs = [];
+  resetTraceLogs();
   resetLoxer();
   Loxer.init({
     dev: true,
@@ -1176,7 +1149,7 @@ test('an omitted trace level remains visible while a hidden trace leaves no visi
     ['defaultLevel done', 'info'],
   ]);
 
-  devLogs = [];
+  resetTraceLogs();
   const historyLength = Loxer.history.length;
   const hidden = __startTrace('hiddenLevel', [], { level: 'debug', moduleId: 'TRACE' });
   hidden.success('hidden');
@@ -1358,7 +1331,10 @@ test('the transform removes the marker and reports unsupported marker forms', as
   expect(result?.code).toContain('__startTrace');
 
   await expect(
-    transformLoxerTrace(`${imports()} const value = trace(() => 1);`, transformOptions())
+    transformLoxerTrace(
+      `${imports()} function one() { return 1; } const value = trace(one);`,
+      transformOptions()
+    )
   ).rejects.toThrow('trace() must be a standalone statement');
 });
 
@@ -1405,146 +1381,3 @@ test('the transform removes target-list markers and reports unsupported list for
     'trace() target "constant" is not initialized with a function.'
   );
 });
-
-function imports(): string {
-  return `import { trace } from '${traceRuntimeUrl}'; import { Loxer } from '${loxerRuntimeUrl}';`;
-}
-
-type AssertFalse<Value extends false> = Value;
-type LegacyMarkerIsAbsent = 'loxed' extends keyof typeof import('../src/trace') ? true : false;
-type LegacyMarkerIsNotExported = AssertFalse<LegacyMarkerIsAbsent>;
-
-/**
- * Bidirectional type pin for the formatter callbacks below.
- *
- * A plain `const pinned: Expected = actual;` is one-directional and therefore pins nothing about a
- * union: if `Parameters<T>` regressed to a single branch, the narrower tuple would still be
- * assignable to the wider union and the fixture would keep compiling. Checking both directions
- * catches a collapsed branch, and the `IsAny` guard catches inference degrading to `any` (which is
- * assignable in both directions and would otherwise pass). Mutual assignability rather than type
- * identity is deliberate: a `readonly [f, g]` target list infers `T` as a union of the two element
- * types, so `Parameters<T>` distributes to an unreduced `[id: string] | [id: string]` that is
- * semantically the pinned tuple but not identical to it.
- */
-type IsAny<Value> = 0 extends 1 & Value ? true : false;
-type Equals<Actual, Expected> =
-  IsAny<Actual> extends true
-    ? false
-    : [Actual] extends [Expected]
-      ? [Expected] extends [Actual]
-        ? true
-        : false
-      : false;
-type AssertTrue<Value extends true> = Value;
-
-function traceFormatterTypeFixture(): void {
-  function calculateTotal(quantity: number, currency: string): Promise<{ amount: number }> {
-    return Promise.resolve({ amount: quantity });
-  }
-
-  trace(calculateTotal, {
-    openMessage(args) {
-      type ArgumentsAreExact = AssertTrue<
-        Equals<typeof args, [quantity: number, currency: string]>
-      >;
-      const pinned: ArgumentsAreExact = true;
-      return `${args[0]} ${args[1]} ${pinned}`;
-    },
-    closeMessage(result) {
-      type ResultIsExact = AssertTrue<Equals<typeof result, { amount: number }>>;
-      const pinned: ResultIsExact = true;
-      return `${result.amount} ${pinned}`;
-    },
-  });
-}
-
-function traceListFormatterTypeFixture(): void {
-  function loadOrder(id: string): Promise<{ amount: number }> {
-    return Promise.resolve({ amount: id.length });
-  }
-  function saveOrder(id: string): Promise<{ amount: number }> {
-    return Promise.resolve({ amount: 0 });
-  }
-
-  trace([loadOrder, saveOrder], {
-    openMessage(args) {
-      type ArgumentsAreExact = AssertTrue<Equals<typeof args, [id: string]>>;
-      const pinned: ArgumentsAreExact = true;
-      return `${args[0]} ${pinned}`;
-    },
-    closeMessage(result) {
-      type ResultIsExact = AssertTrue<Equals<typeof result, { amount: number }>>;
-      const pinned: ResultIsExact = true;
-      return `${result.amount} ${pinned}`;
-    },
-  });
-}
-
-function traceReadonlyListFormatterTypeFixture(): void {
-  function loadOrder(id: string): Promise<{ amount: number }> {
-    return Promise.resolve({ amount: id.length });
-  }
-  function saveOrder(id: string): Promise<{ amount: number }> {
-    return Promise.resolve({ amount: 0 });
-  }
-  const targets = [loadOrder, saveOrder] as const;
-
-  trace(targets, {
-    openMessage(args) {
-      type ArgumentsAreExact = AssertTrue<Equals<typeof args, [id: string]>>;
-      const pinned: ArgumentsAreExact = true;
-      return `${args[0]} ${pinned}`;
-    },
-    closeMessage(result) {
-      type ResultIsExact = AssertTrue<Equals<typeof result, { amount: number }>>;
-      const pinned: ResultIsExact = true;
-      return `${result.amount} ${pinned}`;
-    },
-  });
-}
-
-function traceMixedSignatureListFormatterTypeFixture(): void {
-  function loadOrder(id: string): Promise<{ amount: number }> {
-    return Promise.resolve({ amount: id.length });
-  }
-  function countOrders(active: boolean): number {
-    return active ? 1 : 0;
-  }
-
-  trace([loadOrder, countOrders], {
-    openMessage(args) {
-      type ArgumentsAreExactUnion = AssertTrue<
-        Equals<typeof args, [id: string] | [active: boolean]>
-      >;
-      const pinned: ArgumentsAreExactUnion = true;
-      return `${String(args[0])} ${pinned}`;
-    },
-    closeMessage(result) {
-      type ResultIsExactUnion = AssertTrue<Equals<typeof result, { amount: number } | number>>;
-      const pinned: ResultIsExactUnion = true;
-      return `${String(result)} ${pinned}`;
-    },
-  });
-}
-
-function transformOptions() {
-  return {
-    loxerImport: loxerRuntimeUrl,
-    sourceMaps: false,
-    traceImport: traceRuntimeUrl,
-  };
-}
-
-async function loadTracedModule(body: string): Promise<any> {
-  const result = await transformLoxerTrace(`${imports()}${body}`, transformOptions());
-  if (!result?.code) {
-    throw new Error('Expected Babel to emit transformed code.');
-  }
-
-  const moduleUrl = `${asDataModule(result.code)}#${moduleCount++}`;
-  return import(moduleUrl);
-}
-
-function asDataModule(code: string): string {
-  return `data:text/javascript;base64,${Buffer.from(code).toString('base64')}`;
-}

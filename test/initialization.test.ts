@@ -10,6 +10,20 @@ import { LoxHistory } from '../src/core/LoxHistory';
 // mock console
 global.console.log = vi.fn();
 global.console.error = vi.fn();
+// the pre-init queue reports itself through console.warn - the only channel that exists before
+// init() registers any callback
+global.console.warn = vi.fn();
+
+/** mirrors `PENDING_QUEUE_CAP` in `src/core/Loxes.ts`, which is deliberately not exported: the
+ * pre-init queue takes no configuration, because `init()`'s config is by construction too late */
+const PENDING_QUEUE_CAP = 1000;
+/** mirrors `PENDING_QUEUE_TIMEOUT_MS` in `src/core/Loxes.ts` */
+const PENDING_QUEUE_TIMEOUT_MS = 5000;
+
+/** the messages the queue reported, in call order */
+function warnings(): string[] {
+  return (console.warn as Mock).mock.calls.map((call) => String(call[0]));
+}
 
 let devLogs: OutputLox[] = [];
 function devLog(log: OutputLox) {
@@ -36,6 +50,8 @@ afterEach(() => {
   devErrors = [];
   histories = [];
   resetLoxer();
+  vi.useRealTimers();
+  (console.warn as Mock).mockClear();
 });
 
 afterAll(() => {
@@ -182,6 +198,139 @@ test('a queued log is hidden by a threshold that only the init call introduces',
   // the 'Loxer initialized' log is itself an 'info' log and goes with them
   expect(devLogs.map((l) => l.message)).toEqual(['queued warn']);
   expect(devErrors.map((l) => l.message)).toEqual(['queued error']);
+});
+
+test('a pre-init queue that nothing drains reports itself once, past the threshold', () => {
+  vi.useFakeTimers();
+
+  Loxer.log('the first queued log');
+  Loxer.m().warn('a second queued log');
+  // still inside the healthy module-evaluation-to-init() gap
+  vi.advanceTimersByTime(PENDING_QUEUE_TIMEOUT_MS - 1);
+  expect(warnings()).toEqual([]);
+
+  vi.advanceTimersByTime(1);
+
+  expect(warnings()).toHaveLength(1);
+  // the count, the elapsed time, and both candidate causes
+  expect(warnings()[0]).toContain(`2 log(s) have waited ${PENDING_QUEUE_TIMEOUT_MS}ms`);
+  expect(warnings()[0]).toContain('Loxer.init()');
+  expect(warnings()[0]).toContain('two copies of loxer');
+  expect(warnings()[0]).not.toContain('the first queued log');
+
+  // once ever per instance: neither a later advance nor a further log reports again
+  vi.advanceTimersByTime(PENDING_QUEUE_TIMEOUT_MS * 10);
+  Loxer.log('a log written long after the report');
+  vi.advanceTimersByTime(PENDING_QUEUE_TIMEOUT_MS);
+  expect(warnings()).toHaveLength(1);
+
+  // reporting does not consume the queue - every log still replays at init
+  Loxer.init({ dev: true, callbacks: { devLog, devError } });
+  expect(devLogs.map((l) => l.message)).toEqual([
+    'Loxer initialized',
+    'the first queued log',
+    'a second queued log',
+    'a log written long after the report',
+  ]);
+});
+
+test('init inside the threshold reports nothing and disarms the queue timer', () => {
+  vi.useFakeTimers();
+
+  Loxer.log('queued in the healthy gap');
+  // the first enqueue armed exactly one timer
+  expect(vi.getTimerCount()).toBe(1);
+
+  vi.advanceTimersByTime(10);
+  Loxer.init({ dev: true, callbacks: { devLog, devError } });
+
+  expect(devLogs.map((l) => l.message)).toEqual(['Loxer initialized', 'queued in the healthy gap']);
+  expect(warnings()).toEqual([]);
+  expect(vi.getTimerCount()).toBe(0);
+  // and a disarmed timer cannot fire late either
+  vi.advanceTimersByTime(PENDING_QUEUE_TIMEOUT_MS * 2);
+  expect(warnings()).toEqual([]);
+});
+
+test('resetLoxer with a pending queue reports nothing on a later advance', () => {
+  vi.useFakeTimers();
+
+  Loxer.log('queued and then thrown away');
+  expect(vi.getTimerCount()).toBe(1);
+
+  resetLoxer();
+
+  expect(vi.getTimerCount()).toBe(0);
+  vi.advanceTimersByTime(PENDING_QUEUE_TIMEOUT_MS * 2);
+  expect(warnings()).toEqual([]);
+
+  // the reset emptied the queue too, so a later init replays nothing but its own log
+  Loxer.init({ dev: true, callbacks: { devLog, devError } });
+  expect(devLogs.map((l) => l.message)).toEqual(['Loxer initialized']);
+});
+
+test('the pre-init queue caps, reports the overflow immediately and drops the newest logs', () => {
+  // fake timers freeze the clock, so nothing here can be attributed to the elapsed-time report
+  vi.useFakeTimers();
+  const overflow = 3;
+
+  for (let i = 0; i < PENDING_QUEUE_CAP + overflow; i++) {
+    Loxer.log(`queued ${i}`);
+  }
+
+  // hitting the cap undrained is unambiguous whatever the elapsed time, so it reports at once
+  expect(warnings()).toHaveLength(1);
+  expect(warnings()[0]).toContain(`${PENDING_QUEUE_CAP} log cap`);
+  expect(warnings()[0]).not.toContain('queued 0');
+
+  Loxer.init({ dev: true, callbacks: { devLog, devError } });
+
+  // exactly the cap replays, plus the init log itself
+  expect(devLogs).toHaveLength(PENDING_QUEUE_CAP + 1);
+  // the head survives - `findOpenLox` searches the pending queue, so evicting from the front would
+  // unlink a pre-init `.of(id)` from its opening log
+  expect(devLogs[1].message).toBe('queued 0');
+  // ...and the newest are the ones that went
+  expect(devLogs[devLogs.length - 1].message).toBe(`queued ${PENDING_QUEUE_CAP - 1}`);
+  expect(devLogs.some((l) => l.message === `queued ${PENDING_QUEUE_CAP + overflow - 1}`)).toBe(
+    false
+  );
+
+  // the drop count is reported at replay, separately from the overflow report
+  expect(warnings()).toHaveLength(2);
+  expect(warnings()[1]).toContain(`${overflow} log(s) were dropped`);
+  expect(warnings()[1]).toContain(`more than ${PENDING_QUEUE_CAP} logs`);
+});
+
+test('an overflowing queue keeps the opening log at its head, so a pre-init .of(id) still resolves', () => {
+  vi.useFakeTimers();
+
+  // the opening log is the head of the queue, so it is the entry an eviction from the front would
+  // take first
+  const box = Loxer.open('an opened box, queued first');
+  for (let i = 0; i < PENDING_QUEUE_CAP - 2; i++) {
+    Loxer.log(`filler ${i}`);
+  }
+  // one slot left, so this close is still retained - `.of(id)` resolves it against the pending queue
+  Loxer.of(box).close('closed before init');
+  // ...and only now does the queue overflow
+  for (let i = 0; i < 5; i++) {
+    Loxer.log(`overflow ${i}`);
+  }
+
+  Loxer.init({ dev: true, callbacks: { devLog, devError } });
+
+  expect(devLogs).toHaveLength(PENDING_QUEUE_CAP + 1);
+  expect(devLogs[1].message).toBe('an opened box, queued first');
+  expect(devLogs[1].type).toBe('open');
+  // the close found its own opening log rather than the "not (anymore) existing Lox" error path
+  const closeLog = devLogs[PENDING_QUEUE_CAP];
+  expect(closeLog.message).toBe('closed before init');
+  expect(closeLog.type).toBe('close');
+  expect(closeLog.id).toBe(box.id);
+  // a time consumption is only computed when the close paired up with its open
+  expect(closeLog.timeConsumption).toBeDefined();
+  expect(devErrors).toEqual([]);
 });
 
 test('OutputStreams', () => {

@@ -20,7 +20,28 @@ small and behavior-preserving; most public contracts are asserted from `test/box
   encodings. A module that logs up to `'error'` reports *errors only*, not nothing: errors bypass
   the gate entirely, so there is deliberately no `'off'` level.
 - `Loxes` stores both queued pre-init logs and currently open visible boxes. Be careful when
-  changing `_shouldUseQueue`, because `.of(id)` must work for queued open logs before init.
+  changing `_shouldUseQueue`, because `.of(id)` must work for queued open logs before init. The
+  pending queue caps at `PENDING_QUEUE_CAP` and drops the **newest** entry, never the head, because
+  `findOpenLox` searches the pending queue for open loxes and evicting the front would silently
+  unlink a pre-init `.of(id)` from its opening log; `dequeue()` reports the total dropped count once
+  the queue is replayed. It also self-reports once per instance through `console.warn` — the only
+  channel available, since `init()` (which registers the output callbacks) hasn't run yet — arming
+  a `PENDING_QUEUE_TIMEOUT_MS` timer on the first `enqueue` (`unref()`'d where available, plus an
+  elapsed-time backstop for environments where timers never fire, e.g. fake timers) and reporting
+  immediately on hitting the cap, since an undrained cap is unambiguous regardless of elapsed time.
+  Both thresholds are constants with no configuration knob: `init()`'s config is by construction too
+  late to configure the pre-init queue, and a setter would be public surface for a fire-once
+  diagnostic. `dequeue()` (via `init()`) and the instance reset both disarm the report timer.
+- `Realm.ts` anchors the values that must be shared by every copy of Loxer's modules in one
+  JavaScript realm; `realmSlot(name, create)` reads or creates a slot on `globalThis`, and
+  `clearRealmSlot(name)` exists for tests only. It must stay import-free: `Loxer.ts` imports
+  `Lox.ts`, so anything imported into `Realm.ts` could close a cycle back onto the module holding
+  the instance. The anchor key is `Symbol.for('loxer.realm.3')`, keyed on the **major** version
+  deliberately — two majors loaded in one application stay isolated (a v3 instance must never
+  receive a v4 lox) while every copy of the same major shares one record; bumping the major means
+  bumping this key. It must never throw: a frozen or hardened realm (SES/lockdown, some sandboxes)
+  falls back to module-local slots — one value per copy, same as a module-scoped `const` — covering
+  a `defineProperty` that throws, a host that swallows the write, and a non-extensible slot record.
 - `BoxFactory` builds layout from the current visible open-log buffer. Hidden logs return an empty
   box and hidden opening logs must not add visible columns. A shown log whose own `open` is missing
   from the buffer therefore finds no id to match and gets no `single` / `closeEdge` marker, only the
@@ -49,3 +70,6 @@ small and behavior-preserving; most public contracts are asserted from `test/box
   copy of the matched `COLOR_NAMES` entry, not the shared array — returning the shared reference
   reintroduces a `color-string@1.6.0` mutation bug the vendoring fixed. Keep `Color()` throwing on
   an unparseable string; `ANSIFormat.colorHighlight`/`colorize` rely on that throw.
+- When a value must be shared by every copy of Loxer in a realm (a new singleton, a cache), store
+  it via `realmSlot(name, create)`, not a module-scoped `const`/`let` — the latter is one value per
+  module copy, which is exactly the bug `Realm.ts` exists to prevent.

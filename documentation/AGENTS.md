@@ -20,7 +20,10 @@ artifacts. It is distinct from generated TypeDoc HTML in `docs/`.
 - Specs live in `specs/`. Each implementation plan and its `worklog.md` live together in
   `plans/<date>-<slug>/`.
 - `docs/` is generated TypeDoc output. Never place authored guides, specs, plans, or worklogs
-  there: `pnpm docs` can wipe the whole directory.
+  there: `pnpm run docs` can wipe the whole directory. Use `pnpm run docs`, not bare `pnpm docs` —
+  `docs` collides with pnpm's built-in "open package documentation" command, so the bare form
+  silently opens nothing, regenerates nothing, and still exits 0; a zero exit status from it is
+  not evidence that anything ran.
 - Do not copy generated API reference content into these guides; link to TypeDoc for exhaustive
   members and keep this folder task-oriented.
 - Renaming a file here breaks hardcoded GitHub blob links in `README.md` and in the `Loxer` class

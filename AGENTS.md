@@ -11,7 +11,10 @@ visualization for nested or async data flow.
 - Build with `pnpm build` (`tsc`, emits `dist/` from `src/`).
 - Test with `pnpm test` (`vitest run --coverage`).
 - Lint with `pnpm lint` (`eslint .`, flat config `eslint.config.mjs`).
-- Regenerate API HTML with `pnpm docs` (`typedoc --options typedoc.json`, writes `docs/`).
+- Regenerate API HTML with `pnpm run docs` (`typedoc --options typedoc.json`, writes `docs/`).
+  The bare `pnpm docs` is a different command: `docs` is a built-in pnpm/npm command ("open
+  documentation for a package in a web browser", alias `home`) that shadows the package script,
+  so `pnpm docs` prints nothing, exits 0, and regenerates nothing — the zero exit is not success.
 
 ## Stack
 
@@ -52,15 +55,32 @@ pre-commit hook (`.husky/pre-commit`) runs `pnpm lint`.
 
 ## Behavior
 
+- `Loxer` lives in a slot on `globalThis` (`src/core/Realm.ts`), not a module binding: every copy
+  of Loxer's modules that a bundler or module registry produces resolves to the one instance,
+  sharing its configuration and history, so a single `Loxer.init()` covers all of them. A separate
+  realm — a worker, an iframe, an SSR process — is its own instance by design.
 - `Loxer` is a singleton with intentionally one-shot modifier state (`highlight`, `module`) that
   resets after each logging operation. A level is **not** modifier state: `warn` / `info` / `debug`
   are properties (`Loxer.debug(...)` / `Loxer.debug.open(...)`) whose closures read the live chain
   state at call time, so reading the property logs nothing and resets nothing.
+- `resetLoxer()` resets the instance **in place**; `Loxer` is exported `const` and must never
+  become a rebinding `export let` again. A rebind is invisible to a held reference
+  (`const L = Loxer`) and invisible to a second module copy by construction, so it would silently
+  fail to reset exactly the callers that matter most — object identity never changing is what makes
+  the reset observable everywhere.
+- The running log-id counter lives on the instance, never as a static on `Lox`: the open-lox map
+  is per instance, so two module copies handing out ids `0, 1, 2` into one shared map would make
+  `.of(id)` resolve to the wrong box and let opens overwrite each other — strictly worse than two
+  separate instances.
 - Levels are the names `'error' | 'warn' | 'info' | 'debug'` (`LogLevel`), never numbers. `log()`
   writes at `'info'`; `warn()` is an ordinary log on the `devLog`/`prodLog` stream — only `error()`
   goes to `devError`/`prodError`.
 - Logs created before `Loxer.init()` are queued and replayed on init; uninitialized logging must
-  not silently disappear.
+  not silently disappear. The queue is bounded — it keeps the oldest 1000 pending logs and drops
+  any beyond that — and reports itself: once logs have waited longer than 5 seconds undrained, one
+  `console.warn` fires, naming both candidate causes (an `init()` that never runs, or a bundler
+  that loaded two copies so `init()` reached a different one). `console` is the only channel
+  available, since the output callbacks themselves arrive with `init()`.
 - Production output defaults to silence — user callbacks are the production integration point.
 - Errors are always output when enabled, even when their level would hide a normal log. A module
   that logs up to `'error'` therefore reports errors only, which is why no `'off'` level exists.

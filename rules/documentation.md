@@ -1,7 +1,10 @@
 # Documentation rules
 
 > Two separate targets, do not conflate them: `documentation/` is the authored user guide
-> (hand-written Markdown); `docs/` is generated TypeDoc HTML (`typedoc.json`, `pnpm docs`).
+> (hand-written Markdown); `docs/` is generated TypeDoc HTML (`typedoc.json`, `pnpm run docs`).
+> `pnpm docs` (without `run`) is pnpm's own built-in "open a package's documentation in a
+> browser" command (alias `home`) and it shadows the package script of the same name — it exits
+> 0 and regenerates nothing. Always type `pnpm run docs`.
 
 ## Always
 
@@ -33,18 +36,21 @@
 - When an example's code changes, re-read every comment adjacent to it — a stale comment (e.g.
   one that names an action the code no longer performs) teaches the old model and is worse than
   no comment.
-- Before attributing a `pnpm docs` page rename or removal to your change, regenerate from an
+- Before attributing a `pnpm run docs` page rename or removal to your change, regenerate from an
   unmodified checkout and compare — `docs/` is committed but wholesale-replaced per run, so it
   routinely drifts from `src/` between regenerations and a rename can predate your change
   entirely. A new link reference added under `documentation/` must point at a page name confirmed
   in a freshly generated `docs/` tree, never a guessed path.
 - Put documentation images under `assets/docs_images/`; use stable GitHub raw URLs for images in
   Markdown meant to render outside the repo (README, npm page).
-- Regenerate the API reference with `pnpm docs` (`typedoc --options typedoc.json`) after a JSDoc
-  change. A documentation task touching JSDoc is done only when `pnpm docs` exits 0.
+- Regenerate the API reference with `pnpm run docs` (`typedoc --options typedoc.json`) after a
+  JSDoc change. An exit code alone never proves this — `pnpm docs` (missing `run`) also exits 0
+  while regenerating nothing, so a zero exit status is not evidence. A documentation task touching
+  JSDoc is done only when the command's own output confirms it (typedoc prints "html generated at
+  ./docs") and `git status`/`git diff` shows the `docs/` tree actually changed.
 - Keep workflow plan folders and worklogs in `documentation/plans/<date>-<slug>/`, alongside
   `documentation/specs/`; never put them under `docs/plans/`. `docs/` is the TypeDoc `out` dir,
-  so `pnpm docs` wipes anything living there (see the `docs/` Never below); untracked plan
+  so `pnpm run docs` wipes anything living there (see the `docs/` Never below); untracked plan
   folders would be destroyed on the next run.
 - Keep review reports in a plan folder append-only: use `review.md` for the first pass, then
   `review-N.md` for each later pass; never overwrite an earlier report. Group related remediation
@@ -59,13 +65,13 @@
 ## Never
 
 - Never hand-edit anything under `docs/`, and never place hand-written files (workflow plan
-  folders included) there — it is generated output, and `pnpm docs` wipes the **entire** `docs/`
-  tree on every run (`cleanOutputDir` defaults to `true`). Edit source JSDoc or `typedoc.json`
-  instead, then regenerate.
+  folders included) there — it is generated output, and `pnpm run docs` wipes the **entire**
+  `docs/` tree on every run (`cleanOutputDir` defaults to `true`). Edit source JSDoc or
+  `typedoc.json` instead, then regenerate.
 - Never add `readme: "none"` to `typedoc.json`, or otherwise suppress the README front page —
   `docs/index.html` is intentionally the rendered `README.md`, not the API module index. If the
-  generated docs look wrong (e.g. a stale version in the title), regenerate with `pnpm docs`; do
-  not change the landing page.
+  generated docs look wrong (e.g. a stale version in the title), regenerate with `pnpm run docs`;
+  do not change the landing page.
 - Never copy generated API reference content (member lists, generated signatures) into
   `documentation/`; link to the TypeDoc output for exhaustive members and keep `documentation/`
   task-oriented.

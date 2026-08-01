@@ -78,6 +78,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/), and this
 
 ### Fixed
 
+- Fix logs from duplicate same-major Loxer module copies becoming stuck before initialization, so
+  configuration, history and open boxes remain shared within one JavaScript realm.
+- Warn when logs remain queued before `Loxer.init()` or exceed the startup queue limit, instead of
+  silently retaining them indefinitely.
+- Fix `vite-plugin-loxer-trace` triggering a late Vite dependency re-optimization when it injects
+  `loxer/trace` into a source file.
 - Fix `Loxer.init({ defaultLevels })` permanently rewriting the built-in modules for the rest of the
   process: the levels were written into a shared object, so one init leaked into every later one and
   survived `resetLoxer()`.

@@ -14,7 +14,7 @@
 <section class="tsd-panel tsd-comment">
 <div class="tsd-comment tsd-typography"><p>This is a log streamed to the <code>devLog</code>or <code>prodLog</code> output stream defined at the LoxerCallbacks.</p>
 </div></section>
-<section class="tsd-panel tsd-hierarchy" data-refl="429">
+<section class="tsd-panel tsd-hierarchy" data-refl="430">
 <h4>Hierarchy (<a href="../hierarchy.html#Logs.OutputLox">View Summary</a>)</h4>
 <ul class="tsd-hierarchy">
 <li class="tsd-hierarchy-item"><span class="tsd-signature-type">Lox</span>
@@ -51,7 +51,6 @@
 <section class="tsd-index-section">
 <h3 class="tsd-index-heading tsd-anchor-link" id="methods">Methods<a href="#methods" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
 <div class="tsd-index-list"><a href="#equals" class="tsd-index-link tsd-is-inherited"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="Method"><use href="../assets/icons.svg#icon-2048"></use></svg><span>equals</span></a>
-<a href="#resetstaticrunningid" class="tsd-index-link tsd-is-inherited"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="Method"><use href="../assets/icons.svg#icon-2048"></use></svg><span>reset<wbr/>Static<wbr/>Running<wbr/>Id</span></a>
 </div></section></div></details></section></section>
 <details class="tsd-panel-group tsd-member-group tsd-accordion" open><summary class="tsd-accordion-summary" data-key="section-Properties"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true"><use href="../assets/icons.svg#icon-chevronDown"></use></svg>
 <h2 class="tsd-anchor-link" id="properties-1">Properties<a href="#properties-1" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h2></summary>
@@ -62,6 +61,7 @@
 <div class="tsd-comment tsd-typography"><p>the internal identifier of the log</p>
 <ul>
 <li>this id is used to reference <code>.of(id)</code> logs to opening logs</li>
+<li>handed out by the <code>Loxer</code> instance the log belongs to, so ids stay unique within it</li>
 </ul>
 </div><aside class="tsd-sources">
 <p>Inherited from Lox.id</p></aside></section>
@@ -113,7 +113,8 @@
 <ul>
 <li><code>'error'</code> for every <code>Loxer.error()</code> / <code>Loxer.of(...).error()</code></li>
 <li><code>'info'</code> for <code>Loxer.log()</code> / <code>Loxer.open()</code></li>
-<li>the named level for <code>Loxer.warn/info/debug(...)</code> and their <code>.open()</code></li>
+<li>the named level for <code>Loxer.warn/info/debug(...)</code>, their <code>.open()</code>, and
+<code>Loxer.of(...).warn/info/debug()</code></li>
 <li>the opening log's level for <code>Loxer.of(...).add()</code> / <code>.close()</code></li>
 </ul>
 </div><aside class="tsd-sources">
@@ -192,15 +193,7 @@ neither the history nor the visible box layout</p>
 </div></li></ul></div>
 <h4 class="tsd-returns-title">Returns <span class="tsd-signature-type">boolean</span></h4><p>true if both have the same id</p>
 <aside class="tsd-sources">
-<p>Inherited from Lox.equals</p></aside></div></li></ul></section>
-<section class="tsd-panel tsd-member tsd-is-inherited">
-<h3 class="tsd-anchor-link" id="resetstaticrunningid"><code class="tsd-tag">Static</code><span>reset<wbr/>Static<wbr/>Running<wbr/>Id</span><a href="#resetstaticrunningid" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
-<ul class="tsd-signatures tsd-is-inherited">
-<li class="tsd-is-inherited">
-<div class="tsd-signature tsd-anchor-link" id="resetstaticrunningid-1"><span class="tsd-kind-call-signature">resetStaticRunningId</span><span class="tsd-signature-symbol">()</span><span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">void</span><a href="#resetstaticrunningid-1" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></div>
-<div class="tsd-description">
-<h4 class="tsd-returns-title">Returns <span class="tsd-signature-type">void</span></h4><aside class="tsd-sources">
-<p>Inherited from Lox.resetStaticRunningId</p></aside></div></li></ul></section></section></details></div>
+<p>Inherited from Lox.equals</p></aside></div></li></ul></section></section></details></div>
 <div class="col-sidebar">
 <div class="page-menu">
 <div class="tsd-navigation settings">
@@ -221,7 +214,7 @@ neither the history nor the visible box layout</p>
 <details open class="tsd-accordion tsd-page-navigation-section"><summary class="tsd-accordion-summary" data-key="section-Accessors"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true"><use href="../assets/icons.svg#icon-chevronDown"></use></svg>Accessors</summary>
 <div><a href="#moduletext"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="Accessor"><use href="../assets/icons.svg#icon-262144"></use></svg><span>module<wbr/>Text</span></a></div></details>
 <details open class="tsd-accordion tsd-page-navigation-section"><summary class="tsd-accordion-summary" data-key="section-Methods"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true"><use href="../assets/icons.svg#icon-chevronDown"></use></svg>Methods</summary>
-<div><a href="#equals" class="tsd-is-inherited"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="Method"><use href="../assets/icons.svg#icon-2048"></use></svg><span>equals</span></a><a href="#resetstaticrunningid" class="tsd-is-inherited"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="Method"><use href="../assets/icons.svg#icon-2048"></use></svg><span>reset<wbr/>Static<wbr/>Running<wbr/>Id</span></a></div></details></div></details></div>
+<div><a href="#equals" class="tsd-is-inherited"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="Method"><use href="../assets/icons.svg#icon-2048"></use></svg><span>equals</span></a></div></details></div></details></div>
 <div class="site-menu">
 <nav class="tsd-navigation"><a href="../modules.html">Loxer - v3.0.0</a>
 <ul class="tsd-small-nested-navigation" id="tsd-nav-container">

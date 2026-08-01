@@ -79,7 +79,8 @@
 <div class="tsd-description">
 <div class="tsd-comment tsd-typography"><p>assigns a single <code>'warn'</code> level log to a log box</p>
 <ul>
-<li>a box already past <code>'warn'</code> keeps its own level, so the log is never shown where the box is not</li>
+<li>the log reports <code>'warn'</code> and is shown wherever the module reaches <code>'warn'</code>, even where the
+box itself is hidden</li>
 </ul>
 </div>
 <div class="tsd-parameters">
@@ -98,7 +99,8 @@
 <div class="tsd-description">
 <div class="tsd-comment tsd-typography"><p>assigns a single <code>'info'</code> level log to a log box</p>
 <ul>
-<li>a box already past <code>'info'</code> keeps its own level, so the log is never shown where the box is not</li>
+<li>the log reports <code>'info'</code> and is shown wherever the module reaches <code>'info'</code>, even where the
+box itself is hidden</li>
 </ul>
 </div>
 <div class="tsd-parameters">
@@ -117,7 +119,8 @@
 <div class="tsd-description">
 <div class="tsd-comment tsd-typography"><p>assigns a single <code>'debug'</code> level log to a log box</p>
 <ul>
-<li><code>'debug'</code> is the last level, so this log is shown only where the box itself reaches it</li>
+<li>the log reports <code>'debug'</code> and is shown wherever the module reaches <code>'debug'</code>, which is the
+last level, so a box at any level can hold one</li>
 </ul>
 </div>
 <div class="tsd-parameters">

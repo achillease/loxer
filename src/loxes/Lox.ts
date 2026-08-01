@@ -7,7 +7,7 @@ export type LoxType = 'single' | 'open' | 'close' | 'error';
 
 /** @internal */
 export interface LoxProps {
-  id: number | undefined;
+  id: number;
   message: string;
   highlighted: boolean;
   item: ItemType | undefined;
@@ -21,6 +21,7 @@ export interface LoxProps {
 export class Lox {
   /** the internal identifier of the log
    * - this id is used to reference `.of(id)` logs to opening logs
+   * - handed out by the `Loxer` instance the log belongs to, so ids stay unique within it
    */
   id: number;
   /** the message of the log */
@@ -52,7 +53,7 @@ export class Lox {
 
   /** @internal */
   constructor(props: LoxProps) {
-    this.id = props.id ?? Lox.nextId();
+    this.id = props.id;
     this.message = props.message;
     this.highlighted = props.highlighted;
     this.item = props.item;
@@ -70,16 +71,5 @@ export class Lox {
    */
   equals(obj: unknown): boolean {
     return is(obj) && obj instanceof Lox ? obj.id === this.id : false;
-  }
-
-  // id #####################################################################
-  private static _runningId: number = -1;
-  private static nextId(): number {
-    this._runningId = (this._runningId + 1) % Number.MAX_VALUE;
-
-    return this._runningId;
-  }
-  static resetStaticRunningId(): void {
-    Lox._runningId = -1;
   }
 }

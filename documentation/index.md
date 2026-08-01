@@ -175,6 +175,14 @@ This method can be called anywhere in your application.
 > - It is recommended to declare a separate `const options = { ... } satisfies LoxerOptions` that is passed to the init method, because the more detailed the configuration, the larger the parameter.
 >   Use `satisfies`, not a `: LoxerOptions` annotation: an annotation widens the keys of your `modules` to `string`, which silently switches off the typed module ids you get from augmenting `LoxerModuleRegistry` (see [Typing your module ids](#typing-your-module-ids)).
 
+`Loxer` is one instance per JavaScript realm, anchored on `globalThis` rather than on a module. Every copy of the package that a bundler or a module registry hands out shares that instance, along with its configuration and history, so one `Loxer.init()` covers all of them. A worker, an iframe or a server process is a realm of its own and gets its own instance.
+
+### Logs made before initialization
+
+Logging before `Loxer.init()` runs loses nothing: those logs wait in a queue and are output in order once init happens, levelled against the modules that init supplies. The queue keeps the 1000 oldest logs and drops beyond that, which preserves the startup story it exists for.
+
+A queue that never drains reports itself. If logs have been waiting longer than 5 seconds, Loxer writes one `console.warn` — the only channel it has, since the output callbacks arrive with `init()` — naming how many logs are waiting, the first of them, and the two things that keep a queue from draining: an `init()` that never runs, or a bundler that loaded two copies of Loxer so that `init()` reached a different one than the logs. An application that initializes late on purpose, for instance while it fetches its configuration, will see this warning; it is accumulating unflushed logs, which is what the message reports.
+
 ### LoxerOptions:
 
 Anyways, the options are an object with the following structure:

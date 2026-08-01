@@ -13,10 +13,25 @@
   `test/`. It must include `vitest/globals` and use Vite-compatible
   `moduleResolution: "bundler"`; changes to that configuration are complete only when
   `pnpm typecheck:test` passes.
+- Run `pnpm typecheck:test` (`tsc -p test/tsconfig.json`) whenever a `src/` change alters a type,
+  signature, or interface that a test constructs or calls directly — narrowing a field, making an
+  optional field required, renaming a member, removing a static, tightening a union. `test/` sits
+  outside the tsconfig `include` and the eslint `ignores`, and Vitest transpiles without
+  typechecking, so `pnpm build`, `pnpm lint`, and `pnpm test` can all exit 0 while `test/` no
+  longer typechecks; `pnpm typecheck:test` is the only gate that catches it.
 - Keep extracted test suites as independently discovered `test/**/*.test.ts` files; do not hide
   test registrations in imported case modules behind a thin entry test.
 - If a change touches global logger state, call `resetLoxer()` in `afterEach` and re-init `Loxer`
   in `beforeEach` — see `test/boxed.test.ts` for the pattern.
+- If a suite loads a second copy of Loxer (`vi.resetModules()`, then re-`import` the module), also
+  call `clearRealmSlot('instance')` in `afterEach`. The realm slot (`src/core/Realm.ts`) lives on
+  `globalThis` and deliberately outlives a module-registry reset — surviving `vi.resetModules()` is
+  what makes two module copies resolve to one instance — so it is the one piece of global state
+  `resetLoxer()` does not clear, and without the extra call the next test in the file inherits an
+  already-initialized instance. See `test/realm-singleton.test.ts`.
+- Give a suite that loads a second copy of Loxer its own `test/**/*.test.ts` file.
+  `vi.resetModules()` breaks module identity for everything imported after it, so it must not run
+  in a file whose other suites hold imported references.
 - If a change alters box layout (open/close columns, trimming, visible slots), update or add
   expectations in `test/boxed.test.ts`. Those tests assert visible column behavior without
   terminal glyphs.
@@ -31,7 +46,8 @@
   `test/item.test.ts`. Falsy items (`false`, `0`, `''`, `null`, `undefined`) never reach this path
   (`if (outputLox.item)` gate).
 - A task touching `src/` is done only when `pnpm test` passes AND, for a box-layout or decorator
-  change, the corresponding test file above was updated.
+  change, the corresponding test file above was updated AND, for a type-affecting change,
+  `pnpm typecheck:test` passes.
 
 ## Never
 
@@ -39,14 +55,22 @@
   `test/boxed.test.ts`'s `afterAll` asserts prod log/error arrays are empty; a regression here is
   a real failure, not test noise.
 - Never expect `pnpm build` or `pnpm lint` to cover files under `test/` — `test/` is excluded from
-  the tsconfig `include` (`tsconfig.json`) and from eslint via `ignorePatterns` (`.eslintrc`).
-  Type or lint errors in `test/` will not surface there.
+  the tsconfig `include` (`tsconfig.json`) and from the eslint `ignores` array
+  (`eslint.config.mjs`). Type or lint errors in `test/` will not surface there; run
+  `pnpm typecheck:test` for the type check instead.
 - Never add a test solely to raise coverage; `pnpm test` runs with `--coverage`
   (`@vitest/coverage-v8`) but the number itself is not the target.
+- Never assume realm-scoped state leaks between test files, and never assume it cannot — verify.
+  Each test file runs in its own process and therefore gets its own `globalThis`: two probe files
+  writing a `Symbol.for` key on `globalThis` reported different `process.pid`s, including under
+  `--maxWorkers=1`, because `vitest.config.ts` sets neither `pool` nor `isolate`. Adding
+  `pool: 'threads'` or `isolate: false` there invalidates that without touching a single test, so
+  re-run the probe before adding state that depends on the isolation.
 
 ## Reference
 
 - Singleton reset pattern: `test/boxed.test.ts`.
+- Realm-slot reset and second-module-copy loading: `test/realm-singleton.test.ts`.
 - Existing suites, one topic each: `test/boxed.test.ts`, `test/unboxed.test.ts`,
   `test/item.test.ts`, `test/format.test.ts`, `test/error.test.ts`,
   `test/initialization.test.ts`, `test/decorators.test.ts`.

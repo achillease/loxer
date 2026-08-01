@@ -12,6 +12,7 @@ import { Loxes } from './core/Loxes.js';
 import { LoxHistory } from './core/LoxHistory.js';
 import { Modules } from './core/Modules.js';
 import { OutputStreams } from './core/OutputStreams.js';
+import { realmSlot } from './core/Realm.js';
 import { is, isNES } from './Helpers.js';
 import { ErrorLox } from './loxes/ErrorLox.js';
 import { Lox, LoxType } from './loxes/Lox.js';
@@ -93,6 +94,25 @@ class LoxerInstance implements LoxerType {
     this._loxes.dequeue().forEach((queued) => this.switchOutput(queued.lox, queued.error));
   }
 
+  /** Returns this instance to its pre-`init()` state **in place**.
+   *
+   * Object identity never changes, so every module copy that resolved the realm slot and every
+   * cached `const L = Loxer` reference observes the reset. Rebinding the export instead would be
+   * invisible to both.
+   */
+  reset(): void {
+    this._loxes.dispose();
+    this._loxes = new Loxes();
+    this._history = new LoxHistory();
+    this._modules = new Modules();
+    this._output = new OutputStreams();
+    this._isInitialized = false;
+    this._isDev = false;
+    this._isDisabled = false;
+    this._runningId = -1;
+    this.resetState();
+  }
+
   get history() {
     return this._history.stack;
   }
@@ -104,6 +124,19 @@ class LoxerInstance implements LoxerType {
   private resetState() {
     this._isHighlighted = false;
     this._moduleId = 'NONE';
+  }
+
+  // id #####################################################################
+
+  /** The log id counter belongs to the instance, not to the `Lox` class: `_loxes` is per instance,
+   * so two instances handing out `0, 1, 2` into one shared map would make `.of(id)` resolve to the
+   * wrong box.
+   */
+  private _runningId: number = -1;
+  private nextId(): number {
+    this._runningId = (this._runningId + 1) % Number.MAX_VALUE;
+
+    return this._runningId;
   }
 
   // highlight ##############################################################
@@ -166,7 +199,7 @@ class LoxerInstance implements LoxerType {
     }
     this.switchOutput(
       new Lox({
-        id: undefined,
+        id: this.nextId(),
         highlighted: this._isHighlighted,
         item,
         itemOptions,
@@ -210,7 +243,7 @@ class LoxerInstance implements LoxerType {
     const sureError = castError(error);
     this.switchOutput(
       new Lox({
-        id: logId,
+        id: logId ?? this.nextId(),
         highlighted: this._isHighlighted,
         item,
         itemOptions,
@@ -239,7 +272,7 @@ class LoxerInstance implements LoxerType {
       return { id: 0, ...disabledOfLoxes() };
     }
     const lox = new Lox({
-      id: undefined,
+      id: this.nextId(),
       highlighted: this._isHighlighted,
       item,
       itemOptions,
@@ -448,15 +481,26 @@ class LoxerInstance implements LoxerType {
   }
 }
 
+/** The instance lives in a realm slot rather than in this module, so that every copy of Loxer's
+ * modules a bundler or module registry may produce resolves to the same logger — see
+ * {@link realmSlot}.
+ */
+const instance = realmSlot('instance', () => new LoxerInstance());
+
 /**
  * This is the main class of Loxer. It works "static" because it's a singleton instance though you
  * don't need to call ~`new Loxer()`~. Instead you use it with **`Loxer.log()`** (or any other method).
  *
  * ### For an overview of all methods and a guide on how to use it, take a look at the [Documentation](https://github.com/pcprinz/loxer/blob/master/documentation/index.md).
  */
-export let Loxer: LoxerType = new LoxerInstance();
+export const Loxer: LoxerType = instance;
 
+/** Returns `Loxer` to its pre-`init()` state: no modules, no callbacks, an empty history and an
+ * empty pre-init queue, ready to `init()` again.
+ *
+ * The one instance is reset in place rather than replaced, so a held reference
+ * (`const L = Loxer`) and any other copy of Loxer's modules in this realm see the reset too.
+ */
 export function resetLoxer(): void {
-  Loxer = new LoxerInstance();
-  Lox.resetStaticRunningId();
+  instance.reset();
 }

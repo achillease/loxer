@@ -32,7 +32,8 @@ const MALFORMED = { color: '#0ff', fullName: 'Malformed' } as unknown as Module;
 
 function singleLox(moduleId: string, level: 'error' | 'warn' | 'info' | 'debug') {
   return new Lox({
-    id: undefined,
+    // `Modules.getModule` never reads the id, but a `Lox` requires one
+    id: 0,
     highlighted: false,
     item: undefined,
     itemOptions: undefined,

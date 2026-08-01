@@ -27,11 +27,13 @@ export type {
   ModuleId,
   OfLoxes,
   OpenedLox,
+  RegisteredModules,
 } from './types.js';
 
 /** ## Registry for type-safe module ids
- * #### Augment this interface to type `.module(...)`, `.m(...)`, `Loxer.getModuleLevel(...)` and the
- * `moduleId` trace option after the modules your project declares.
+ * #### Augment this interface to type `Loxer.init({ modules })`, `.module(...)`, `.m(...)`,
+ * `Loxer.getModuleLevel(...)` and the `moduleId` trace option after the modules your project
+ * declares.
  *
  * While this interface is empty — the default — a module id is an ordinary `string` and nothing
  * changes. Register your modules once and every module id becomes autocompleted and typo-checked:
@@ -54,6 +56,11 @@ export type {
  * From then on `Loxer.m('PERS')` is accepted and `Loxer.m('PRES')` is a compile error, while the
  * built-in ids (see {@link DefaultModuleId}) stay valid. Only the property *keys* are read — their
  * value type is irrelevant, `true` is just the cheapest thing to write.
+ *
+ * The `modules` given to `Loxer.init(...)` are held to the same registry: a registered id that the
+ * object does not define, and an id the object defines without registering it, are both compile
+ * errors — see {@link RegisteredModules}. Deriving the registry from the object with
+ * `Record<keyof typeof modules, true>`, as above, keeps the two in lockstep by construction.
  *
  * - **`satisfies LoxerModules`, never `: LoxerModules`**: an annotation widens the keys back to
  *   `string`, which silently turns the whole check off again with no error to tell you.

@@ -20,11 +20,15 @@ export interface LoxerCore {
    * - **`ATTENTION`**: Do no conditionally leave out the initialization in order to avoid logging!
    *   All the logs will be cached anyways. If you want to conditionally disable Loxer then use
    *   one of the "disabled" options in the config({@link LoxerConfig}) at the initialization
+   * - the given {@link LoxerOptions.modules} are checked against the
+   *   {@link LoxerModuleRegistry}: while it is empty, any set of module ids is accepted; once
+   *   modules are registered there, a registered id that is missing here and an id that is not
+   *   registered are both compile errors - see {@link RegisteredModules}
    *
    * ---
    * @param options Options for the configuration of Loxer
    */
-  init(options?: LoxerOptions): void;
+  init<M extends RegisteredModules<M>>(options?: LoxerOptions<M>): void;
   /** ## Get the level a module logs up to
    * #### Returns the {@link LogLevel} the given `moduleId`s corresponding Module logs up to.
    *
@@ -52,8 +56,13 @@ export interface LoxerCore {
 // ##### OPTIONS ###################################################################################
 // #################################################################################################
 
-/** Options for the {@link Loxer.init} method */
-export interface LoxerOptions {
+/** Options for the {@link Loxer.init} method
+ *
+ * The type parameter carries the concrete {@link LoxerOptions.modules} object and is inferred, so
+ * `LoxerOptions` can be named without it - as the target of a
+ * `const options = { ... } satisfies LoxerOptions`, for example.
+ */
+export interface LoxerOptions<M extends LoxerModules = RegisteredModules> {
   /** ## An object containing all loggable modules
    * an exemplary module "Persons" would look like this:
    *
@@ -102,8 +111,13 @@ export interface LoxerOptions {
    * ```
    *
    * This module will have a moduleName (`INVALIDMODULE`), but no box layout at the output.
+   *
+   * ## Typed module ids
+   * The accepted ids follow the {@link LoxerModuleRegistry}: while it is empty, every module id is
+   * an ordinary `string`. Register the modules of your project and this object has to define
+   * exactly them - see {@link RegisteredModules}.
    */
-  modules?: LoxerModules;
+  modules?: M;
   /** determines if Loxer is running in a development or production environment.
    * - you can pass any boolean expression here
    * - `process.env.NODE_ENV === 'development'` is common for *NodeJS*
@@ -133,7 +147,12 @@ export interface LoxerOptions {
   };
 }
 
-/** Modules for the {@link LoxerOptions} */
+/** The shape of a modules object for the {@link LoxerOptions}: one {@link Module} per module id.
+ *
+ * This is the type to declare the modules of a project against - with `satisfies LoxerModules`, so
+ * that their keys stay literal and can be registered at the {@link LoxerModuleRegistry}. The ids
+ * {@link Loxer.init} accepts are {@link RegisteredModules}.
+ */
 export type LoxerModules = { [moduleId: string]: Module };
 
 /** Structure of a loggable module for the {@link LoxerModules} */
@@ -178,6 +197,37 @@ export type DefaultModuleId = 'NONE' | 'DEFAULT' | 'INVALID';
 export type ModuleId = [keyof LoxerModuleRegistry] extends [never]
   ? string
   : Extract<keyof LoxerModuleRegistry, string> | DefaultModuleId;
+
+/** The modules {@link Loxer.init} accepts, checked against the {@link LoxerModuleRegistry}.
+ *
+ * - it is {@link LoxerModules} as long as the registry is not augmented - any set of module ids is
+ *   accepted
+ * - once modules are registered there, every registered id has to be defined, the
+ *   {@link DefaultModuleId built-in ids} may be overwritten, and no other id is accepted
+ *
+ * ```typescript
+ *   declare module 'loxer' {
+ *     interface LoxerModuleRegistry extends Record<'PERS' | 'DB', true> {}
+ *   }
+ *
+ *   Loxer.init({ modules: { PERS, DB } });         // ✔
+ *   Loxer.init({ modules: { PERS, DB, NONE } });   // ✔ - a built-in module, overwritten
+ *   Loxer.init({ modules: { PERS } });             // ✘ - 'DB' is registered but not defined
+ *   Loxer.init({ modules: { PERS, DB, PRES } });   // ✘ - 'PRES' is not a registered module id
+ * ```
+ *
+ * The type parameter carries the object that is passed in, which is what lets an unregistered id be
+ * reported even when that object is declared elsewhere and handed over as a variable: its key
+ * resolves to `never`. An object typed by a `: LoxerModules` annotation carries an index signature
+ * instead of its keys and can therefore not be checked at all - declare it with
+ * `satisfies LoxerModules` to keep its keys.
+ */
+export type RegisteredModules<M = unknown> = [keyof LoxerModuleRegistry] extends [never]
+  ? LoxerModules
+  : Record<Extract<keyof LoxerModuleRegistry, string>, Module> &
+      Partial<Record<DefaultModuleId, Module>> & {
+        [K in keyof M]: K extends ModuleId ? Module : never;
+      };
 
 /** Output stream callbacks for the {@link LoxerOptions} */
 export interface LoxerCallbacks {
@@ -442,10 +492,12 @@ export interface LogMethods {
    *
    * ### Levels of assigned logs
    * - `add()` takes the level of the opening log
-   * - `warn()` / `info()` / `debug()` name a level themselves. A level nearer `'error'` than the box's
-   *   own is replaced by the box's, so an added log is never shown where its box is not
+   * - `warn()` / `info()` / `debug()` name a level themselves, and the log reports it unchanged
    * - `close()` always takes the level of the opening log and accepts none of its own, so a box can
    *   neither be closed without having been opened nor be left open
+   * - a log's own level decides whether it is written, inside a box as much as outside one. Where
+   *   the module hides the opening log, a log that names a level the module does show is still
+   *   written — without box membership, since the box reserved no column for it
    * - errors are output whatever the level says
    *
    * ### Returned functions
@@ -476,15 +528,18 @@ export interface OfLoxes {
    */
   add(message: string, item?: ItemType, itemOptions?: ItemOptions): void;
   /** assigns a single `'warn'` level log to a log box
-   * - a box already past `'warn'` keeps its own level, so the log is never shown where the box is not
+   * - the log reports `'warn'` and is shown wherever the module reaches `'warn'`, even where the
+   *   box itself is hidden
    */
   warn(message: string, item?: ItemType, itemOptions?: ItemOptions): void;
   /** assigns a single `'info'` level log to a log box
-   * - a box already past `'info'` keeps its own level, so the log is never shown where the box is not
+   * - the log reports `'info'` and is shown wherever the module reaches `'info'`, even where the
+   *   box itself is hidden
    */
   info(message: string, item?: ItemType, itemOptions?: ItemOptions): void;
   /** assigns a single `'debug'` level log to a log box
-   * - `'debug'` is the last level, so this log is shown only where the box itself reaches it
+   * - the log reports `'debug'` and is shown wherever the module reaches `'debug'`, which is the
+   *   last level, so a box at any level can hold one
    */
   debug(message: string, item?: ItemType, itemOptions?: ItemOptions): void;
   /** closes an opened log box and imitates the behavior of {@link LogMethods.log}

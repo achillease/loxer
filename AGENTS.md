@@ -66,8 +66,14 @@ pre-commit hook (`.husky/pre-commit`) runs `pnpm lint`.
   that logs up to `'error'` therefore reports errors only, which is why no `'off'` level exists.
 - Hidden normal logs must not enter history or the visible open-box buffer, but open/close state
   stays consistent for later `.of(...)` calls. `Loxer.of(id).close()` always takes the opening log's
-  level (it accepts none), and `.of(id).warn/info/debug()` may only move further down the level list
-  than the box, never up — a shown log must never sit in a column its hidden `open` never reserved.
+  level (it accepts none), while `.of(id).warn/info/debug()` report the level their caller named.
+- A log's own level is the **only** thing that decides whether it is written. A threshold is a
+  promise about severity, so never drop a log for where it was written, and never rewrite its level
+  to make it fit — the level reaches `devLog`/`prodLog`, the history and the coloring, and a
+  consumer routing by severity is entitled to the one the caller stated. A log that outranks its
+  hidden box is written without box membership, drawing no marker, the way an assigned error
+  already is. `add` and `close` need no rule of their own: they take the opening log's level, so
+  they are gated identically to their box and pair with it automatically.
 
 ## Workspace Safety
 
@@ -97,8 +103,8 @@ like it's outside this repo (e.g. a `git worktree` under a temp dir with a symli
 
 Read the matching doc before touching that area — it holds the enforceable rules, not this file.
 
-| Doc                             | If you're touching...                                                    |
-| ------------------------------- | -------------------------------------------------------------------------- |
-| @rules/coding-conventions.md    | src/ TypeScript (style, semicolons, `any`, public API, lint/build gates) |
-| @rules/testing.md               | tests, or global Loxer/box/decorator behavior                           |
-| @rules/documentation.md         | JSDoc, the documentation/ guide, or regenerating docs/                   |
+| Doc                          | If you're touching...                                                    |
+| ---------------------------- | ------------------------------------------------------------------------ |
+| @rules/coding-conventions.md | src/ TypeScript (style, semicolons, `any`, public API, lint/build gates) |
+| @rules/testing.md            | tests, or global Loxer/box/decorator behavior                            |
+| @rules/documentation.md      | JSDoc, the documentation/ guide, or regenerating docs/                   |

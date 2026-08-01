@@ -12,7 +12,10 @@
 <li><a href="" aria-current="page">LoxerModules</a></li></ul>
 <h1>Type Alias LoxerModules</h1></div>
 <div class="tsd-signature"><span class="tsd-kind-type-alias">LoxerModules</span><span class="tsd-signature-symbol">:</span> <span class="tsd-signature-symbol">{</span> <span class="tsd-signature-symbol">[</span><span class="tsd-kind-index-signature">moduleId</span><span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">string</span><span class="tsd-signature-symbol">]:</span> <a href="../interfaces/Loxer.Module.html" class="tsd-signature-type tsd-kind-interface">Module</a> <span class="tsd-signature-symbol">}</span></div>
-<div class="tsd-comment tsd-typography"><p>Modules for the <a href="../interfaces/Loxer.LoxerOptions.html" class="tsd-kind-interface">LoxerOptions</a></p>
+<div class="tsd-comment tsd-typography"><p>The shape of a modules object for the <a href="../interfaces/Loxer.LoxerOptions.html" class="tsd-kind-interface">LoxerOptions</a>: one <a href="../interfaces/Loxer.Module.html" class="tsd-kind-interface">Module</a> per module id.</p>
+<p>This is the type to declare the modules of a project against - with <code>satisfies LoxerModules</code>, so
+that their keys stay literal and can be registered at the <a href="../interfaces/index.LoxerModuleRegistry.html" class="tsd-kind-interface">LoxerModuleRegistry</a>. The ids
+<a href="../interfaces/Loxer.LoxerCore.html#init" class="tsd-kind-method">Loxer.init</a> accepts are <a href="Loxer.RegisteredModules.html" class="tsd-kind-type-alias">RegisteredModules</a>.</p>
 </div>
 <div class="tsd-type-declaration">
 <h4>Type Declaration</h4>

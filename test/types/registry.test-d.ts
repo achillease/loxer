@@ -11,10 +11,13 @@
 // Negative cases are pinned with `@ts-expect-error`, so a clean exit means the errors were really
 // produced - if the narrowing regresses, the unused directives fail the check.
 import {
+  initLoxer,
   Loxer,
   trace as traceDecorator,
   type LogLevel,
   type LoxerModules,
+  type LoxerOptions,
+  type Module,
   type ModuleId,
 } from 'loxer';
 import { trace as traceMarker } from 'loxer/trace';
@@ -68,6 +71,35 @@ Loxer.m('PRES').log('typo');
 // @ts-expect-error 'PRES' is not a registered module id
 Loxer.module('PRES').log('typo');
 
+// --- the `modules` given to init have to be exactly the registered ones -----------------------
+const NONE = { fullName: '', color: '#fff', devLevel: 'info', prodLevel: 'error' } satisfies Module;
+// the built-in ids may be overwritten alongside the registered ones
+Loxer.init({ modules: { ...modules, NONE } });
+initLoxer({ modules });
+// @ts-expect-error 'DB' is registered, but this object does not define it
+Loxer.init({ modules: { PERS: modules.PERS } });
+// @ts-expect-error 'PRES' is not a registered module id
+Loxer.init({ modules: { ...modules, PRES: modules.PERS } });
+// ... which holds for an object declared elsewhere too, where no excess property check applies
+const strayModules = { ...modules, PRES: modules.PERS } satisfies LoxerModules;
+// @ts-expect-error 'PRES' is not a registered module id
+Loxer.init({ modules: strayModules });
+// @ts-expect-error 'PRES' is not a registered module id
+initLoxer({ modules: strayModules });
+// an `: LoxerModules` annotation replaces the keys with an index signature, which proves nothing
+const annotatedModules: LoxerModules = modules;
+// @ts-expect-error an index signature can not be checked against the registry
+Loxer.init({ modules: annotatedModules });
+// `LoxerOptions` stays nameable without a type argument, and checks the modules just the same
+const options = { modules, dev: true } satisfies LoxerOptions;
+Loxer.init(options);
+// @ts-expect-error 'DB' is registered, but this object does not define it
+const badOptions: LoxerOptions = { modules: { PERS: modules.PERS } };
+void badOptions;
+// options without modules stay valid
+Loxer.init({ dev: false });
+Loxer.init();
+
 // --- getModuleLevel is narrowed too -----------------------------------------------------------
 const level: LogLevel | undefined = Loxer.getModuleLevel('PERS');
 // @ts-expect-error probing an unregistered id needs a cast now
@@ -83,8 +115,12 @@ const moduleIdIsNotAny: NotAny<ModuleId> = true;
 Loxer.l(2).log('gone');
 // @ts-expect-error `.level()` was removed in favor of the per-level methods
 Loxer.level(2).log('gone');
+const numericLevels = {
+  ...modules,
+  PERS: { fullName: 'Persons', color: '#0ff', devLevel: 1, prodLevel: 0 },
+};
 // @ts-expect-error module thresholds are names, never numbers
-Loxer.init({ modules: { X: { fullName: 'X', color: '#fff', devLevel: 1, prodLevel: 0 } } });
+Loxer.init({ modules: numericLevels });
 // @ts-expect-error 'off' / 'silent' do not exist - 'error' is the quietest a module gets
 Loxer.init({ defaultLevels: { devLevel: 'off', prodLevel: 'off' } });
 // @ts-expect-error an error is not a box, so there is no `Loxer.error.open()`

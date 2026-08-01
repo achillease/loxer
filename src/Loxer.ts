@@ -7,7 +7,7 @@ import {
   sanitizeErrorMessage,
 } from './core/Error.js';
 import { ItemType, ItemOptions } from './core/Item.js';
-import { BoxLevel, moreVerbose } from './core/Levels.js';
+import { BoxLevel } from './core/Levels.js';
 import { Loxes } from './core/Loxes.js';
 import { LoxHistory } from './core/LoxHistory.js';
 import { Modules } from './core/Modules.js';
@@ -369,12 +369,12 @@ class LoxerInstance implements LoxerType {
     itemOptions?: ItemOptions
   ) {
     const { id, level: openLevel } = openLox;
-    // A `close` is *always* the open's level: `proceedOpenLox` frees the box's visible column
-    // regardless of `hidden`, so a hidden close on a visible open would strand the box with no
-    // closing glyph. An added log may only ever move further down the level list, never up, so it
-    // can never emit a mid-box glyph into a column its hidden open never reserved.
-    const level =
-      type === 'single' && requestedLevel ? moreVerbose(openLevel, requestedLevel) : openLevel;
+    // An added log keeps the level its caller named. A level says how severe the log *is*, and it
+    // travels on to `devLog` / `prodLog`, the history and the coloring, so a box must not overwrite
+    // it. Staying inside the box is a matter of visibility instead: `toOutputLox` hides a log whose
+    // open was hidden, so a shown log can never emit a mid-box glyph into a column its open never
+    // reserved. `add` and `close` name no level of their own and take the open's.
+    const level = type === 'single' && requestedLevel ? requestedLevel : openLevel;
     this.switchOutput(
       new Lox({
         id,
@@ -429,6 +429,11 @@ class LoxerInstance implements LoxerType {
     outputLox.setTime(this.getTimeConsumption(outputLox));
     const { loxModule, hidden } = this._modules.getModule(outputLox);
     outputLox.module = loxModule;
+    // a log's own level is the only gate, inside a box as much as outside one: a threshold is a
+    // promise about severity, so a log must never be dropped for where it was written. `add` and
+    // `close` take the opening log's level, which gates them identically to their box - they pair
+    // with it without a rule of their own. An explicitly leveled log that outranks its hidden box
+    // is written without box membership, the way an assigned error already is.
     outputLox.hidden = hidden;
     outputLox.box = BoxFactory.getLogBox(outputLox, this._loxes);
 

@@ -8,8 +8,10 @@ test('foreground coloring', () => {
   expect(fg).toBe('\x1b[38;2;100;100;100m');
   const fg2 = ANSIFormat.colorForeground(-1, -1, -1);
   expect(fg2).toBe('\x1b[38;2;0;0;0m');
+  const fgError = ANSIFormat.fgError('TEXT');
+  expect(fgError).toBe('\x1b[38;2;255;0;0mTEXT\x1b[0m');
   const fgWarn = ANSIFormat.fgWarn('TEXT');
-  expect(fgWarn).toBe('\x1b[38;2;255;0;0mTEXT\x1b[0m');
+  expect(fgWarn).toBe('\x1b[38;2;255;165;15mTEXT\x1b[0m');
   const fgSuccess = ANSIFormat.fgSuccess('TEXT');
   expect(fgSuccess).toBe('\x1b[38;2;20;200;0mTEXT\x1b[0m');
   const fgTime = ANSIFormat.fgTime('TEXT');
@@ -27,8 +29,8 @@ test('background coloring', () => {
   expect(hl).toBe('\x1b[48;2;102;68;119mTEXT\x1b[0m');
   const hl2 = ANSIFormat.colorHighlight('TEXT');
   expect(hl2).toBe('\x1b[7mTEXT\x1b[0m');
-  const bgWarn = ANSIFormat.bgWarn('TEXT');
-  expect(bgWarn).toBe('\x1b[48;2;255;0;0m\x1b[38;2;255;255;255mTEXT\x1b[0m');
+  const bgError = ANSIFormat.bgError('TEXT');
+  expect(bgError).toBe('\x1b[48;2;255;0;0m\x1b[38;2;255;255;255mTEXT\x1b[0m');
 });
 
 test('lox coloring', () => {
@@ -50,6 +52,11 @@ test('lox coloring', () => {
   );
   expect(log3.timeText).toBe('\x1b[38;2;70;70;70m[123ms]\x1b[0m');
   expect(log3.moduleText).toBe('\x1b[38;2;153;153;153mModule\x1b[0m');
+  // a `'warn'` level log is colored from its own level, inside a box as much as outside one
+  const log4 = ANSIFormat.colorLox(lox4);
+  expect(log4.message).toBe('\x1b[38;2;255;165;15mLox4!\x1b[0m');
+  expect(log4.timeText).toBe('\x1b[38;2;70;70;70m[123ms]\x1b[0m');
+  expect(log4.moduleText).toBe('\x1b[38;2;255;255;255mModule\x1b[0m');
 });
 
 test('BoxLayout', () => {
@@ -118,3 +125,17 @@ lox2.module.slicedName = 'Module';
 lox2.setTime(123);
 
 const lox3 = new ErrorLox(lox1, new Error());
+
+const lox4 = new OutputLox({
+  highlighted: false,
+  id: 0,
+  level: 'warn',
+  message: 'Lox4!',
+  moduleId: 'Module',
+  type: 'single',
+  item: undefined,
+  itemOptions: undefined,
+});
+lox4.module.color = '#fff';
+lox4.module.slicedName = 'Module';
+lox4.setTime(123);

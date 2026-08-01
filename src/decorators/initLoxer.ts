@@ -1,5 +1,5 @@
 import { Loxer } from '../Loxer.js';
-import { LoxerOptions } from '../types.js';
+import { LoxerOptions, RegisteredModules } from '../types.js';
 
 export interface InitLoxerClassContext {
   readonly kind: 'class';
@@ -14,10 +14,13 @@ export type InitLoxerDecorator = (target: unknown, context?: InitLoxerClassConte
  * Use this if the initialization has to be done fast.
  *
  * ---
- * @param options the options for the `Loxer.init(options: LoxerOptions)` method
+ * @param options the options for the `Loxer.init(options: LoxerOptions)` method - their `modules`
+ * are checked against the `LoxerModuleRegistry` exactly like `Loxer.init`'s
  * @returns a class decorator
  */
-export function initLoxer(options: LoxerOptions): InitLoxerDecorator;
+export function initLoxer<M extends RegisteredModules<M>>(
+  options: LoxerOptions<M>
+): InitLoxerDecorator;
 export function initLoxer(options: unknown): InitLoxerDecorator | void {
   if (typeof options === 'function') {
     return;

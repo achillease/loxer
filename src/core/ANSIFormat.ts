@@ -10,7 +10,7 @@ export class ANSIFormat {
   }
 
   /** ANSI codes to manipulate strings */
-  public static CODE = {
+  public static readonly CODE = {
     /** this is used to reset everything to the terminals default */
     Reset: '\x1b[0m',
     Bright: '\x1b[1m',
@@ -68,15 +68,20 @@ export class ANSIFormat {
   }
 
   /** returns a string to color the following text's background red */
-  static bgWarn(text: string): string {
+  static bgError(text: string): string {
     return (
       this.colorBackground(255, 0, 0) + this.colorForeground(255, 255, 255) + text + this.CODE.Reset
     );
   }
 
   /** returns a string to color the following text red */
-  static fgWarn(text: string): string {
+  static fgError(text: string): string {
     return this.colorForeground(255, 0, 0) + text + this.CODE.Reset;
+  }
+
+  /** returns a string to color the following text yellow */
+  static fgWarn(text: string): string {
+    return this.colorForeground(255, 165, 15) + text + this.CODE.Reset;
   }
 
   /** returns a string to color the following text green */
@@ -129,8 +134,11 @@ export class ANSIFormat {
     if (!lox.highlighted && lox.type === 'close') {
       message = this.fgCloseLog(lox.message);
     }
+    if (lox.level === 'warn') {
+      message = `${this.fgWarn(lox.message)}`;
+    }
     if (lox instanceof ErrorLox) {
-      message = `${this.bgWarn(lox.error.name)}: ${this.fgWarn(lox.message)}`;
+      message = `${this.bgError(lox.error.name)}: ${this.fgError(lox.message)}`;
     }
 
     return {

@@ -14,7 +14,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/), and this
   `'info'`, and `warn()` goes to the `devLog` / `prodLog` stream, so only `error()` reaches
   `devError` / `prodError`.
 - Add `warn()`, `info()` and `debug()` to `Loxer.of(id)`, so a log inside a box can carry a level of
-  its own; bare `add()` still takes the box's level, and `close()` always does.
+  its own and report it to `devLog` / `prodLog` and the history; bare `add()` takes the box's level,
+  and `close()` always does. A log's own level decides whether it is written, inside a box as much
+  as outside one — raising a module to `'warn'` still shows a warning written inside an `'info'`
+  box, without box membership, the way an assigned error is shown. So tracing at `'info'` and
+  filtering at `'warn'` stay independent.
 - Add build-time tracing for plain functions: mark a function with `trace()` from `loxer/trace` and
   it opens and closes its own box, capturing arguments, result and thrown errors — no decorator and
   no class needed. The transform ships as `babel-plugin-loxer-trace` (Babel 7.26.10+ or 8) or
@@ -30,6 +34,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/), and this
   `Loxer.m()`, `Loxer.module()`, `Loxer.getModuleLevel()` and the `moduleId` trace option accept
   only those ids plus the built-ins — autocompleted, with a compile error on a typo. Leaving the
   registry untouched keeps a module id an ordinary `string`.
+- Hold the `modules` of `Loxer.init()` and `@initLoxer()` to the same registry (`RegisteredModules`):
+  a registered id the object does not define, and an id it defines without registering, are both
+  compile errors — the second one even when the object is declared elsewhere and passed in as a
+  variable. Declare that object with `satisfies LoxerModules`; a `: LoxerModules` annotation
+  replaces its keys with an index signature and cannot be checked.
 - Add standard TC39 / TypeScript 5 decorator support to `@trace` and `@initLoxer`, dispatched on the
   protocol the call site uses, so both work with and without `experimentalDecorators`. `@trace`
   raises a `TypeError` when applied to anything that is not a method.

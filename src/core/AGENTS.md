@@ -15,14 +15,17 @@ small and behavior-preserving; most public contracts are asserted from `test/box
 - `Modules.getModule()` owns sliced module text, environment-specific level visibility, and the
   resolved box layout style.
 - `Levels.ts` is the single home of the `LogLevel` ordering: `LEVEL_ORDER` (`error` 0 → `debug` 3;
-  a higher ordinal is dropped sooner), the strict-`>` gate `isHidden(level, threshold)`, and
-  `moreVerbose()`. Never re-derive the comparison anywhere else — it used to exist in three places
-  with three different encodings. A module that logs up to `'error'` reports *errors only*, not
-  nothing: errors bypass the gate entirely, so there is deliberately no `'off'` level.
+  a higher ordinal is dropped sooner) and the strict-`>` gate `isHidden(level, threshold)`. Never
+  re-derive the comparison anywhere else — it used to exist in three places with three different
+  encodings. A module that logs up to `'error'` reports *errors only*, not nothing: errors bypass
+  the gate entirely, so there is deliberately no `'off'` level.
 - `Loxes` stores both queued pre-init logs and currently open visible boxes. Be careful when
   changing `_shouldUseQueue`, because `.of(id)` must work for queued open logs before init.
 - `BoxFactory` builds layout from the current visible open-log buffer. Hidden logs return an empty
-  box and hidden opening logs must not add visible columns.
+  box and hidden opening logs must not add visible columns. A shown log whose own `open` is missing
+  from the buffer therefore finds no id to match and gets no `single` / `closeEdge` marker, only the
+  enclosing `vertical`s and a trailing `horizontal` — that is the intended rendering for a log that
+  outranks its hidden box, not a defect to route around.
 - Closing a box removes the corresponding open log and trims only trailing empty slots so async
   overlapping boxes keep their column positions.
 - `OutputStreams` must forward raw `OutputLox` / `ErrorLox` objects unchanged to callbacks; default

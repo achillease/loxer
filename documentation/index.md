@@ -173,7 +173,7 @@ This method can be called anywhere in your application.
 
 > - There is also a method decorator `@initLoxer(options?: LoxerOptions)` that does the same thing.
 > - It is recommended to declare a separate `const options = { ... } satisfies LoxerOptions` that is passed to the init method, because the more detailed the configuration, the larger the parameter.
->   Use `satisfies`, not a `: LoxerOptions` annotation: an annotation widens the keys of your `modules` to `string`, which silently switches off the typed module ids you get from augmenting `LoxerModuleRegistry` (see the `LoxerModuleRegistry` entry in the API reference).
+>   Use `satisfies`, not a `: LoxerOptions` annotation: an annotation widens the keys of your `modules` to `string`, which silently switches off the typed module ids you get from augmenting `LoxerModuleRegistry` (see [Typing your module ids](#typing-your-module-ids)).
 
 ### LoxerOptions:
 
@@ -181,7 +181,7 @@ Anyways, the options are an object with the following structure:
 
 ```typescript
   // An object containing all log-able modules
-  modules?: LoxerModules;
+  modules?: RegisteredModules;
   // determines if Loxer is running in a development or production environment
   dev?: boolean;
   // Functions called as an output stream for Loxer
@@ -334,12 +334,12 @@ Loxer.h(shouldHighlight).log('This message will be conditionally highlighted');
 Every log has a **level** saying how severe it is. There are four, ordered from the most to the least
 severe ([`LogLevel`][loxer.loglevel]):
 
-| level     | meaning                                          |
-| --------- | ------------------------------------------------ |
-| `'error'` | something failed                                 |
-| `'warn'`  | something is suspicious but recoverable          |
-| `'info'`  | the ordinary log                                 |
-| `'debug'` | detail that is only interesting while debugging   |
+| level     | meaning                                         |
+| --------- | ----------------------------------------------- |
+| `'error'` | something failed                                |
+| `'warn'`  | something is suspicious but recoverable         |
+| `'info'`  | the ordinary log                                |
+| `'debug'` | detail that is only interesting while debugging |
 
 ### Levels on logs
 
@@ -388,12 +388,12 @@ Loxer.m('CART').h().debug.open('recalculating cart');
 A module says how far down that list it wants to go. A log is written when its level is at or before
 what the module logs up to:
 
-| the module logs up to | it writes                              | it drops                    |
-| --------------------- | -------------------------------------- | --------------------------- |
-| `'error'`             | `error`                                | `warn`, `info`, `debug`     |
-| `'warn'`              | `error`, `warn`                        | `info`, `debug`             |
-| `'info'`              | `error`, `warn`, `info`                | `debug`                     |
-| `'debug'`             | everything                             | —                           |
+| the module logs up to | it writes               | it drops                |
+| --------------------- | ----------------------- | ----------------------- |
+| `'error'`             | `error`                 | `warn`, `info`, `debug` |
+| `'warn'`              | `error`, `warn`         | `info`, `debug`         |
+| `'info'`              | `error`, `warn`, `info` | `debug`                 |
+| `'debug'`             | everything              | —                       |
 
 Each module sets its own, separately for development and production, which is how you give different
 parts of an application different logging densities. The built-in modules `NONE` and `DEFAULT` take
@@ -452,7 +452,7 @@ Loxer.log('this one is automatically assigned to the module NONE');
 
 ### Declaring modules
 
-Modules must be declared as part of the [`LoxerOptions`][loxerOptions] when you initialize `Loxer`. Therefore the `options.modules` must receive an object of `type LoxerModules = { [moduleId: string]: Module }`, where the `moduleId` is the key that will be referenced in the `.m()` and `.module()` methods.
+Modules must be declared as part of the [`LoxerOptions`][loxerOptions] when you initialize `Loxer`. Therefore the `options.modules` must receive an object with a [`Module`][loxerModule] per module id (`satisfies LoxerModules`), where the `moduleId` is the key that will be referenced in the `.m()` and `.module()` methods. Which ids that object has to define is up to your project — see [Typing your module ids](#typing-your-module-ids).
 
 A [`Module`][loxerModule] must be structured as :
 
@@ -483,6 +483,50 @@ Loxer.init({
 ```
 
 > - You are free to set any string key for a `moduleId`, but it will be efficient to choose short ones, because you probably have to write them often.
+
+### Typing your module ids
+
+As long as Loxer knows nothing about your modules, a `moduleId` is an ordinary `string`, so a typo
+like `Loxer.m('PRES')` compiles and shows up at runtime as a red `INVALIDMODULE` label. Register the
+modules of your project at the [`LoxerModuleRegistry`][loxerModuleRegistry] once, and every module id
+is autocompleted and checked instead:
+
+```typescript
+import { Loxer, type LoxerModules } from 'loxer';
+
+export const modules = {
+  PERS: { color: '#f00', fullName: 'Persons', devLevel: 'debug', prodLevel: 'warn' },
+  CART: { color: '#00ff00', fullName: 'Shopping cart', devLevel: 'info', prodLevel: 'warn' },
+} satisfies LoxerModules;
+
+declare module 'loxer' {
+  interface LoxerModuleRegistry extends Record<keyof typeof modules, true> {}
+}
+
+Loxer.init({ modules });
+```
+
+The registered ids are the ones `.m()` / `.module()`, [`Loxer.getModuleLevel()`][loxer.getmodulelevel]
+and the `moduleId` [trace option](#plain-function-tracing) accept — and the ones the `modules` of
+`Loxer.init()` itself has to define ([`RegisteredModules`][registeredModules]):
+
+```typescript
+Loxer.m('PERS').log('to the module Persons'); // ✔
+Loxer.m('PRES').log('typo'); // ✘ - 'PRES' is not a registered module id
+
+Loxer.init({ modules }); // ✔
+Loxer.init({ modules: { PERS: modules.PERS } }); // ✘ - 'CART' is registered, but not defined here
+Loxer.init({ modules: { ...modules, PRES: modules.PERS } }); // ✘ - 'PRES' is not registered
+```
+
+> - Write `satisfies LoxerModules`, not a `: LoxerModules` annotation: an annotation replaces the
+>   keys of your object with an index signature, which switches off every check above.
+> - Deriving the registry from the object with `Record<keyof typeof modules, true>` keeps the two in
+>   lockstep, so declaring a module and registering it are a single edit.
+> - The built-in ids `NONE`, `DEFAULT` and `INVALID` stay valid and may be overwritten in
+>   `options.modules` (see [Default modules](#default-modules)).
+> - The augmentation belongs in a file that is a module: if it contains nothing else, add an
+>   `export {};`, or TypeScript reads it as a declaration that replaces the package.
 
 ### Default modules
 
@@ -757,7 +801,8 @@ Loxer.of(lox).add('this log is shown but as error');
 ![console_output](https://raw.githubusercontent.com/pcprinz/loxer/master/assets/docs_images/8-2.png)
 
 > - When using `Loxer.of()`, a level and `.module()` do not have to be specified again: `.add()` and `.close()` automatically use the values of the opening log.
-> - `Loxer.of(id).warn()` / `.info()` / `.debug()` name a level themselves. A box that already goes further down the level list keeps its own, so an added log is never written into a box column that its dropped opening log never reserved.
+> - `Loxer.of(id).warn()` / `.info()` / `.debug()` name a level themselves, and the log reports that level to the output streams and the history.
+> - A log's own level decides whether it is written, inside a box as much as outside one. Raising a module to `'warn'` therefore still shows a warning written inside an `'info'` box — the box is gone, but the warning is not. Such a log is written without box membership, drawing no marker of its own, exactly as an assigned error is.
 > - `Loxer.of(id).close()` takes no level at all: it is always the opening log's, or a box could be left unclosed.
 > - It is not possible to specify a different `.module()`, since **always** the module of the opening log is used!
 
@@ -853,12 +898,12 @@ quietly changing what it means.
 
 ### Module and default levels
 
-| Loxer 2         | Loxer 3                         | why                                                                             |
-| --------------- | ------------------------------- | ------------------------------------------------------------------------------- |
-| `devLevel: 0`   | `devLevel: 'error'`             | behavior is unchanged: `0` never suppressed errors either                       |
-| `devLevel: 1`   | `devLevel: 'info'`              | **not** `'warn'` — `log()` writes at `'info'` and has to keep coming through     |
-| `devLevel: 2`   | `devLevel: 'info'` or `'debug'` | choose by whether `debug()` should come through                                 |
-| `devLevel: 3`   | `devLevel: 'debug'`             | everything                                                                      |
+| Loxer 2       | Loxer 3                         | why                                                                          |
+| ------------- | ------------------------------- | ---------------------------------------------------------------------------- |
+| `devLevel: 0` | `devLevel: 'error'`             | behavior is unchanged: `0` never suppressed errors either                    |
+| `devLevel: 1` | `devLevel: 'info'`              | **not** `'warn'` — `log()` writes at `'info'` and has to keep coming through |
+| `devLevel: 2` | `devLevel: 'info'` or `'debug'` | choose by whether `debug()` should come through                              |
+| `devLevel: 3` | `devLevel: 'debug'`             | everything                                                                   |
 
 The same applies to `prodLevel` and to both members of `defaultLevels`.
 
@@ -870,22 +915,22 @@ errors it used to mean. Translate the literal rather than relying on the fallbac
 
 ### Logs
 
-| Loxer 2                   | Loxer 3                              | why                                                          |
-| ------------------------- | ------------------------------------ | ------------------------------------------------------------ |
-| `Loxer.l(1).log(msg)`     | `Loxer.log(msg)` or `Loxer.info(msg)` |                                                             |
-| `Loxer.l(2).log(msg)`     | `Loxer.warn(msg)`                    |                                                              |
-| `Loxer.l(3).log(msg)`     | `Loxer.debug(msg)`                   |                                                              |
-| `Loxer.l(3).open(msg)`    | `Loxer.debug.open(msg)`              | `Loxer.open(msg)` stays at `'info'`                          |
-| `Loxer.l(3).of(id).add()` | `Loxer.of(id).debug()`               | bare `add()` still takes the box's level                     |
-| `Loxer.l(n).error(...)`   | `Loxer.error(...)`                   | a level never affected an error; the log now carries `'error'` |
+| Loxer 2                   | Loxer 3                               | why                                                            |
+| ------------------------- | ------------------------------------- | -------------------------------------------------------------- |
+| `Loxer.l(1).log(msg)`     | `Loxer.log(msg)` or `Loxer.info(msg)` |                                                                |
+| `Loxer.l(2).log(msg)`     | `Loxer.warn(msg)`                     |                                                                |
+| `Loxer.l(3).log(msg)`     | `Loxer.debug(msg)`                    |                                                                |
+| `Loxer.l(3).open(msg)`    | `Loxer.debug.open(msg)`               | `Loxer.open(msg)` stays at `'info'`                            |
+| `Loxer.l(3).of(id).add()` | `Loxer.of(id).debug()`                | bare `add()` still takes the box's level                       |
+| `Loxer.l(n).error(...)`   | `Loxer.error(...)`                    | a level never affected an error; the log now carries `'error'` |
 
 ### Types and returns
 
-| Loxer 2                              | Loxer 3                                  |
-| ------------------------------------ | ---------------------------------------- |
-| `LevelType`, `LogLevelType`          | [`LogLevel`][loxer.loglevel] for both    |
-| `Loxer.getModuleLevel(...)` → `-1`   | → `undefined` for an unknown module id   |
-| `TraceOptions.level: 1 \| 2 \| 3`    | [`BoxLevel`][loxer.boxlevel]             |
+| Loxer 2                            | Loxer 3                                |
+| ---------------------------------- | -------------------------------------- |
+| `LevelType`, `LogLevelType`        | [`LogLevel`][loxer.loglevel] for both  |
+| `Loxer.getModuleLevel(...)` → `-1` | → `undefined` for an unknown module id |
+| `TraceOptions.level: 1 \| 2 \| 3`  | [`BoxLevel`][loxer.boxlevel]           |
 
 If you use `babel-plugin-loxer-trace`, note that the level methods are linked to their trace box just
 like `Loxer.log` is: `Loxer.debug('…')` inside a traced body becomes part of that box.
@@ -908,6 +953,9 @@ like `Loxer.log` is: `Loxer.debug('…')` inside a traced body becomes part of t
 [loxerOptions]: https://pcprinz.github.io/loxer/interfaces/Loxer.LoxerOptions.html
 [loxerConfig]: https://pcprinz.github.io/loxer/interfaces/Loxer.LoxerConfig.html
 [loxerModule]: https://pcprinz.github.io/loxer/interfaces/Loxer.Module.html
+[loxerModuleRegistry]: https://pcprinz.github.io/loxer/interfaces/index.LoxerModuleRegistry.html
+[registeredModules]: https://pcprinz.github.io/loxer/types/Loxer.RegisteredModules.html
+[loxer.getmodulelevel]: https://pcprinz.github.io/loxer/interfaces/Loxer.LoxerCore.html#getmodulelevel
 [loxerCallbacks]: https://pcprinz.github.io/loxer/interfaces/Loxer.LoxerCallbacks.html
 [loxer.init]: https://pcprinz.github.io/loxer/interfaces/Loxer.LoxerCore.html#init
 [loxer.log]: https://pcprinz.github.io/loxer/interfaces/Loxer.LogMethods.html#log

@@ -269,7 +269,7 @@ test('leveling', () => {
   // the DEFAULT module is at devLevel 'info', so 'debug' is the hidden end here
   const id1 = Loxer.open('open');
   const id2 = Loxer.debug.open('open2');
-  // append to a hidden box: naming a more severe level cannot pull the log back into view
+  // append to a hidden box at a level the module does show: the log is written, without a marker
   Loxer.of(id2).info('add2');
   // auto 'debug'
   Loxer.of(id2).close('close2');
@@ -278,33 +278,40 @@ test('leveling', () => {
   Loxer.of(id1).error('error');
   Loxer.of(id1).close('close');
 
-  expect(devLogs.length).toBe(3);
+  expect(devLogs.length).toBe(4);
   expect(devErrors.length).toBe(1);
 
   // the visible logs keep the levels they were emitted at ...
   expect(devLogs[1].message).toBe('open');
   expect(devLogs[1].level).toBe('info');
-  // ... and `close` inherits its open's level rather than its own default
-  expect(devLogs[2].message).toBe('close');
+  expect(devLogs[2].message).toBe('add2');
   expect(devLogs[2].level).toBe('info');
+  // ... and `close` inherits its open's level rather than its own default
+  expect(devLogs[3].message).toBe('close');
+  expect(devLogs[3].level).toBe('info');
   expect(devErrors[0].level).toBe('error');
 
-  // hidden (leveled-out) logs must not enter history; only init, open, error and close remain
-  expect(Loxer.history.length).toBe(4);
-  for (const hidden of ['open2', 'add2', 'close2', 'add']) {
+  // hidden (leveled-out) logs must not enter history; init, open, add2, error and close remain
+  expect(Loxer.history.length).toBe(5);
+  for (const hidden of ['open2', 'close2', 'add']) {
     expect(Loxer.history.some((l) => l.message === hidden)).toBe(false);
   }
 
   /*
   ╭← open
 //│╭← open2        [UNLEVELLED]
-//│├─ add2         [UNLEVELLED automatically]
+  │─ add2          [LEVELED but shown - its box reserved no column]
 //│╰→ close2       [UNLEVELLED automatically]
 //├─ add           [UNLEVELLED]
   ├─ Error: error  [LEVELED but shown! ]
   ╰→ close
   */
-  checkBoxes(['open.DEFAULT.<-open', 'error.DEFAULT.T-error', 'close.DEFAULT.>-close']);
+  checkBoxes([
+    'open.DEFAULT.<-open',
+    'single.DEFAULT.|-add2',
+    'error.DEFAULT.T-error',
+    'close.DEFAULT.>-close',
+  ]);
 });
 
 test('of(id).add inherits the box level, of(id).close always matches its open', () => {
@@ -321,7 +328,7 @@ test('of(id).add inherits the box level, of(id).close always matches its open', 
   expect(devLogs[3].level).toBe('debug');
 });
 
-test('an explicit level on an added log never moves back up the level list', () => {
+test('an explicit level on an added log is reported as given, either way along the list', () => {
   const id = Loxer.m('TWO').open('open');
   Loxer.of(id).debug('further down');
   Loxer.of(id).warn('further up');
@@ -329,11 +336,41 @@ test('an explicit level on an added log never moves back up the level list', () 
 
   expect(devLogs.length).toBe(5);
   expect(devLogs[1].level).toBe('info');
-  // further down the list than the box: taken as given
+  // further down the list than the box
   expect(devLogs[2].level).toBe('debug');
-  // further up than the box: replaced by the box's level, so it never out-lives its column
-  expect(devLogs[3].level).toBe('info');
+  // further up than the box: still the caller's own level, not the box's
+  expect(devLogs[3].level).toBe('warn');
+  // close names no level and takes the open's
   expect(devLogs[4].level).toBe('info');
+});
+
+test('a log that outranks its hidden box is written without box membership', () => {
+  // module ONE is at devLevel 'info', so a 'debug' box never reaches the output ...
+  const id = Loxer.m('ONE').debug.open('open');
+  // ... but a log ONE would show on its own is not dropped for sitting inside that box
+  Loxer.of(id).warn('warn inside a hidden box');
+  Loxer.of(id).error('error inside a hidden box');
+  Loxer.of(id).close('close');
+
+  expect(devLogs.length).toBe(2);
+  expect(devLogs[1].level).toBe('warn');
+  expect(devLogs[1].hidden).toBe(false);
+  expect(Loxer.history.some((l) => l.message === 'warn inside a hidden box')).toBe(true);
+  // the box reserved no column, so neither the warning nor the error draws a marker of its own -
+  // and `open` / `close`, both at the box's own 'debug', stay hidden as a pair
+  checkBoxes(['single.ONE.-warn inside a hidden box', 'error.ONE.-error inside a hidden box']);
+});
+
+test('a log added to a visible box keeps a level the module itself would hide', () => {
+  // module ONE is at devLevel 'info', so a 'debug' log of its own is dropped ...
+  const id = Loxer.m('ONE').open('open');
+  Loxer.of(id).debug('debug inside a visible box');
+  Loxer.of(id).close('close');
+
+  // ... and stays dropped inside a box: the box widens nothing
+  expect(devLogs.length).toBe(3);
+  expect(devLogs.some((l) => l.message === 'debug inside a visible box')).toBe(false);
+  checkBoxes(['open.ONE.<-open', 'close.ONE.>-close']);
 });
 
 test('module boxing', () => {

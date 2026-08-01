@@ -1,4 +1,4 @@
-import { isHidden, LEVEL_ORDER, moreVerbose, type LogLevel } from '../src/core/Levels';
+import { isHidden, LEVEL_ORDER, type LogLevel } from '../src/core/Levels';
 
 // The ordering direction is the one thing a whole-suite pass cannot prove: inverting it flips
 // individual visibility while the aggregate counts can still work out. So pin it directly.
@@ -27,13 +27,4 @@ test('isHidden drops a log past its module threshold, and nothing else', () => {
   for (const threshold of levels) {
     expect(isHidden('error', threshold)).toBe(false);
   }
-});
-
-test('moreVerbose returns whichever level sits further down the list', () => {
-  expect(moreVerbose('info', 'debug')).toBe('debug');
-  expect(moreVerbose('debug', 'info')).toBe('debug');
-  expect(moreVerbose('info', 'warn')).toBe('info');
-  expect(moreVerbose('warn', 'info')).toBe('info');
-  expect(moreVerbose('error', 'warn')).toBe('warn');
-  expect(moreVerbose('info', 'info')).toBe('info');
 });

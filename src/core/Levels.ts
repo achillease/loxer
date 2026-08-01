@@ -61,8 +61,3 @@ export function resolveThreshold(threshold: unknown, fallback: LogLevel): LogLev
 export function resolveBoxLevel(level: unknown): BoxLevel {
   return level === 'warn' || level === 'info' || level === 'debug' ? level : 'info';
 }
-
-/** @internal returns whichever of the two levels sits further down the list */
-export function moreVerbose(a: LogLevel, b: LogLevel): LogLevel {
-  return LEVEL_ORDER[a] >= LEVEL_ORDER[b] ? a : b;
-}

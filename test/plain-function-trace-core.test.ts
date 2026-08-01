@@ -1264,9 +1264,9 @@ test('direct level calls link to the trace box while a level .open() starts its 
   const traceId = byMessage('checkout()')?.id;
   expect(traceId).toBeDefined();
 
-  // `.warn(...)` was rewritten onto the trace box. 'warn' sits above the box's own 'info', so the
-  // box's level wins - a linked log must never out-live the column its box reserved.
-  expect(byMessage('warned')).toMatchObject({ id: traceId, level: 'info', type: 'single' });
+  // `.warn(...)` was rewritten onto the trace box and still reports 'warn': linking a log to a box
+  // changes which box it belongs to, never how severe it is.
+  expect(byMessage('warned')).toMatchObject({ id: traceId, level: 'warn', type: 'single' });
   // `.info(...)` behind a module modifier is linked too, and keeps the explicit module
   expect(byMessage('informed')).toMatchObject({
     id: traceId,

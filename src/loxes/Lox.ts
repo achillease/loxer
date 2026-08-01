@@ -42,7 +42,8 @@ export class Lox {
   /** the {@link LogLevel} of the log
    * - `'error'` for every `Loxer.error()` / `Loxer.of(...).error()`
    * - `'info'` for `Loxer.log()` / `Loxer.open()`
-   * - the named level for `Loxer.warn/info/debug(...)` and their `.open()`
+   * - the named level for `Loxer.warn/info/debug(...)`, their `.open()`, and
+   *   `Loxer.of(...).warn/info/debug()`
    * - the opening log's level for `Loxer.of(...).add()` / `.close()`
    */
   level: LogLevel;

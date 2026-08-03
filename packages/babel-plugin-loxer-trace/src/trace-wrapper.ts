@@ -5,6 +5,7 @@ export function buildWrapperBody(
   originalBody: any,
   isAsync: boolean,
   functionName: string,
+  parentName: string | undefined,
   runtimeId: any,
   observeResultId: any,
   optionsNode: any,
@@ -16,16 +17,20 @@ export function buildWrapperBody(
 ): any {
   const resultId = t.identifier(stateId.name.replace('traceState', 'traceResult'));
   const errorId = t.identifier(stateId.name.replace('traceState', 'traceError'));
+  // the parent name is the last argument, so a function no parent reaches emits a three-argument
+  // call and lets the runtime's own default stand in for it
+  const startArguments = [
+    t.stringLiteral(functionName),
+    t.cloneNode(argsExpression),
+    t.cloneNode(optionsNode),
+  ];
+  if (parentName !== undefined) {
+    startArguments.push(t.stringLiteral(parentName));
+  }
+
   const declarations = [
     t.variableDeclaration('const', [
-      t.variableDeclarator(
-        stateId,
-        t.callExpression(runtimeId, [
-          t.stringLiteral(functionName),
-          t.cloneNode(argsExpression),
-          t.cloneNode(optionsNode),
-        ])
-      ),
+      t.variableDeclarator(stateId, t.callExpression(runtimeId, startArguments)),
     ]),
   ];
 

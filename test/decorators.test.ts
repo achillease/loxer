@@ -1,6 +1,7 @@
 import type { LogLevel } from '../src';
 import { initLoxer, Loxer, resetLoxer, trace } from '../src';
 import { ErrorLox, OutputLox } from '../src/loxes';
+import { classParentNameCases } from './class-parent-name-cases';
 import { DecoratorMode, installTraced, traceCases } from './trace-cases';
 
 let devLogs: OutputLox[] = [];
@@ -20,7 +21,7 @@ function prodError(log: ErrorLox) {
   prodErrors.push(log);
 }
 
-// class name does not end in 'Class', so `className.functionName` renders as `Service.<fn>`
+// class name does not end in 'Class', so `parent.functionName` renders as `Service.<fn>`
 class Service {
   @trace('NONE')
   simple(n: number) {
@@ -36,8 +37,8 @@ class Service {
   }
   @trace({
     moduleId: 'NONE',
-    openMessage: 'className.functionName',
-    closeMessage: 'className.functionName',
+    openMessage: 'parent.functionName',
+    closeMessage: 'parent.functionName',
   })
   named(n: number) {
     return n;
@@ -151,7 +152,7 @@ test('@trace types / prettyResult message formatting', () => {
   expect(devLogs[1].message).toBe('withTypes done. returns: \n5');
 });
 
-test('@trace className.functionName message formatting', () => {
+test('@trace parent.functionName message formatting', () => {
   const s = new Service();
   s.named(7);
   expect(devLogs[0].message).toBe('Service.named()');
@@ -255,8 +256,8 @@ describe.each<DecoratorMode>(['legacy', 'standard'])(
         },
         options: {
           moduleId: 'NONE',
-          openMessage: 'className.functionName',
-          closeMessage: 'className.functionName',
+          openMessage: 'parent.functionName',
+          closeMessage: 'parent.functionName',
         },
         isStatic: true,
       });
@@ -276,8 +277,8 @@ describe.each<DecoratorMode>(['legacy', 'standard'])(
         },
         options: {
           moduleId: 'NONE',
-          openMessage: 'className.functionName',
-          closeMessage: 'className.functionName',
+          openMessage: 'parent.functionName',
+          closeMessage: 'parent.functionName',
         },
       });
 
@@ -294,8 +295,8 @@ describe.each<DecoratorMode>(['legacy', 'standard'])(
         },
         options: {
           moduleId: 'NONE',
-          openMessage: 'className.functionName',
-          closeMessage: 'className.functionName',
+          openMessage: 'parent.functionName',
+          closeMessage: 'parent.functionName',
         },
       });
 
@@ -317,13 +318,45 @@ describe.each<DecoratorMode>(['legacy', 'standard'])(
         },
         options: {
           moduleId: 'NONE',
-          openMessage: 'className.functionName',
-          closeMessage: 'className.functionName',
+          openMessage: 'parent.functionName',
+          closeMessage: 'parent.functionName',
         },
       });
       expect(detached()).toBeUndefined();
       expect(devLogs.map((log) => log.message)).toEqual(['detached()', 'detached done']);
     });
+
+    // The decorator's copy of the trailing-`Class` rule, driven from the table
+    // `test/plain-function-trace-enclosing.test.ts` drives the transform's copy from. The two live in
+    // separate packages and cannot import each other, so one shared table is what keeps them from
+    // drifting apart while each still reads only its own copy. Every case gets a row of its own, so a
+    // failure on one class name still reports every other - the `Class` row is the one the rule's
+    // exception exists for, and an earlier row throwing must not be able to skip it.
+    test.each(classParentNameCases)(
+      'renders $parent as the parent of a method on class $className',
+      ({ className, parent }) => {
+        resetAndInitialize();
+        const Host = class {};
+        // the decorator reads `this.constructor.name`, so the name is what has to be set - a class
+        // expression is otherwise named after the binding it is assigned to
+        Object.defineProperty(Host, 'name', { value: className });
+        installTraced(mode, Host.prototype, {
+          methodName: 'run',
+          original() {
+            return 'ran';
+          },
+          options: {
+            moduleId: 'NONE',
+            openMessage: 'parent.functionName',
+            closeMessage: 'parent.functionName',
+          },
+        });
+
+        const instance = new Host() as { run(): string };
+        expect(instance.run()).toBe('ran');
+        expect(devLogs.map((log) => log.message)).toEqual([`${parent}.run()`, `${parent}.run done`]);
+      }
+    );
 
     test('normalizes symbol method names', () => {
       resetAndInitialize();

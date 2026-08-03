@@ -1,4 +1,5 @@
 import { resolveBoxLevel } from './core/Levels.js';
+import { qualifiedFunctionName } from './core/TraceNames.js';
 import { Loxer } from './Loxer.js';
 import {
   FunctionCloseMessage,
@@ -165,19 +166,32 @@ export function trace(
 /**
  * Starts the runtime lifecycle emitted by `babel-plugin-loxer-trace`.
  *
+ * The transform passes `parentName` — the class a traced method belongs to, or the file a traced
+ * function is written in — which is what the `'parent.functionName'` message styles render against.
+ *
  * @internal
  */
 export function __startTrace(
   functionName: string,
   args: any[],
-  options: TraceOptions = {}
+  options: TraceOptions = {},
+  parentName?: string
 ): FunctionTrace {
   const { highlight, moduleId } = options;
   const level = resolveBoxLevel(options.level);
   // a name reaches this from the `name` option or a string-literal property key as well as from an
   // identifier, so it carries no more guarantee about control characters than an argument does
   const safeName = sanitizeMessage(functionName);
-  const openMessage = getOpenMessage(safeName, args, options.openMessage);
+  // only the `'parent.functionName'` styles read the parent, so a trace that names neither pays
+  // nothing for it — this runs on every traced call, ahead of the level that decides whether the
+  // log is written at all
+  const needsParentName =
+    options.openMessage === 'parent.functionName' || options.closeMessage === 'parent.functionName';
+  const parentQualifiedName =
+    needsParentName && parentName !== undefined
+      ? qualifiedFunctionName(sanitizeMessage(parentName), safeName)
+      : safeName;
+  const openMessage = getOpenMessage(safeName, parentQualifiedName, args, options.openMessage);
   const item = options.argsAsItem ? args : undefined;
   // every level exposes the same `LevelMethods` shape, so the dispatch is a plain index
   const id = Loxer.h(isHighlighted(highlight, 'open'))
@@ -187,7 +201,12 @@ export function __startTrace(
   return {
     id,
     success(result: any): void {
-      const closeMessage = getCloseMessage(safeName, result, options.closeMessage);
+      const closeMessage = getCloseMessage(
+        safeName,
+        parentQualifiedName,
+        result,
+        options.closeMessage
+      );
       Loxer.h(isHighlighted(highlight, 'close'))
         .of(id)
         .close(closeMessage, options.resultAsItem ? result : undefined);
@@ -205,6 +224,7 @@ function isHighlighted(highlight: TraceHighlight | undefined, phase: 'open' | 'c
 
 function getOpenMessage(
   functionName: string,
+  parentQualifiedName: string,
   args: any[],
   style: FunctionOpenMessage | undefined
 ): string {
@@ -220,8 +240,8 @@ function getOpenMessage(
     if (style === 'types') {
       return `${functionName}(${args.map((arg) => typeof arg).join(', ')})`;
     }
-    if (style === 'className.functionName') {
-      return fallback;
+    if (style === 'parent.functionName') {
+      return `${parentQualifiedName}()`;
     }
   } catch {
     return fallback;
@@ -239,6 +259,7 @@ function sanitizeMessage(value: unknown): string {
 
 function getCloseMessage(
   functionName: string,
+  parentQualifiedName: string,
   result: any,
   style: FunctionCloseMessage | undefined
 ): string {
@@ -258,8 +279,8 @@ function getCloseMessage(
 
       return serialized === undefined ? fallback : `${functionName} done. returns: \n${serialized}`;
     }
-    if (style === 'className.functionName') {
-      return fallback;
+    if (style === 'parent.functionName') {
+      return `${parentQualifiedName} done`;
     }
   } catch {
     return fallback;

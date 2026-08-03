@@ -97,8 +97,8 @@ export const traceCases: TraceCase[] = [
     },
     options: {
       moduleId: 'NONE',
-      openMessage: 'className.functionName',
-      closeMessage: 'className.functionName',
+      openMessage: 'parent.functionName',
+      closeMessage: 'parent.functionName',
     },
     args: [7],
     expectedResult: 7,

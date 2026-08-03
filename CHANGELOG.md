@@ -67,6 +67,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/), and this
 - Drop the runtime dependency on `color` — Loxer installs with zero runtime dependencies. The same
   color formats are accepted: hex, `rgb()`, `rgba()`, `hsl()`, `hwb()`, named colors and
   `transparent`.
+- **Breaking:** Name the qualifying message style `'parent.functionName'` (`openMessage` /
+  `closeMessage`), replacing `'className.functionName'`, and give every traced function a parent:
+  the class of a method — a decorated one, or a method, getter, setter or field a `trace()` marker
+  reaches inside a class body — and otherwise the file the marked function is written in, so a
+  function in `src/orders/orderService.ts` opens as `orderService.load()`. A decorated method reads
+  its class from the running instance and the file name comes from the build, so a function neither
+  reaches still reports its bare name. A class name ending in `Class` reports without that suffix,
+  so a method of `OrderServiceClass` reads as `OrderService.load`.
 
 ### Removed
 
@@ -78,6 +86,16 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/), and this
 
 ### Fixed
 
+- Keep a Loxer the project links rather than installs out of Vite's dependency optimizer
+  (`vite-plugin-loxer-trace`), and add the directory it lives in to `server.fs.allow` so Vite can
+  serve it. Vite's dependency cache is keyed on the lockfile and the resolved config, so a
+  pre-bundled working copy went on serving the build that was current when the cache was written —
+  through every rebuild, until `node_modules/.vite` was deleted by hand. An installed Loxer is
+  pre-bundled exactly as before. `server.fs.allow` is the boundary deciding which files the dev
+  server serves to a browser, and Loxer's directory — outside the project, for a linked copy — is
+  added to it silently, including to a list the project drew itself; only `vite dev` reads it, so a
+  build or preview is unaffected. Set `dedupe: false` to keep that boundary, and the rest of the
+  single-copy config, entirely your own.
 - Fix logs from duplicate same-major Loxer module copies becoming stuck before initialization, so
   configuration, history and open boxes remain shared within one JavaScript realm.
 - Warn when logs remain queued before `Loxer.init()` or exceed the startup queue limit, instead of

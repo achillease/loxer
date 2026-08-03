@@ -1,3 +1,6 @@
+import { fileParentName } from '../packages/babel-plugin-loxer-trace/src/marker-collection';
+import { classParentName } from '../src/core/TraceNames';
+import { classParentNameCases } from './class-parent-name-cases';
 import {
   devLogs,
   imports,
@@ -121,6 +124,353 @@ test('an accessor class field names its function the same way a plain or private
   // asserting on the emitted call itself (not just "no throw") pins the resolved name, matching a
   // plain or private field instead of falling back to the ambient default box name
   expect(result?.code).toContain('_startTrace("load"');
+});
+
+// the parent message styles, written once and interpolated into the marked sources below - the
+// enclosing form reads its options off an object literal, so they cannot be hoisted into a shared
+// binding inside the traced module itself. `transformOptions()` transforms every module below under
+// the filename `src/orders/orderService.ts`.
+const parentStyle =
+  "{ moduleId: 'ORDER', openMessage: 'parent.functionName', closeMessage: 'parent.functionName' }";
+
+test('parent.functionName names the class of a marked method, private method, private field, getter, and static method', async () => {
+  const traced = await loadTracedModule(`
+    class Checkout {
+      calculate(price) {
+        trace(${parentStyle});
+        return this.#tax(price);
+      }
+      #tax(price) {
+        trace(${parentStyle});
+        return price * 1.2;
+      }
+      #load = (id) => {
+        trace(${parentStyle});
+        return 'order:' + id;
+      };
+      invokeLoad(id) {
+        return this.#load(id);
+      }
+      get total() {
+        trace(${parentStyle});
+        return 42;
+      }
+      static create() {
+        trace(${parentStyle});
+        return new Checkout();
+      }
+    }
+    export { Checkout };
+  `);
+
+  const checkout = traced.Checkout.create();
+  expect(checkout.calculate(10)).toBe(12);
+  expect(checkout.invokeLoad('9')).toBe('order:9');
+  expect(checkout.total).toBe(42);
+
+  expect(devLogs.map((log) => log.message)).toEqual([
+    'Checkout.create()',
+    'Checkout.create done',
+    'Checkout.calculate()',
+    'Checkout.#tax()',
+    'Checkout.#tax done',
+    'Checkout.calculate done',
+    'Checkout.#load()',
+    'Checkout.#load done',
+    'Checkout.total()',
+    'Checkout.total done',
+  ]);
+});
+
+test('parent.functionName reports the file where no class member holds the function', async () => {
+  const traced = await loadTracedModule(`
+    class Checkout {
+      calculate(price) {
+        const round = (value) => {
+          trace(${parentStyle});
+          return Math.round(value);
+        };
+
+        return round(price * 1.2);
+      }
+    }
+    const helper = {
+      compute(value) {
+        trace(${parentStyle});
+        return value * 2;
+      },
+    };
+    function standalone(value) {
+      trace(${parentStyle});
+      return value;
+    }
+    export { Checkout, helper, standalone };
+  `);
+
+  expect(new traced.Checkout().calculate(10)).toBe(12);
+  expect(traced.helper.compute(3)).toBe(6);
+  expect(traced.standalone(1)).toBe(1);
+
+  // a function declared inside a method's body is held by that body, not by the class, and an
+  // object literal is not a class at all - all three report the file they are written in, with the
+  // directories and the extension of `src/orders/orderService.ts` dropped
+  expect(devLogs.map((log) => log.message)).toEqual([
+    'orderService.round()',
+    'orderService.round done',
+    'orderService.compute()',
+    'orderService.compute done',
+    'orderService.standalone()',
+    'orderService.standalone done',
+  ]);
+});
+
+test('parent.functionName reports the file for a marker beside a binding, in either marker form', async () => {
+  const traced = await loadTracedModule(`
+    function useCallback(fn, deps) { return fn; }
+    function load(id) {
+      return 'order:' + id;
+    }
+    trace(load, ${parentStyle});
+
+    const cancel = useCallback(trace((id) => 'cancelled:' + id, ${parentStyle}), []);
+    export { cancel, load };
+  `);
+
+  expect(traced.load('9')).toBe('order:9');
+  expect(traced.cancel('9')).toBe('cancelled:9');
+
+  expect(devLogs.map((log) => log.message)).toEqual([
+    'orderService.load()',
+    'orderService.load done',
+    'orderService.cancel()',
+    'orderService.cancel done',
+  ]);
+});
+
+test('parent.functionName reports the bare function name when the build hands Babel no filename', async () => {
+  const traced = await loadTracedModule(
+    `
+    function standalone(value) {
+      trace(${parentStyle});
+      return value;
+    }
+    export { standalone };
+  `,
+    { filename: undefined }
+  );
+
+  expect(traced.standalone(1)).toBe(1);
+  expect(devLogs.map((log) => log.message)).toEqual(['standalone()', 'standalone done']);
+});
+
+test('parent.functionName reads an unnamed class from its binding and drops a trailing Class', async () => {
+  const traced = await loadTracedModule(`
+    const Checkout = class {
+      calculate(price) {
+        trace(${parentStyle});
+        return price;
+      }
+    };
+    class OrderServiceClass {
+      load(id) {
+        trace(${parentStyle});
+        return id;
+      }
+    }
+    export { Checkout, OrderServiceClass };
+  `);
+
+  expect(new traced.Checkout().calculate(10)).toBe(10);
+  expect(new traced.OrderServiceClass().load('9')).toBe('9');
+
+  // the suffix rule is the decorator's, and the same option renders the same way for both
+  expect(devLogs.map((log) => log.message)).toEqual([
+    'Checkout.calculate()',
+    'Checkout.calculate done',
+    'OrderService.load()',
+    'OrderService.load done',
+  ]);
+});
+
+// The trailing-`Class` rule is deliberately applied where a class name is read, not inside the
+// joiner that both parents share - it exists in two copies (`classParentName` in
+// `src/core/TraceNames.ts` and its twin in `marker-collection.ts`) for exactly this reason. Moving
+// it back into the shared joiner would silently rename every file whose name happens to end in
+// `Class`, so a file parent is the case that catches that regression.
+test('parent.functionName never drops a trailing Class from a file name', async () => {
+  const traced = await loadTracedModule(
+    `
+    function load(id) {
+      trace(${parentStyle});
+      return id;
+    }
+    export { load };
+  `,
+    { filename: 'src/orders/orderServiceClass.ts' }
+  );
+
+  expect(traced.load('9')).toBe('9');
+  expect(devLogs.map((log) => log.message)).toEqual([
+    'orderServiceClass.load()',
+    'orderServiceClass.load done',
+  ]);
+});
+
+test('parent.functionName names the innermost class, and reads an unnamed class expression off a member-expression assignment target', async () => {
+  const traced = await loadTracedModule(`
+    const Namespace = {};
+    Namespace.Widget = class {
+      render(id) {
+        trace(${parentStyle});
+        return 'widget:' + id;
+      }
+    };
+    class Outer {
+      build() {
+        class Inner {
+          run(value) {
+            trace(${parentStyle});
+            return 'ran:' + value;
+          }
+        }
+
+        return new Inner();
+      }
+    }
+    export { Namespace, Outer };
+  `);
+
+  expect(new traced.Namespace.Widget().render('3')).toBe('widget:3');
+  expect(new traced.Outer().build().run('x')).toBe('ran:x');
+
+  // `Namespace.Widget = class { ... }` reaches its name only through the assignment target, the one
+  // branch of `declaringClassName` no other case exercises; `Inner` is declared inside `Outer`'s
+  // method body, so the walk must stop at the first class it meets rather than the outermost one
+  expect(devLogs.map((log) => log.message)).toEqual([
+    'Widget.render()',
+    'Widget.render done',
+    'Inner.run()',
+    'Inner.run done',
+  ]);
+});
+
+// A static block sits in the class body but is not a member that holds a function, so a function
+// written in one belongs to the file like any other free function. This pins that adding
+// `StaticBlock` to `isClassMember` - or letting the walk read straight through it to the class -
+// would be a behavior change, not a tidy-up.
+test('parent.functionName reports the file for a function inside a class static block', async () => {
+  const traced = await loadTracedModule(`
+    class Config {
+      static loaded;
+      static {
+        function load() {
+          trace(${parentStyle});
+          return 'ready';
+        }
+        Config.loaded = load();
+      }
+    }
+    export { Config };
+  `);
+
+  expect(traced.Config.loaded).toBe('ready');
+  expect(devLogs.map((log) => log.message)).toEqual([
+    'orderService.load()',
+    'orderService.load done',
+  ]);
+});
+
+test('parent.functionName survives the await of an async class method and an async file-level function', async () => {
+  const traced = await loadTracedModule(`
+    class Checkout {
+      async calculate(price) {
+        trace(${parentStyle});
+        await Promise.resolve();
+        return price * 2;
+      }
+    }
+    async function submit(value) {
+      trace(${parentStyle});
+      await Promise.resolve();
+      return value + 1;
+    }
+    async function settle(value) {
+      trace({ moduleId: 'ORDER', openMessage: 'parent.functionName', closeMessage: 'result' });
+      await Promise.resolve();
+      return { total: value };
+    }
+    export { Checkout, settle, submit };
+  `);
+
+  await expect(new traced.Checkout().calculate(3)).resolves.toBe(6);
+  await expect(traced.submit(1)).resolves.toBe(2);
+  await expect(traced.settle(7)).resolves.toEqual({ total: 7 });
+
+  // the parent is resolved once, where the box opens, and has to still be in hand a microtask later
+  // when the awaited result closes it - `settle` pins that the resolved payload, not the Promise,
+  // is still what a result-shaped close reads while a parent is in play
+  expect(devLogs.map((log) => [log.type, log.message])).toEqual([
+    ['open', 'Checkout.calculate()'],
+    ['close', 'Checkout.calculate done'],
+    ['open', 'orderService.submit()'],
+    ['close', 'orderService.submit done'],
+    ['open', 'orderService.settle()'],
+    ['close', 'settle done. returns: {"total":7}'],
+  ]);
+});
+
+// The failure close is one fixed message: no preset, callback, or parent reaches it, so a reader
+// can always tell a failed box from a successful one by its shape alone. Pin it against a parent
+// leaking in the day `getCloseMessage` grows a failure branch.
+test('a failing traced function closes with the bare name even where a parent exists', async () => {
+  const traced = await loadTracedModule(`
+    class Checkout {
+      calculate(price) {
+        trace(${parentStyle});
+        throw new Error('no price:' + price);
+      }
+    }
+    function submit(value) {
+      trace(${parentStyle});
+      throw new Error('no value:' + value);
+    }
+    export { Checkout, submit };
+  `);
+
+  expect(() => new traced.Checkout().calculate(1)).toThrow('no price:1');
+  expect(() => traced.submit(2)).toThrow('no value:2');
+
+  expect(devLogs.map((log) => [log.type, log.message])).toEqual([
+    ['open', 'Checkout.calculate()'],
+    ['close', 'calculate failed'],
+    ['open', 'orderService.submit()'],
+    ['close', 'submit failed'],
+  ]);
+});
+
+// `fileParentName` reduces Babel's filename to the parent every marked function outside a class
+// reports, so each of these shapes is a message a consumer would read. Unit-level because a
+// dotfile, a multi-dot name, and a trailing separator have no natural module to transform.
+test.each([
+  ['a Windows path', 'C:\\dev\\loxer\\src\\orders\\orderService.ts', 'orderService'],
+  ['a POSIX path', 'src/orders/orderService.ts', 'orderService'],
+  ['a bare filename', 'orderService.ts', 'orderService'],
+  // only the last dot starts an extension, so the compound name survives intact
+  ['a multi-dot name', 'src/orders.service.ts', 'orders.service'],
+  // a leading dot names the file; dropping it would report the empty string as the parent
+  ['a dotfile', '.eslintrc', '.eslintrc'],
+  ['a name with no extension', 'src/Makefile', 'Makefile'],
+])('fileParentName reduces %s to its base name', (_label, filename, expected) => {
+  expect(fileParentName(filename)).toBe(expected);
+});
+
+test('fileParentName reports no parent where a name cannot be read', () => {
+  // a path ending in a separator names a directory, and an empty parent would render as '.load'
+  expect(fileParentName('src/orders/')).toBeUndefined();
+  expect(fileParentName('src\\orders\\')).toBeUndefined();
+  expect(fileParentName('')).toBeUndefined();
+  // Babel's filename is optional, and a build that omits it hands the runtime nothing to join
+  expect(fileParentName(undefined)).toBeUndefined();
 });
 
 test('an inline literal assigned to a private class field reports the field name', async () => {
@@ -746,5 +1096,57 @@ test("the enclosing form evaluates its options once per invocation - three calls
     'load(a)',
     'load(b)',
     'load(c)',
+  ]);
+});
+
+// The trailing-`Class` rule lives in two copies, one per package, because the packages cannot import
+// each other - so nothing but a test holds them to the same answer. Each row checks both against the
+// same expectation: the transform's copy through the message its emitted code produces, and the
+// runtime's copy directly. `test/decorators.test.ts` drives the decorator from the same table. A row
+// each, so a class name that breaks one copy cannot be skipped by an earlier row throwing.
+test.each(classParentNameCases)(
+  'both copies of the trailing-Class rule render $parent for class $className',
+  async ({ className, parent }) => {
+    const traced = await loadTracedModule(`
+    class ${className} {
+      run(id) {
+        trace(${parentStyle});
+        return id;
+      }
+    }
+    export { ${className} };
+  `);
+
+    expect(new traced[className]().run('9')).toBe('9');
+    expect(devLogs.map((log) => log.message)).toEqual([`${parent}.run()`, `${parent}.run done`]);
+    expect(classParentName(className)).toBe(parent);
+  }
+);
+
+// The runtime resolves the parent once, when the box opens, behind a gate that has to read *both*
+// message styles - the close message is built a call later, from the value captured back then. Every
+// other parent test in this file names the style on both ends, so a gate that read only `openMessage`
+// would pass all of them and still drop the parent from every close-only message.
+test('parent.functionName on the close message alone still renders the parent', async () => {
+  const traced = await loadTracedModule(`
+    function closeOnly(id) {
+      trace({ moduleId: 'ORDER', closeMessage: 'parent.functionName' });
+      return id;
+    }
+    function closeOnlyWithArgs(id) {
+      trace({ moduleId: 'ORDER', openMessage: 'args', closeMessage: 'parent.functionName' });
+      return id;
+    }
+    export { closeOnly, closeOnlyWithArgs };
+  `);
+
+  expect(traced.closeOnly('9')).toBe('9');
+  expect(traced.closeOnlyWithArgs('7')).toBe('7');
+
+  expect(devLogs.map((log) => [log.type, log.message])).toEqual([
+    ['open', 'closeOnly()'],
+    ['close', 'orderService.closeOnly done'],
+    ['open', 'closeOnlyWithArgs(7)'],
+    ['close', 'orderService.closeOnlyWithArgs done'],
   ]);
 });

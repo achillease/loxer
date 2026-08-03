@@ -1,6 +1,6 @@
 import type { NodePath } from '@babel/core';
 import type * as BabelTypes from '@babel/types';
-import { assertOneMarkerPerFunction, collectMarkers } from './marker-collection.js';
+import { assertOneMarkerPerFunction, collectMarkers, fileParentName } from './marker-collection.js';
 import { innermostFirst, transformMarker } from './marker-transform.js';
 import type { BabelPluginApi, RuntimeIds } from './marker-types.js';
 import { needsFunctionLength } from './trace-binding.js';
@@ -25,7 +25,7 @@ export default function loxerTracePlugin(
   return {
     name: 'babel-plugin-loxer-trace',
     visitor: {
-      Program(programPath: NodePath<any>): void {
+      Program(programPath: NodePath<any>, state: any): void {
         const imports = collectImports(programPath, traceImport, loxerImport, t);
         if (imports.markerBindings.size === 0 || !imports.runtimeImportPath) {
           return;
@@ -44,8 +44,10 @@ export default function loxerTracePlugin(
           imports.loxerBinding,
           t
         );
+        // the file a marked function is written in is the parent of every function no class holds
+        const fileName = fileParentName(state?.file?.opts?.filename ?? state?.filename);
         for (const marker of innermostFirst(markers)) {
-          transformMarker(marker, programPath, runtime, t);
+          transformMarker(marker, programPath, runtime, fileName, t);
         }
         for (const binding of imports.markerBindings) {
           if (!binding.path.removed) {

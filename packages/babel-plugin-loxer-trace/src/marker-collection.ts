@@ -82,6 +82,7 @@ export function collectMarkers(
         isLiteral && !isStandaloneStatement
           ? {
               callPath,
+              className: enclosingClassName(targetPath, t),
               isArrow: targetPath.isArrowFunctionExpression(),
               kind: 'inline',
               literalPath: targetPath,
@@ -134,6 +135,7 @@ function collectEnclosingMarker(
 
   return {
     callPath,
+    className: enclosingClassName(functionPath, t),
     functionPath,
     kind: 'enclosing',
     name: resolveFunctionName(callPath, functionPath, optionsNode, t),
@@ -320,7 +322,8 @@ function surroundingName(functionPath: NodePath<any>, t: typeof BabelTypes): str
  * literal to a call on the way to a binding is the shape the inline form exists for, so the walk
  * reads through it.
  *
- * Adding a kind here is a reason to re-read the rest of the list.
+ * Adding a kind here is a reason to re-read the rest of the list — and to check it against
+ * `enclosingClassName`, which ends its walk on the same boundaries.
  */
 function isNameBoundary(path: NodePath<any>, t: typeof BabelTypes): boolean {
   return (
@@ -339,6 +342,98 @@ function isNameBoundary(path: NodePath<any>, t: typeof BabelTypes): boolean {
     t.isMemberExpression(path.node) ||
     t.isOptionalMemberExpression(path.node)
   );
+}
+
+/**
+ * Returns the name of the class a traced function is a member of, which the `'parent.functionName'`
+ * message styles render against ahead of the file the function is written in.
+ *
+ * The walk that reads a function's name is the walk that reads its class, because a function reaches
+ * a class through the member that holds it: a method, a getter or setter, an ordinary, private, or
+ * accessor field. A function the walk reaches by any other route — one declared inside a method's
+ * body, one an object literal holds — is a member of nothing and reports its file instead. A call
+ * stays transparent here as well, so `load = useCallback(trace(() => { ... }, options), [])` is read
+ * as the field of its class it is.
+ */
+function enclosingClassName(functionPath: NodePath<any>, t: typeof BabelTypes): string | undefined {
+  for (let path: NodePath<any> | null = functionPath; path; path = path.parentPath) {
+    if (isClassMember(path.node, t)) {
+      return declaringClassName(path.parentPath?.parentPath, t);
+    }
+    // the marked function is a boundary to everything above it, never to itself
+    if (path !== functionPath && isNameBoundary(path, t)) {
+      return undefined;
+    }
+  }
+
+  return undefined;
+}
+
+/** Returns whether a node is a class body member that can hold a function. */
+function isClassMember(node: any, t: typeof BabelTypes): boolean {
+  return (
+    t.isClassMethod(node) ||
+    t.isClassPrivateMethod(node) ||
+    t.isClassProperty(node) ||
+    t.isClassPrivateProperty(node) ||
+    t.isClassAccessorProperty(node)
+  );
+}
+
+/** Reads a class's name, from its own id or from the binding an unnamed class expression reaches. */
+function declaringClassName(
+  classPath: NodePath<any> | null | undefined,
+  t: typeof BabelTypes
+): string | undefined {
+  const node = classPath?.node;
+  if (!t.isClassDeclaration(node) && !t.isClassExpression(node)) {
+    return undefined;
+  }
+  if (t.isIdentifier(node.id)) {
+    return classParentName(node.id.name);
+  }
+
+  const holder = classPath?.parentPath?.node;
+  if (t.isVariableDeclarator(holder) && t.isIdentifier(holder.id)) {
+    return classParentName(holder.id.name);
+  }
+
+  const assigned = t.isAssignmentExpression(holder) ? assignedName(holder.left, t) : undefined;
+
+  return assigned === undefined ? undefined : classParentName(assigned);
+}
+
+/**
+ * Renders a class as the parent of its methods, dropping a trailing `Class`. A class named exactly
+ * `Class` keeps its name, because stripping the suffix would leave no parent at all.
+ *
+ * The `@trace` decorator reads its class at run time and applies the same rule from
+ * `src/core/TraceNames.ts`, which this plugin cannot import: the two are separate packages, and the
+ * emitted call carries a finished string. `test/plain-function-trace-enclosing.test.ts` and
+ * `test/decorators.test.ts` pin them against each other.
+ */
+function classParentName(className: string): string {
+  return className !== 'Class' && className.endsWith('Class') ? className.slice(0, -5) : className;
+}
+
+/**
+ * Renders a file as the parent of the functions written in it, as its name without directories or
+ * extension.
+ *
+ * A build that hands Babel no filename leaves a function outside a class with no parent to report,
+ * which the runtime renders as the bare function name.
+ */
+export function fileParentName(filename: unknown): string | undefined {
+  if (typeof filename !== 'string') {
+    return undefined;
+  }
+
+  const base = filename.slice(Math.max(filename.lastIndexOf('/'), filename.lastIndexOf('\\')) + 1);
+  const extension = base.lastIndexOf('.');
+  // a leading dot names the file rather than starting an extension, so only a later one is dropped
+  const name = extension > 0 ? base.slice(0, extension) : base;
+
+  return name.length > 0 ? name : undefined;
 }
 
 /** Returns a keyed member's source-level name, which a computed key does not have. */

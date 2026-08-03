@@ -8,8 +8,8 @@ export type TraceHighlight = 'open' | 'close' | 'all';
  * Presets render against the traced name (`propertyKey` for methods, the binding name for plain
  * functions):
  * - `'functionName'` — `calculate()` (also the default when `openMessage` is omitted)
- * - `'className.functionName'` — `Checkout.calculate()` on decorated methods; plain functions fall
- *   back to `'functionName'`
+ * - `'parent.functionName'` — `Checkout.calculate()` for a method of a class, `checkout.calculate()`
+ *   for a function written in `checkout.ts`
  * - `'args'` — `calculate(19.95, 3)` (arguments stringified into the message)
  * - `'types'` — `calculate(number, number)` (`typeof` each argument)
  *
@@ -35,7 +35,7 @@ export type TraceHighlight = 'open' | 'close' | 'all';
  * ```
  */
 export type FunctionOpenMessage<Args extends readonly unknown[] = readonly unknown[]> =
-  ((args: Args) => string) | 'functionName' | 'className.functionName' | 'types' | 'args';
+  ((args: Args) => string) | 'functionName' | 'parent.functionName' | 'types' | 'args';
 
 /**
  * How the successful closing box message is built for `@trace()` and `trace()`.
@@ -43,8 +43,8 @@ export type FunctionOpenMessage<Args extends readonly unknown[] = readonly unkno
  * Presets render against the traced name (`propertyKey` for methods, the binding name for plain
  * functions). For async targets the message uses the resolved (awaited) result, not the Promise:
  * - `'functionName'` — `calculate done` (also the default when `closeMessage` is omitted)
- * - `'className.functionName'` — `Checkout.calculate done` on decorated methods; plain functions
- *   fall back to `'functionName'`
+ * - `'parent.functionName'` — `Checkout.calculate done` for a method of a class,
+ *   `checkout.calculate done` for a function written in `checkout.ts`
  * - `'result'` — `calculate done. returns: {"total":59.85}` (`JSON.stringify`)
  * - `'prettyResult'` — same as `'result'`, with indented JSON
  *
@@ -68,11 +68,7 @@ export type FunctionOpenMessage<Args extends readonly unknown[] = readonly unkno
  * ```
  */
 export type FunctionCloseMessage<Result = unknown> =
-  | ((result: Result) => string)
-  | 'functionName'
-  | 'className.functionName'
-  | 'result'
-  | 'prettyResult';
+  ((result: Result) => string) | 'functionName' | 'parent.functionName' | 'result' | 'prettyResult';
 
 /**
  * Options shared by the `@trace()` method decorator and the `trace()` function marker in each of
@@ -82,8 +78,11 @@ export type FunctionCloseMessage<Result = unknown> =
  * from it, from the union of every listed target when it marks a list. `@trace()` and the
  * `trace(options)` marker inside a function have no signature in hand, so supply them explicitly
  * when formatter callbacks need precise types.
- * `className.functionName` uses the class name for decorated methods and falls back to the function
- * name for plain functions.
+ * `parent.functionName` names the class a traced method belongs to — a decorated method, or a
+ * method, getter, setter, or field a marker reaches inside a class body — and otherwise the file a
+ * marked function is written in. A class name ending in `Class` reports without that suffix. The
+ * decorator reads its class from the running instance, and the file name comes from the build, so a
+ * decorated method that a call reaches detached from its class reports its own name alone.
  */
 export interface TraceOptions<
   Args extends readonly unknown[] = readonly unknown[],

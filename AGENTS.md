@@ -94,6 +94,15 @@ pre-commit hook (`.husky/pre-commit`) runs `pnpm lint`.
   hidden box is written without box membership, drawing no marker, the way an assigned error
   already is. `add` and `close` need no rule of their own: they take the opening log's level, so
   they are gated identically to their box and pair with it automatically.
+- A message style, formatter, or option that only some callers select must not make every caller
+  pay for computing it. `__startTrace` (`src/trace.ts`) and `@trace`'s decorator runtime
+  (`src/decorators/trace.ts`) each gate resolving the `'parent.functionName'` parent name behind a
+  `needsParentName` check (`openMessage === 'parent.functionName' || closeMessage === '…'`) before
+  doing the work, because the default style never reads it and this runs on every traced call —
+  ahead of the level check above that decides whether the log is written at all, so an ungated
+  cost here is paid even by logs that get discarded. A gate reading two options like this needs
+  both sides covered by a test, or the ungated one silently drops the feature for callers who
+  named only it.
 
 ## Workspace Safety
 

@@ -91,6 +91,39 @@ test('an inline literal takes its name from a member-expression assignment targe
   ]);
 });
 
+test('parent.functionName names the class an inline literal is a field of, through a call and all', async () => {
+  const traced = await loadTracedModule(`
+    function useCallback(fn, deps) { return fn; }
+    class Checkout {
+      #discount = trace((price) => price - 1, {
+        moduleId: 'ORDER',
+        openMessage: 'parent.functionName',
+        closeMessage: 'parent.functionName',
+      });
+      load = useCallback(trace((id) => 'order:' + id, {
+        moduleId: 'ORDER',
+        openMessage: 'parent.functionName',
+        closeMessage: 'parent.functionName',
+      }), []);
+      invokeDiscount(price) {
+        return this.#discount(price);
+      }
+    }
+    export { Checkout };
+  `);
+
+  const checkout = new traced.Checkout();
+  expect(checkout.invokeDiscount(10)).toBe(9);
+  expect(checkout.load('9')).toBe('order:9');
+
+  expect(devLogs.map((log) => log.message)).toEqual([
+    'Checkout.#discount()',
+    'Checkout.#discount done',
+    'Checkout.load()',
+    'Checkout.load done',
+  ]);
+});
+
 test('an inline literal with no name source raises a build-time error naming the fix', async () => {
   await expect(
     transformLoxerTrace(

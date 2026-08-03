@@ -20,6 +20,7 @@ export interface StatementMarker {
 export interface InlineMarker {
   kind: 'inline';
   callPath: NodePath<any>;
+  className?: string;
   optionsNode: any;
   literalPath: NodePath<any>;
   name: string;
@@ -29,6 +30,7 @@ export interface InlineMarker {
 export interface EnclosingMarker {
   kind: 'enclosing';
   callPath: NodePath<any>;
+  className?: string;
   optionsNode: any;
   functionPath: NodePath<any>;
   name: string;

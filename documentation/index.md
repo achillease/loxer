@@ -127,8 +127,14 @@ export default defineConfig({
 });
 ```
 
-`openMessage` accepts `functionName`, `args`, `types`, or a formatter; `closeMessage` accepts
-`functionName`, `result`, `prettyResult`, or a formatter. `moduleId`, `level`, `highlight`,
+The adapter also contributes the Vite settings that keep the page on one copy of Loxer, adapted to
+how the project has it: an installed Loxer is pre-bundled, and a linked one is served as source from
+a directory added to `server.fs.allow`, so that a rebuild of the working copy takes effect on
+reload. `loxerTrace({ dedupe: false })` leaves all of it to you.
+
+`openMessage` accepts `functionName`, `parent.functionName`, `args`, `types`, or a formatter;
+`closeMessage` accepts `functionName`, `parent.functionName`, `result`, `prettyResult`, or a
+formatter. `moduleId`, `level`, `highlight`,
 `argsAsItem`, and `resultAsItem` follow the same behavior as function-relevant `@trace` options.
 `TraceOptions` is shared by the plain-function marker and the class-method decorator. The marker
 infers an open formatter's argument from the marked function's actual argument tuple and a close
@@ -150,9 +156,21 @@ class CheckoutService {
 }
 ```
 
-`className.functionName` uses the class and method name for decorators. For a plain function, it
-falls back to `functionName`. Formatters and result serialization fall back to the default message
-when they fail, without changing the application result.
+`parent.functionName` prefixes the traced function's parent, so a box opens as
+`Checkout.calculate()` and closes as `Checkout.calculate done`. The parent of a method is its class,
+read off a decorated method and off the class body a marker sits in: a method, a private method, a
+getter or setter, and an ordinary, private, or accessor field all report their class. A class name
+ending in `Class` reports without that suffix, so a method of `OrderServiceClass` reads as
+`OrderService.load`.
+
+The parent of every other marked function is the file it is written in, named without its
+directories or extension: a plain function, one declared inside a method's body, and one an object
+literal holds all report `orderService.load` in `src/orders/orderService.ts`. The file comes from the
+build, so a function reports one only where Babel is given a filename — as `babel-plugin-loxer-trace`
+and `vite-plugin-loxer-trace` are in an ordinary build. A function neither a class nor a file reaches
+reports its own name, the same as `functionName` does, which is also what a decorated method reports
+when a call reaches it detached from its class. Formatters and result serialization fall back to the
+default message when they fail, without changing the application result.
 
 `openMessage: 'args'` and result message modes create formatted message strings for callbacks; built-in
 argument formatting escapes control characters. `argsAsItem` and `resultAsItem` are the modes that send
@@ -934,11 +952,15 @@ errors it used to mean. Translate the literal rather than relying on the fallbac
 
 ### Types and returns
 
-| Loxer 2                            | Loxer 3                                |
-| ---------------------------------- | -------------------------------------- |
-| `LevelType`, `LogLevelType`        | [`LogLevel`][loxer.loglevel] for both  |
-| `Loxer.getModuleLevel(...)` → `-1` | → `undefined` for an unknown module id |
-| `TraceOptions.level: 1 \| 2 \| 3`  | [`BoxLevel`][loxer.boxlevel]           |
+| Loxer 2                             | Loxer 3                                |
+| ----------------------------------- | -------------------------------------- |
+| `LevelType`, `LogLevelType`         | [`LogLevel`][loxer.loglevel] for both  |
+| `Loxer.getModuleLevel(...)` → `-1`  | → `undefined` for an unknown module id |
+| `TraceOptions.level: 1 \| 2 \| 3`   | [`BoxLevel`][loxer.boxlevel]           |
+| `'className.functionName'`          | `'parent.functionName'`                |
+
+The last row applies to `openMessage` and `closeMessage` alike. A decorated method reports the same
+message it did, since its parent is its class.
 
 If you use `babel-plugin-loxer-trace`, note that the level methods are linked to their trace box just
 like `Loxer.log` is: `Loxer.debug('…')` inside a traced body becomes part of that box.

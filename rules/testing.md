@@ -21,6 +21,10 @@
   longer typechecks; `pnpm typecheck:test` is the only gate that catches it.
 - Keep extracted test suites as independently discovered `test/**/*.test.ts` files; do not hide
   test registrations in imported case modules behind a thin entry test.
+- Drive a table of cases with `test.each`, never a `for` loop inside one `test()`. A loop lets an
+  early row throw and silently skip every later row, while a per-row `test.each` failure names the
+  row instead of diffing a whole array — see `test.each(traceCases)` in `test/decorators.test.ts`
+  and the `isInstalledPackagePath` table in `test/vite-plugin-loxer-trace.test.ts`.
 - If a change touches global logger state, call `resetLoxer()` in `afterEach` and re-init `Loxer`
   in `beforeEach` — see `test/boxed.test.ts` for the pattern.
 - If a suite loads a second copy of Loxer (`vi.resetModules()`, then re-`import` the module), also
@@ -45,9 +49,31 @@
   for plain (un-ANSI'd) strings and mock `global.console.log` to capture output — see
   `test/item.test.ts`. Falsy items (`false`, `0`, `''`, `null`, `undefined`) never reach this path
   (`if (outputLox.item)` gate).
+- When a rule must exist in two copies because the packages holding them cannot import each
+  other, drive both copies from one shared table of cases and assert they agree — a comment
+  claiming two suites pin the copies against each other is not a pin unless breaking either copy
+  alone fails the table. `test/class-parent-name-cases.ts` drives `classParentName`
+  (`src/core/TraceNames.ts`, read at run time) and its separate copy in
+  `packages/babel-plugin-loxer-trace/src/marker-collection.ts` (read at build time) through three
+  consumers: the runtime helper directly, the decorator end to end, and the transform through the
+  messages its emitted code produces.
+- Exercise a change to what a consumer executes — the code the Babel transform emits, or the
+  published runtime — against the built trees after `pnpm build`, not only against `src/` through
+  `pnpm test`: transform a module with `packages/babel-plugin-loxer-trace/dist` and run the emitted
+  code against `dist/trace.js` and `dist/index.js`. Every suite imports source
+  (`test/plain-function-trace.fixture.ts` imports `../src`, `test/vite-plugin-loxer-trace.test.ts`
+  imports `../packages/vite-plugin-loxer-trace/src/index`) while a consumer imports `dist/` and
+  `packages/*/dist`, so a green suite proves nothing about a stale or unbuilt artifact. A
+  `playground/*.js` script already imports `../dist/index.js` and is one ready-made way in.
+- Where a consumer application is on hand, finish through its dev server (`pnpm demo` runs
+  `examples/vite-trace-demo`) and check the runtime it actually resolves and serves. A bundler keeps
+  its own pre-bundled copy of the package — `examples/vite-trace-demo/node_modules/.vite/deps` — that
+  can go on serving a frozen older `dist/` across a rebuild, a third tree neither `pnpm test` nor a
+  Node-level run of `dist/` can see.
 - A task touching `src/` is done only when `pnpm test` passes AND, for a box-layout or decorator
   change, the corresponding test file above was updated AND, for a type-affecting change,
-  `pnpm typecheck:test` passes.
+  `pnpm typecheck:test` passes AND, for a change a consumer observes, the built trees were exercised
+  per the two rules above.
 
 ## Never
 

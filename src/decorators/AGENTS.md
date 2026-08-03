@@ -14,7 +14,10 @@ Decorators are optional public helpers layered on top of the singleton `Loxer` A
   highlight mode, message formatting, and item capture. `level` is a `BoxLevel` (every `LogLevel`
   except `'error'`, defaulting to `'info'`) and is applied by indexing the matching level's
   `LevelMethods`: `Loxer.h(...).m(moduleId)[level].open(...)`.
-- Class names ending in `Class` are shortened for decorator-generated messages.
+- `'parent.functionName'` renders through `qualifiedFunctionName()` in `src/core/TraceNames.ts`,
+  which the marker runtime uses too. A decorated method's parent is always its class, read off `this`
+  through `classParentName()` — the decorator never reports a file, which only the build-time
+  transform knows.
 
 ## Tests
 

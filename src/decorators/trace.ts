@@ -1,4 +1,5 @@
 import { resolveBoxLevel } from '../core/Levels.js';
+import { classParentName, qualifiedFunctionName } from '../core/TraceNames.js';
 import { is } from '../Helpers.js';
 import { Loxer } from '../Loxer.js';
 import { TraceOptions } from '../tracing-types.js';
@@ -83,9 +84,10 @@ function createTracedMethod<Args extends readonly unknown[] = readonly unknown[]
 
     const level = resolveBoxLevel(o?.level);
     const h = o?.highlight;
-    const needsClassName =
-      o?.openMessage === 'className.functionName' || o?.closeMessage === 'className.functionName';
-    const fixedName = needsClassName ? resolveClassName(this) : '';
+    const needsParentName =
+      o?.openMessage === 'parent.functionName' || o?.closeMessage === 'parent.functionName';
+    // a decorated method's parent is always its class, which the running instance carries
+    const fixedName = needsParentName ? resolveClassName(this) : '';
 
     // open message
     const openMessage = getOpenMessage(o, propertyName, args, fixedName);
@@ -140,18 +142,11 @@ function methodName(propertyKey: string | symbol): string {
 function resolveClassName(instance: any): string {
   try {
     const className = typeof instance === 'function' ? instance.name : instance?.constructor?.name;
-    if (typeof className !== 'string') {
-      return '';
-    }
 
-    return className.endsWith('Class') ? className.slice(0, -5) : className;
+    return typeof className === 'string' ? classParentName(className) : '';
   } catch {
     return '';
   }
-}
-
-function classPrefix(className: string): string {
-  return className ? className + '.' : '';
 }
 
 function getOpenMessage<Args extends readonly unknown[], Result>(
@@ -169,8 +164,8 @@ function getOpenMessage<Args extends readonly unknown[], Result>(
       openMessage = propertyKey + '(' + args.join(', ') + ')';
     } else if (om === 'types') {
       openMessage = propertyKey + '(' + args.map((a) => typeof a).join(', ') + ')';
-    } else if (om === 'className.functionName') {
-      openMessage = classPrefix(fixedName) + propertyKey + '()';
+    } else if (om === 'parent.functionName') {
+      openMessage = qualifiedFunctionName(fixedName, propertyKey) + '()';
     }
   }
 
@@ -192,8 +187,8 @@ function getCloseMessage<Args extends readonly unknown[], Result>(
       closeMessage = propertyKey + ' done. returns: ' + JSON.stringify(result);
     } else if (cm === 'prettyResult') {
       closeMessage = propertyKey + ' done. returns: \n' + JSON.stringify(result, null, ' ');
-    } else if (cm === 'className.functionName') {
-      closeMessage = classPrefix(fixedName) + propertyKey + ' done';
+    } else if (cm === 'parent.functionName') {
+      closeMessage = qualifiedFunctionName(fixedName, propertyKey) + ' done';
     }
   }
 

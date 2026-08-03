@@ -10,19 +10,32 @@ import type {
   StatementMarker,
 } from './marker-types.js';
 
-/** Transforms a marker after runtime helper imports have been added. */
+/**
+ * Transforms a marker after runtime helper imports have been added.
+ *
+ * `fileName` is the parent of every marked function a class does not hold, so a marker resolves its
+ * parent as the class it read out of the source, and the file otherwise. A marker beside a binding
+ * marks a declaration or a variable, which no class body holds, so it always reports the file.
+ *
+ * A class name the shortening rule empties falls through to the file as well, so that a class this
+ * walk *did* reach never renders as less than a function no class holds at all. No name reaches that
+ * fallback today — `classParentName` returns its input untouched rather than emptying it, and every
+ * other source of a class name here is a non-empty identifier or property key — so it holds the
+ * invariant rather than a case, and a change that lets a class name empty again belongs here first.
+ */
 export function transformMarker(
   marker: Marker,
   programPath: NodePath<any>,
   runtime: RuntimeIds,
+  fileName: string | undefined,
   t: typeof BabelTypes
 ): void {
   if (marker.kind === 'inline') {
-    transformInlineMarker(marker, programPath, runtime, t);
+    transformInlineMarker(marker, programPath, runtime, marker.className || fileName, t);
   } else if (marker.kind === 'enclosing') {
-    transformEnclosingMarker(marker, runtime, t);
+    transformEnclosingMarker(marker, runtime, marker.className || fileName, t);
   } else {
-    transformStatementMarker(marker, programPath, runtime, t);
+    transformStatementMarker(marker, programPath, runtime, fileName, t);
   }
 }
 
@@ -38,6 +51,7 @@ function transformInlineMarker(
   marker: InlineMarker,
   programPath: NodePath<any>,
   runtime: RuntimeIds,
+  parentName: string | undefined,
   t: typeof BabelTypes
 ): void {
   const optionsId = programPath.scope.generateUidIdentifier(`${marker.name}TraceOptions`);
@@ -45,6 +59,7 @@ function transformInlineMarker(
   const traced = traceLiteral(
     marker.literalPath,
     marker.name,
+    parentName,
     runtime.runtimeId,
     runtime.observeResultId,
     runtime.withFunctionLengthId,
@@ -63,12 +78,14 @@ function transformInlineMarker(
 function transformEnclosingMarker(
   marker: EnclosingMarker,
   runtime: RuntimeIds,
+  parentName: string | undefined,
   t: typeof BabelTypes
 ): void {
   marker.callPath.parentPath.remove();
   traceEnclosingFunction(
     marker.functionPath,
     marker.name,
+    parentName,
     runtime.runtimeId,
     runtime.observeResultId,
     marker.optionsNode,
@@ -81,6 +98,7 @@ function transformStatementMarker(
   marker: StatementMarker,
   programPath: NodePath<any>,
   runtime: RuntimeIds,
+  parentName: string | undefined,
   t: typeof BabelTypes
 ): void {
   const optionsId = programPath.scope.generateUidIdentifier(
@@ -95,6 +113,7 @@ function transformStatementMarker(
     traceBinding(
       target.binding.path,
       target.name,
+      parentName,
       runtime.runtimeId,
       runtime.observeResultId,
       runtime.setFunctionLengthId,

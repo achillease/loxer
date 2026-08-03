@@ -88,12 +88,26 @@ export function imports(): string {
   return `import { trace } from '${traceRuntimeUrl}'; import { Loxer } from '${loxerRuntimeUrl}';`;
 }
 
+// traced modules are transformed under a filename, the way a real build transforms them, so the
+// file half of `parent.functionName` is exercised; a suite that needs the no-filename case
+// overrides it with `filename: undefined`
 export function transformOptions(): TransformLoxerTraceOptions {
-  return { loxerImport: loxerRuntimeUrl, sourceMaps: false, traceImport: traceRuntimeUrl };
+  return {
+    filename: 'src/orders/orderService.ts',
+    loxerImport: loxerRuntimeUrl,
+    sourceMaps: false,
+    traceImport: traceRuntimeUrl,
+  };
 }
 
-export async function loadTracedModule(body: string): Promise<any> {
-  const result = await transformLoxerTrace(`${imports()}${body}`, transformOptions());
+export async function loadTracedModule(
+  body: string,
+  overrides: Partial<TransformLoxerTraceOptions> = {}
+): Promise<any> {
+  const result = await transformLoxerTrace(`${imports()}${body}`, {
+    ...transformOptions(),
+    ...overrides,
+  });
   if (!result?.code) {
     throw new Error('Expected Babel to emit transformed code.');
   }

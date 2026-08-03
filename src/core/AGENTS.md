@@ -54,6 +54,14 @@ small and behavior-preserving; most public contracts are asserted from `test/box
 - `LoxHistory` is newest-first. A configured size of `1` currently disables stored history.
 - `Item` handles arbitrary runtime values; avoid recursive changes that would loop on class graphs
   or cyclic structures.
+- `TraceNames.ts` owns the rendering of `'parent.functionName'` for the `@trace` decorator
+  (`src/decorators/trace.ts`, class read off `this` at call time) and for the marker runtime
+  (`src/trace.ts`, parent passed in by the transform, a class or a file). The runtime only joins a
+  parent to a name: deciding *which* parent belongs to a function is the caller's job, and the
+  trailing-`Class` rule (`classParentName`) applies to a class only, never to a file.
+  `babel-plugin-loxer-trace` keeps its own copy of that rule because it is a separate package that
+  cannot import this one; `test/decorators.test.ts` and `test/plain-function-trace-enclosing.test.ts`
+  pin the two against each other.
 - `src/core/color/` is vendored, not an npm dependency: it ports `color-string@1.6.0` (parsing),
   `color-name@1.1.4` (the named-color table), and `color-convert@1.9.3` (`hsl`/`hwb` -> rgb), and
   keeps their MIT copyright headers. Loxer ships zero runtime dependencies — never reintroduce

@@ -29,7 +29,7 @@ test('TypeScript standard decorator emit invokes the real @trace protocol', asyn
     class Service {
       @trace({
         moduleId: 'NONE',
-        openMessage: 'className.functionName',
+        openMessage: 'parent.functionName',
         closeMessage: 'result',
       })
       calculate(value: number) {

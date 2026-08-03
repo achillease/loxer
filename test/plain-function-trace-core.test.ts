@@ -1036,15 +1036,37 @@ test('trace options format types, pretty results, and successful formatter messa
   ]);
 });
 
-test('className.functionName trace messages fall back to the function name', () => {
+test('parent.functionName trace messages fall back to the function name', () => {
   const trace = __startTrace('standalone', [], {
-    closeMessage: 'className.functionName',
+    closeMessage: 'parent.functionName',
     moduleId: 'TRACE',
-    openMessage: 'className.functionName',
+    openMessage: 'parent.functionName',
   });
   trace.success(undefined);
 
   expect(devLogs.map((log) => log.message)).toEqual(['standalone()', 'standalone done']);
+});
+
+test('a parent name is sanitized before it reaches the open and close messages', () => {
+  // the parent is a file name or a class name read out of a build's own input, so it carries no
+  // more guarantee about control characters than the function name beside it does - an unescaped
+  // one would let a repository path forge terminal output on every traced call. The test above
+  // covers the same styles with no parent at all.
+  const hostile = __startTrace(
+    'load',
+    [],
+    {
+      closeMessage: 'parent.functionName',
+      moduleId: 'TRACE',
+      openMessage: 'parent.functionName',
+    },
+    'we\u001b[31m\nird'
+  );
+  hostile.success(undefined);
+  expect(devLogs.map((log) => log.message)).toEqual([
+    'we\\u001b[31m\\u000aird.load()',
+    'we\\u001b[31m\\u000aird.load done',
+  ]);
 });
 
 test('custom formatter messages escape terminal control characters', () => {

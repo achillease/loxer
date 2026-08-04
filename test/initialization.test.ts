@@ -339,8 +339,8 @@ test('OutputStreams', () => {
   const ol = new OutputLox({
     highlighted: false,
     id: 0,
-    item: 'item',
-    itemOptions: undefined,
+    props: ['prop'],
+    printProps: {},
     level: 'info',
     message: 'log',
     moduleId: 'NONE',
@@ -349,8 +349,8 @@ test('OutputStreams', () => {
   const cl = new OutputLox({
     highlighted: false,
     id: 0,
-    item: undefined,
-    itemOptions: undefined,
+    props: [],
+    printProps: undefined,
     level: 'info',
     message: 'log',
     moduleId: 'NONE',
@@ -360,8 +360,8 @@ test('OutputStreams', () => {
     new Lox({
       highlighted: false,
       id: 1,
-      item: 'item',
-      itemOptions: undefined,
+      props: ['prop'],
+      printProps: {},
       level: 'info',
       message: 'error',
       moduleId: 'NONE',
@@ -373,8 +373,8 @@ test('OutputStreams', () => {
     new Lox({
       highlighted: true,
       id: 2,
-      item: undefined,
-      itemOptions: undefined,
+      props: [],
+      printProps: undefined,
       level: 'info',
       message: 'error2',
       moduleId: 'NONE',
@@ -404,11 +404,11 @@ test('OutputStreams', () => {
   os.errorOut(true, el2, hy);
   os.errorOut(false, el2, hy);
 
-  // the no-callback stream renders to the console fallback path (which runs Item.prettify)
+  // the no-callback stream renders to the console fallback path (which runs PropsPrinter.print)
   const outputs = (console.log as Mock).mock.calls.map((c) => String(c[0]));
   expect(outputs.length).toBeGreaterThan(0);
-  // the open log's message and its string item were rendered
-  expect(outputs.some((o) => o.includes('log') && o.includes("'item'"))).toBe(true);
+  // the open log's message and its string prop were rendered
+  expect(outputs.some((o) => o.includes('log') && o.includes("'prop'"))).toBe(true);
   // the highlighted error (el2) renders its stack: 'errorText2' appears ONLY via the
   // concatenated Error.stack (OutputStreams.ts:61), so this fails if stack rendering breaks
   expect(outputs.some((o) => o.includes('errorText2'))).toBe(true);
@@ -428,8 +428,8 @@ test('Rest', () => {
   const lox = new Lox({
     highlighted: false,
     id: 0,
-    item: undefined,
-    itemOptions: undefined,
+    props: [],
+    printProps: undefined,
     level: 'info',
     message: 'm',
     moduleId: 'wrong',

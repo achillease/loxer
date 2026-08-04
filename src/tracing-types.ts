@@ -1,3 +1,4 @@
+import { PropsPrinterOptions } from './core/PropsPrinter.js';
 import { BoxLevel, ModuleId } from './types.js';
 
 export type TraceHighlight = 'open' | 'close' | 'all';
@@ -46,7 +47,6 @@ export type FunctionOpenMessage<Args extends readonly unknown[] = readonly unkno
  * - `'parent.functionName'` — `Checkout.calculate done` for a method of a class,
  *   `checkout.calculate done` for a function written in `checkout.ts`
  * - `'result'` — `calculate done. returns: {"total":59.85}` (`JSON.stringify`)
- * - `'prettyResult'` — same as `'result'`, with indented JSON
  *
  * A callback receives that result and must return the message string. `Result` is inferred from the
  * target a `trace()` marker names; pass it explicitly on `@trace<Args, Result>()` and on
@@ -68,7 +68,7 @@ export type FunctionOpenMessage<Args extends readonly unknown[] = readonly unkno
  * ```
  */
 export type FunctionCloseMessage<Result = unknown> =
-  ((result: Result) => string) | 'functionName' | 'parent.functionName' | 'result' | 'prettyResult';
+  ((result: Result) => string) | 'functionName' | 'parent.functionName' | 'result';
 
 /**
  * Options shared by the `@trace()` method decorator and the `trace()` function marker in each of
@@ -118,8 +118,21 @@ export interface TraceOptions<
   name?: string;
   /** which lifecycle messages should be highlighted */
   highlight?: TraceHighlight;
-  /** appends the arguments as the opening log item */
-  argsAsItem?: boolean;
-  /** appends the result as the closing log item */
-  resultAsItem?: boolean;
+  /** attaches the call's arguments to the opening log, one prop per argument */
+  argsAsProps?: boolean;
+  /** attaches a defined resolved result to the closing log, as a single prop; a `void` result
+   * attaches none */
+  resultAsProps?: boolean;
+  /** asks the built-in output to render the opening log's props, and configures that rendering
+   *
+   * Like {@link TraceOptions.argsAsProps}, this only concerns the arguments. Set it to `true` for
+   * the default configuration, or to a {@link PropsPrinterOptions} object to bound the rendering -
+   * `{ depth: 1 }` keeps a wide argument list readable.
+   */
+  printArgs?: boolean | PropsPrinterOptions;
+  /** asks the built-in output to render the closing log's props, and configures that rendering
+   *
+   * The counterpart of {@link TraceOptions.printArgs} for the result.
+   */
+  printResult?: boolean | PropsPrinterOptions;
 }

@@ -63,6 +63,21 @@ export class Modules {
     return level === undefined ? undefined : resolveThreshold(level, 'info');
   }
 
+  /** @internal whether a log of `level` in `moduleId` sits past what that module logs up to.
+   *
+   * The one derivation of that answer, which {@link Modules.getModule} reads too: a caller that has
+   * to know before it builds a log — to skip work the log would only discard — must get the same
+   * answer the output gate later gives, not a second encoding of it.
+   */
+  isHiddenAt(level: LogLevel, moduleId: string): boolean {
+    const mod = this._modules[moduleId] ?? this._modules.INVALID;
+    // the `'info'` fallback keeps a JS consumer's malformed module logging instead of silently
+    // muting it — a missing threshold, and an unusable one, both land there rather than at no gate
+    const threshold = resolveThreshold(this._isDev ? mod.devLevel : mod.prodLevel, 'info');
+
+    return isHidden(level, threshold);
+  }
+
   getModule(lox: Lox): { loxModule: ExtendedModule; hidden: boolean } {
     let mod = this._modules[lox.moduleId];
     if (!is(mod)) {
@@ -75,10 +90,7 @@ export class Modules {
     for (let i = slicedName.length; i < moduleTextLength; i++) {
       slicedName += ' ';
     }
-    // the `'info'` fallback keeps a JS consumer's malformed module logging instead of silently
-    // muting it — a missing threshold, and an unusable one, both land there rather than at no gate
-    const threshold = resolveThreshold(this._isDev ? mod.devLevel : mod.prodLevel, 'info');
-    const hidden = isHidden(lox.level, threshold);
+    const hidden = this.isHiddenAt(lox.level, lox.moduleId);
     const boxLayoutStyle = mod.boxLayoutStyle ?? 'round';
 
     return {

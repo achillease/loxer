@@ -143,12 +143,14 @@ function calculateTotal(unitPrice: number, quantity: number): number {
 }
 
 trace(calculateTotal, {
-  argsAsItem: true,
+  argsAsProps: true,
   closeMessage: (result) => `calculateTotal done. returns: ${result.toFixed(2)}`,
   highlight: 'close',
   moduleId: 'CALC',
   openMessage: 'args',
-  resultAsItem: true,
+  // the arguments are attached and rendered; the result is attached without being rendered
+  printArgs: { depth: 1 },
+  resultAsProps: true,
 });
 
 async function reserveInventory(orderId: number, delay: number): Promise<number> {
@@ -195,7 +197,8 @@ trace(submitOrder, {
   closeMessage: ({ orderId }) => `Order ${orderId} submitted`,
   moduleId: 'ORDER',
   openMessage: ([orderId]) => `submitOrder(${orderId})`,
-  resultAsItem: true,
+  printResult: true,
+  resultAsProps: true,
 });
 
 // A function literal handed straight to the marker is traced where it stands, so a callback needs no

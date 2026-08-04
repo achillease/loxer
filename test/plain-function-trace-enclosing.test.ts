@@ -44,6 +44,29 @@ test('the enclosing form marks a declaration, a named recursive function express
   ]);
 });
 
+test('the enclosing marker configures props rendering independently for its opening and closing logs', async () => {
+  const traced = await loadTracedModule(`
+    async function load(first, second) {
+      trace({
+        moduleId: 'ORDER',
+        argsAsProps: true,
+        resultAsProps: true,
+        printArgs: { depth: 1 },
+        printResult: true,
+      });
+      return { first, second };
+    }
+    export { load };
+  `);
+
+  await expect(traced.load('one', 'two')).resolves.toEqual({ first: 'one', second: 'two' });
+  const [open, close] = devLogs;
+  expect(open.props).toEqual(['one', 'two']);
+  expect(open.printProps).toEqual({ depth: 1 });
+  expect(close.props).toEqual([{ first: 'one', second: 'two' }]);
+  expect(close.printProps).toEqual({});
+});
+
 test('the enclosing form marks a class method, a private method, a private field, a getter, a setter, and an object method', async () => {
   const traced = await loadTracedModule(`
     class Service {
@@ -887,23 +910,23 @@ test('the enclosing form leaves this, arguments, Function.length, and self-recur
 test('an arrow host records its arguments from its own parameter list, including a destructured, a defaulted, and a rest parameter', async () => {
   const traced = await loadTracedModule(`
     const simple = (first, second) => {
-      trace({ moduleId: 'TRACE', openMessage: 'args', argsAsItem: true });
+      trace({ moduleId: 'TRACE', openMessage: 'args', argsAsProps: true });
       return first + second;
     };
     const defaulted = (first = 'fallback', second = 'two') => {
-      trace({ moduleId: 'ORDER', openMessage: 'args', argsAsItem: true });
+      trace({ moduleId: 'ORDER', openMessage: 'args', argsAsProps: true });
       return first + ':' + second;
     };
     const destructured = ({ value } = { value: 'fallback' }, [tail] = ['tail']) => {
-      trace({ moduleId: 'TRACE', openMessage: 'args', argsAsItem: true });
+      trace({ moduleId: 'TRACE', openMessage: 'args', argsAsProps: true });
       return value + ':' + tail;
     };
     const withRest = (first, ...rest) => {
-      trace({ moduleId: 'TRACE', openMessage: 'args', argsAsItem: true });
+      trace({ moduleId: 'TRACE', openMessage: 'args', argsAsProps: true });
       return [first, rest];
     };
     const d = (first = 1) => {
-      trace({ moduleId: 'ORDER', openMessage: 'args', argsAsItem: true });
+      trace({ moduleId: 'ORDER', openMessage: 'args', argsAsProps: true });
       return first;
     };
     export { d, defaulted, destructured, simple, withRest };
@@ -932,7 +955,7 @@ test('an arrow host records its arguments from its own parameter list, including
   expect(traced.d(5)).toBe(5);
 
   const opens = devLogs.filter((log) => log.type === 'open');
-  expect(opens.map((log) => log.item)).toEqual([
+  expect(opens.map((log) => log.props)).toEqual([
     [1, 2],
     ['fallback', 'two'],
     ['fallback', 'given'],
@@ -950,7 +973,7 @@ test('an arrow host records its arguments from its own parameter list, including
   ]);
 });
 
-test('the enclosing form applies openMessage/closeMessage presets and callbacks, item capture, level, and highlight', async () => {
+test('the enclosing form applies openMessage/closeMessage presets and callbacks, props capture, level, and highlight', async () => {
   const traced = await loadTracedModule(`
     function withPreset(value) {
       trace({
@@ -959,8 +982,8 @@ test('the enclosing form applies openMessage/closeMessage presets and callbacks,
         closeMessage: 'result',
         level: 'warn',
         highlight: 'all',
-        argsAsItem: true,
-        resultAsItem: true,
+        argsAsProps: true,
+        resultAsProps: true,
       });
       return { total: value * 2 };
     }
@@ -983,13 +1006,13 @@ test('the enclosing form applies openMessage/closeMessage presets and callbacks,
     level: 'warn',
     highlighted: true,
     message: 'withPreset(number)',
-    item: [3],
+    props: [3],
   });
   expect(presetClose).toMatchObject({
     level: 'warn',
     highlighted: true,
     message: 'withPreset done. returns: {"total":6}',
-    item: { total: 6 },
+    props: [{ total: 6 }],
   });
   expect(callbackOpen).toMatchObject({ message: 'starting:3' });
   expect(callbackClose).toMatchObject({ message: 'finished:4' });

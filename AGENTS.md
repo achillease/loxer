@@ -2,7 +2,7 @@
 
 Loxer is a TypeScript logging library, not an application (`package.json` name `loxer`, version
 3.0.0, MIT, author Christian Prinz). It exposes a singleton `Loxer` logger with chainable
-modifiers, custom output callbacks, error wrapping, rich item printing, and box-style trace
+modifiers, custom output callbacks, error wrapping, opt-in props printing, and box-style trace
 visualization for nested or async data flow.
 
 ## Commands
@@ -35,7 +35,7 @@ pre-commit hook (`.husky/pre-commit`) runs `pnpm lint`.
 - `src/` is the package source. `src/index.ts` is the public export surface.
 - `src/Loxer.ts` owns the singleton logger, chaining state, initialization, queueing, level
   checks, history, and output dispatch.
-- `src/core/` contains the formatting, module, level, history, output, box, item, and error helpers,
+- `src/core/` contains the formatting, module, level, history, output, box, props, and error helpers,
   plus `src/core/color/` (vendored color parsing, replacing the former `color` dependency).
 - `src/loxes/` contains the `Lox`, `OutputLox`, and `ErrorLox` value classes.
 - `src/decorators/` contains the `@initLoxer` and `@trace` decorators.
@@ -47,7 +47,7 @@ pre-commit hook (`.husky/pre-commit`) runs `pnpm lint`.
 - `docs/` is generated TypeDoc HTML and may be wiped entirely by `pnpm docs` (`cleanOutputDir`);
   never put hand-written files there. Steering docs live in `rules/` instead, indexed below.
 - `___src/` is outside `tsconfig.json`'s `include` and is not part of the package build.
-- `playground/` holds hand-written, runnable usage examples (`playground.js`, `items.js`,
+- `playground/` holds hand-written, runnable usage examples (`playground.js`, `props.js`,
   `docs.js`, `Logo.js`, `Speedtest.js`, `OrderService.js`) that import the built package from
   `../dist/index.js` — not covered by the tsconfig build, lint, or test config, so nothing in CI
   catches when they break. After `pnpm build`, run one with `node playground/<file>.js` and keep
@@ -103,6 +103,16 @@ pre-commit hook (`.husky/pre-commit`) runs `pnpm lint`.
   cost here is paid even by logs that get discarded. A gate reading two options like this needs
   both sides covered by a test, or the ungated one silently drops the feature for callers who
   named only it.
+- Props and messages are caller-supplied data with **no automatic redaction**. Keep rendering opt-in,
+  and leave masking, filtering, retention, and destination-specific security policy to callbacks.
+  `PropsPrinter` bounds recursive traversal at 100 levels, public box-layout depth at 200, and
+  indentation at 20 spaces per level; retain those limits unless a documented product decision
+  revises the resource budget. Finite numeric printer options are truncated and clamped to their
+  documented range; non-finite options use the default. Rendering remains intentionally proportional
+  to the selected values' breadth, so callers use `depth` or `keys` to bound wide values.
+- Extract a shared internal helper when two independent runtime paths need the same semantic rule or
+  gate. Keep a local expression when it has only one consumer; an abstraction without a second
+  concrete consumer is not justified.
 
 ## Workspace Safety
 

@@ -13,7 +13,7 @@
 - [8. Boxes](#8-boxes)
 - [Appendix: Migrating from Loxer 2](#appendix-migrating-from-loxer-2)
 
-Instructions on how to use the Item can be found **[on the Item documentation][itemDocs]**.
+Instructions on how to use props can be found **[on the props documentation][propsDocs]**.
 
 # Overview
 
@@ -133,9 +133,10 @@ a directory added to `server.fs.allow`, so that a rebuild of the working copy ta
 reload. `loxerTrace({ dedupe: false })` leaves all of it to you.
 
 `openMessage` accepts `functionName`, `parent.functionName`, `args`, `types`, or a formatter;
-`closeMessage` accepts `functionName`, `parent.functionName`, `result`, `prettyResult`, or a
-formatter. `moduleId`, `level`, `highlight`,
-`argsAsItem`, and `resultAsItem` follow the same behavior as function-relevant `@trace` options.
+`closeMessage` accepts `functionName`, `parent.functionName`, `result`, or a formatter. `moduleId`,
+`level`, `highlight`,
+`argsAsProps`, `resultAsProps`, `printArgs`, and `printResult` follow the same behavior as
+function-relevant `@trace` options.
 `TraceOptions` is shared by the plain-function marker and the class-method decorator. The marker
 infers an open formatter's argument from the marked function's actual argument tuple and a close
 formatter's argument from its awaited result. TypeScript evaluates `@trace(...)` before it associates
@@ -173,9 +174,14 @@ when a call reaches it detached from its class. Formatters and result serializat
 default message when they fail, without changing the application result.
 
 `openMessage: 'args'` and result message modes create formatted message strings for callbacks; built-in
-argument formatting escapes control characters. `argsAsItem` and `resultAsItem` are the modes that send
-the original values as callback items. Do not enable message or item capture for secrets or personal
-data unless the receiving callback redacts or otherwise protects that data.
+argument formatting escapes control characters. `argsAsProps` and `resultAsProps` are the modes that
+send the original values on to the callbacks as the log's [props][propsDocs]: `argsAsProps` attaches
+one prop per argument to the opening log, `resultAsProps` attaches a defined resolved result as a
+single prop to the closing log (a `void` result attaches none). `printArgs` and `printResult`
+additionally have the built-in output render
+them, and each accepts a `PropsPrinterOptions` object in place of `true` to bound that rendering. Do
+not enable message or props capture for secrets or personal data unless the receiving callback
+redacts or otherwise protects that data.
 
 # 1. Initialization - [`Loxer.init()`][loxer.init]
 
@@ -229,7 +235,13 @@ More about the details of the options can be found in the following sections.
 
 # 2. Simple logs - [`Loxer.log()`][loxer.log]
 
-To make a simple log, all you have to do is call `Loxer.log(message: string, item?: ItemType, itemOptions?: ItemOptions)`. In the default - unless otherwise specified in `Loxer.init(options.callbacks)` - `message` and `item` are logged with `console.log(message + ITEM)`, where `ITEM` is a prettified and configurable printed version of the item (any variable). All you have to do is replacing `console` with `Loxer`.
+To make a simple log, all you have to do is call `Loxer.log(message?: unknown, ...props: unknown[])`.
+In the default - unless otherwise specified in `Loxer.init(options.callbacks)` - the message is logged
+with `console.log(...)`. All you have to do is replacing `console` with `Loxer`.
+
+Every argument after the message is one of the log's **[props][propsDocs]**: data that travels with
+the log to the callbacks and the history, and that the built-in output renders where the call chained
+`Loxer.printProps()` (short: `pp()`).
 
 ###### Example
 
@@ -237,15 +249,41 @@ To make a simple log, all you have to do is call `Loxer.log(message: string, ite
 const person = { name: 'John Doe', age: 69 };
 console.log('This is the person:', person);
 Loxer.log('This is the person:', person);
+Loxer.pp().log('This is the person:', person);
 ```
 
 ###### Console output
 
-<!-- ![console_output](/assets/docs_images/2.png) -->
+```
+This is the person: { name: 'John Doe', age: 69 }
+This is the person:
+This is the person:
+┃ props> { name: 'John Doe', age: 69 } <props
+```
 
-![console_output](https://raw.githubusercontent.com/pcprinz/loxer/master/assets/docs_images/2.png)
+The message may be of any type, not only a `string`: a primitive is stringified and an object renders
+as one compact line, so `Loxer.log(person)` reads as its contents.
 
-On page **[Item][itemDocs]** there is a detailed guide about the advantages over the `console` and the possibilities that the `item` brings with it.
+### Rendering props - [`Loxer.printProps()`][loxer.printprops]
+
+Props are attached to the log whether or not they are rendered, which is what makes attaching one
+consequence-free: they reach the [output streams](#7-output---loxercallbacks) and `Loxer.history` by
+reference, and the built-in console output prints them only where the call chained `printProps()` (or
+`pp()`).
+
+```typescript
+Loxer.log('restoring order', payment);              // attached, nothing printed
+Loxer.pp().log('restoring order', payment);         // attached and printed
+Loxer.pp({ depth: 1 }).log('restoring order', payment);  // ... with bounded depth
+```
+
+Chaining it at all is the request; the optional [`PropsPrinterOptions`][propsPrinterOptions] argument
+only configures the rendering, so `pp()` and `pp({})` print alike. It is a one-shot modifier like
+`.highlight()` and `.module()`: it applies to the one log at the end of the chain, composes with them
+in any order, and cannot be chained twice.
+
+On page **[Props][propsDocs]** there is a detailed guide about the advantages over the `console` and
+the possibilities that props bring with them.
 
 > Loxer comes with some improvements for logs:
 >
@@ -259,9 +297,9 @@ On page **[Item][itemDocs]** there is a detailed guide about the advantages over
 
 # 3. Error logs - [`Loxer.error()`][loxer.error]
 
-Creating simple error logs is analogous to a simple log. Therefore you write `Loxer.error(error: ErrorType, item?: ItemType, itemOptions?: ItemOptions)`. By default this log will be proceeded to `console.error()`.
+Creating simple error logs is analogous to a simple log. Therefore you write `Loxer.error(error: ErrorType, ...props: unknown[])`. By default this log will be proceeded to `console.error()`.
 
-The error parameter must be of `type ErrorType = Error | string | number | boolean | object`, because these are the types that an error of a `catch(error)` phrase can take. The `item?: any` behaves the same way like in the `.log()` method.
+The error parameter must be of `type ErrorType = Error | string | number | boolean | object`, because these are the types that an error of a `catch(error)` phrase can take. Position 0 is always the error, so the props behave the same way as in the `.log()` method - every argument after the error is one of them.
 
 ###### Example
 
@@ -305,21 +343,24 @@ Loxer.error(new NamedError('ErrorError', 'failed hard!', new TypeError('catched 
 
 ![console_output](https://raw.githubusercontent.com/pcprinz/loxer/master/assets/docs_images/3-2.png)
 
-There is also a shortcut for the creation of `NamedError`s in combination with `Loxer.of(...).error(...)`, which combines the parameters of the `NamedError` followed by the parameters of the `.error(...)` method:
+There is also a shortcut for the creation of `NamedError`s, on `Loxer` itself and on
+`Loxer.of(...)`, which names the error and takes props like `.error(...)` does:
 
 ```typescript
-Loxer.of(...).namedError(
-    name: string,
-    message: string,
-    existingError?: unknown,
-    item?: ItemType,
-    itemOptions?: ItemOptions
-  );
+Loxer.namedError('MyError', 'crashed', payment);
+Loxer.of(lox).namedError('MyError', 'crashed', payment);
 
 // Example:
-Loxer.of(lox).namedError('MyError', 'crashed', someGivenError, someItem);
+Loxer.of(lox).namedError('MyError', 'crashed', payment);
 // is equivalent to:
-Loxer.of(lox).error(new NamedError('MyError', 'crashed', someGivenError), someItem) ;
+Loxer.of(lox).error(new NamedError('MyError', 'crashed'), payment);
+```
+
+The error's message is the given `message` alone. To concatenate an error that was caught, name the
+`NamedError` explicitly - which leaves every argument after it free to be a prop:
+
+```typescript
+Loxer.of(lox).error(new NamedError('MyError', 'crashed', someGivenError), payment);
 ```
 
 > More on that in the sections about boxes and output.
@@ -642,7 +683,7 @@ Loxer.init({
 
 ### Output logs
 
-To symbolize that the logs are more than just simple messages, they are named `* Lox`. There are two different types. In addition to the original message and item parameters, the [`OutputLox`][outputLox] contains the declared properties level, highlight and module, a time stamp and properties that arise from the box layout. [`ErrorLox`][errorLox] have the same properties, but also carry information such as the `Error` that has occurred and properties that represent the log status during the occurrence of the error.
+To symbolize that the logs are more than just simple messages, they are named `* Lox`. There are two different types. In addition to the original message and props, the [`OutputLox`][outputLox] contains the declared properties level, highlight and module, a time stamp and properties that arise from the box layout. [`ErrorLox`][errorLox] have the same properties, but also carry information such as the `Error` that has occurred and properties that represent the log status during the occurrence of the error.
 
 ###### [OutputLox][outputLox]
 
@@ -654,10 +695,10 @@ To symbolize that the logs are more than just simple messages, they are named `*
   message: string;
   /** determines if the log was highlighted with `Loxer.highlight()` or `Loxer.h()` */
   highlighted: boolean;
-  /** an optional item */
-  item: any | undefined;
-  /** options to configure the (default) output of the item */
-  itemOptions: ItemOptions | undefined;
+  /** the values the log was called with, after its message - always an array */
+  props: unknown[];
+  /** the rendering the call asked for with `Loxer.printProps(...)`, or `undefined` for no request */
+  printProps: PropsPrinterOptions | undefined;
   /** the type of the log */
   type: LoxType;
   /** the corresponding key of a module from `LoxerOptions.modules` */
@@ -712,12 +753,12 @@ private devLogOut(outputLox: OutputLox) {
     const box = BoxFactory.getBoxString(outputLox.box, !this._colorsDisabled);
     // construct the message
     const str = `${moduleText}${box}${message}\t${timeText}`;
-    // prettify the item
-    if (outputLox.item) {
+    // render the props where the call asked for it
+    if (outputLox.printProps) {
       console.log(
         str +
-          Item.of(outputLox).prettify(true, {
-            depth: outputLox.module.slicedName.length + outputLox.box.length,
+          PropsPrinter.of(outputLox).print(true, {
+            depth: outputLox.module.slicedName.length + BoxFactory.getMarkerDepth(outputLox.box),
             color: outputLox.module.color,
           })
       );
@@ -732,7 +773,7 @@ As you can see here, the `OutputLox` is forwarded unchanged to the `devLog` stre
 
 - The helper class [`ANSIFormat`][ansiFormat] offers some static methods for the coloring of the output unsing the `[x1b` ANSI code.
 - The helper class [`BoxFactory`][boxFactory] offers a method `.getBoxString(...)` which generates the known box layout, that is used by default.
-- The helper class [`Item`][item] offers a method chain `.of(Lox).prettify(OPTIONS)` which lets you refine the inherited `lox.item` to be printed in a similar way as the `console` does with its secondary parameters. For more information on that see page **[Item][itemDocs]**
+- The helper class [`PropsPrinter`][propsPrinter] offers a method chain `.of(Lox).print(OPTIONS)` which renders the inherited `lox.props` in a similar way as the `console` does with its secondary parameters. Reading `lox.printProps` is what honors the call's own request; a callback may also render unconditionally. For more information on that see page **[Props][propsDocs]**
 
 The `ErrorLox` can be used in the same way:
 
@@ -760,12 +801,12 @@ private devErrorOut(errorLox: ErrorLox, history: LoxHistory) {
               .join(' <> ')}]`
           : '';
       const str = msg + stack + openLogs;
-      // prettify the item if present
-      if (errorLox.item) {
+      // render the props where the call asked for it
+      if (errorLox.printProps) {
         console.log(
           str +
-            Item.of(errorLox).prettify(true, {
-              depth: errorLox.module.slicedName.length + errorLox.box.length,
+            PropsPrinter.of(errorLox).print(true, {
+              depth: errorLox.module.slicedName.length + BoxFactory.getMarkerDepth(errorLox.box),
               color: errorLox.module.color,
             })
         );
@@ -786,7 +827,7 @@ In addition, a box layout is created that shows the course of the box, but with 
 
 ### Create boxes
 
-To use a box, it must be opened with `Loxer.open(message: string, item?: ItemType, itemOptions?: ItemOptions)`. The `.open()` method returns the `id: number` of the log, which is used to connect other logs to this one. The rest of the structure and functionality is analogous to the `.log()` method. It can also be chained with `.highlight()` and `.module()`, just like the rest of the log methods, and `Loxer.debug.open(...)` / `.warn.open(...)` / `.info.open(...)` open the box at that level instead of `'info'`. **As a reminder**, if the box layout is to be generated, **a module** or at least the default module (`.m()`) **must be assigned** to the log that opens.
+To use a box, it must be opened with `Loxer.open(message?: unknown, ...props: unknown[])`. The `.open()` method returns the `id: number` of the log, which is used to connect other logs to this one. The rest of the structure and functionality is analogous to the `.log()` method. It can also be chained with `.highlight()` and `.module()`, just like the rest of the log methods, and `Loxer.debug.open(...)` / `.warn.open(...)` / `.info.open(...)` open the box at that level instead of `'info'`. **As a reminder**, if the box layout is to be generated, **a module** or at least the default module (`.m()`) **must be assigned** to the log that opens.
 
 ###### Open a box - [`Loxer.open()`][loxer.open]
 
@@ -804,9 +845,9 @@ const id3 = Loxer.h().m('CART').open('this one is additionally highlighted');
 
 If an open box is to be closed, or logs / errors are to be added, the `Loxer.of(id: number)` method must be used. This method returns an object with [3 further methods][ofLoxes], which enables the next method to be added as a chain. These are the actual logging methods:
 
-- `add(message: string, item?: ItemType, itemOptions?: ItemOptions)` - adds a log to the box and works in the same way as `Loxer.log()`
-- `error(error: ErrorType, item?: ItemType, itemOptions?: ItemOptions)` - adds an error to the box and works in the same way as `Loxer.error()`
-- `close(message: string, item?: ItemType, itemOptions?: ItemOptions)` - closes the box and works in the same way as `Loxer.log()`
+- `add(message?: unknown, ...props: unknown[])` - adds a log to the box and works in the same way as `Loxer.log()`
+- `error(error: ErrorType, ...props: unknown[])` - adds an error to the box and works in the same way as `Loxer.error()`
+- `close(message?: unknown, ...props: unknown[])` - closes the box and works in the same way as `Loxer.log()`
 
 **ATTENTION**: When calling `add()`, `error()` or `close()` after closing the box, the log will not be appended to the box but logged anyways with a Warning!
 
@@ -962,12 +1003,32 @@ errors it used to mean. Translate the literal rather than relying on the fallbac
 The last row applies to `openMessage` and `closeMessage` alike. A decorated method reports the same
 message it did, since its parent is its class.
 
+### Items
+
+Loxer 2 gave a log one `item` plus a positional `itemOptions`, and rendered the item whenever the
+built-in output ran. Loxer 3 replaces both with [props](#rendering-props---loxerprintprops).
+
+| Loxer 2                                   | Loxer 3                                       | why                                                                                       |
+| ----------------------------------------- | --------------------------------------------- | ----------------------------------------------------------------------------------------- |
+| `Loxer.log(msg, item)`                    | `Loxer.pp().log(msg, item)`                   | attaching data and printing it are separate decisions; without `pp()` the value is data only |
+| `Loxer.log(msg, item, options)`           | `Loxer.pp(options).log(msg, item)`            | an object in an argument slot could not be told apart from a value; the chain can          |
+| `Loxer.log(msg, a, b)` (b was swallowed)  | `Loxer.log(msg, a, b)`                        | every argument after the message is a prop, so nothing is consumed as configuration        |
+| `ItemType`                                | *(gone)*                                      | a prop is `unknown` - every value was already accepted                                    |
+| `ItemOptions`                             | [`PropsPrinterOptions`][propsPrinterOptions]  | same fields, except `depth` where an absent option - not `0` - has no configured limit      |
+| `lox.item` / `lox.itemOptions`            | `lox.props` / `lox.printProps`                | `props` is always an array; `printProps` is `undefined` where nothing was requested        |
+| `Item.of(lox).prettify(...)`              | `PropsPrinter.of(lox).print(...)`             | `PropsPrinter` is exported from `'loxer'`                                                  |
+| `argsAsItem` / `resultAsItem`             | `argsAsProps` / `resultAsProps`               | arguments arrive as one prop each; `printArgs` / `printResult` render them                 |
+| `namedError(name, msg, existing, item)`   | `error(new NamedError(name, msg, existing), ...props)` | an optional `unknown` in front of a rest parameter silently swallowed the first prop |
+
+A falsy value is rendered like any other where `printProps` asked for it, so a log of `0` or `null`
+no longer disappears.
+
 If you use `babel-plugin-loxer-trace`, note that the level methods are linked to their trace box just
 like `Loxer.log` is: `Loxer.debug('…')` inside a traced body becomes part of that box.
 
 <!------------------------------------------ REFERENCES ------------------------------------------>
 
-[itemDocs]: https://github.com/pcprinz/loxer/blob/master/documentation/item.md
+[propsDocs]: https://github.com/pcprinz/loxer/blob/master/documentation/props.md
 [api]: https://pcprinz.github.io/loxer/index.html
 [pkg.color]: https://www.npmjs.com/package/color
 [pkg.crashlytics]: https://firebase.google.com/docs/crashlytics/
@@ -977,9 +1038,9 @@ like `Loxer.log` is: `Loxer.debug('…')` inside a traced body becomes part of t
 [errorLox]: https://pcprinz.github.io/loxer/classes/Logs.ErrorLox.html
 [logs]: https://pcprinz.github.io/loxer/modules/Logs.html
 [boxLayoutStyle]: https://pcprinz.github.io/loxer/interfaces/Loxer.LoxerConfig.html#boxLayoutStyle
-[boxFactory]: https://pcprinz.github.io/loxer/classes/Formatting.BoxFactory.html
-[ansiFormat]: https://pcprinz.github.io/loxer/classes/Formatting.ANSIFormat.html
-[item]: https://pcprinz.github.io/loxer/classes/Formatting.Item.html
+[boxFactory]: https://pcprinz.github.io/loxer/classes/index.BoxFactory.html
+[ansiFormat]: https://pcprinz.github.io/loxer/classes/index.ANSIFormat.html
+[propsPrinter]: https://pcprinz.github.io/loxer/classes/Formatting.PropsPrinter.html
 [loxerOptions]: https://pcprinz.github.io/loxer/interfaces/Loxer.LoxerOptions.html
 [loxerConfig]: https://pcprinz.github.io/loxer/interfaces/Loxer.LoxerConfig.html
 [loxerModule]: https://pcprinz.github.io/loxer/interfaces/Loxer.Module.html
@@ -998,3 +1059,5 @@ like `Loxer.log` is: `Loxer.debug('…')` inside a traced body becomes part of t
 [loxer.boxlevel]: https://pcprinz.github.io/loxer/types/index.BoxLevel.html
 [loxer.levelmethods]: https://pcprinz.github.io/loxer/interfaces/Loxer.LevelMethods.html
 [loxer.module]: https://pcprinz.github.io/loxer/interfaces/Loxer.Modifiers.html#module
+[loxer.printprops]: https://pcprinz.github.io/loxer/interfaces/Loxer.Modifiers.html#printprops
+[propsPrinterOptions]: https://pcprinz.github.io/loxer/interfaces/Formatting.PropsPrinterOptions.html

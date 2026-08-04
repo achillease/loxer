@@ -9,11 +9,13 @@
 //  Features showcased (all of the public API except the @initLoxer / @trace decorators):
 //    - init() with modules (colors, per-module levels, per-module box layout styles) + config
 //    - log() / open() / of().add() / of().close() / of().error() / of().namedError() / error()
-//    - modifiers: .m()/.module(), .h()/.highlight()  (chained in any order)
+//    - modifiers: .m()/.module(), .h()/.highlight(), .pp()/.printProps()  (chained in any order)
 //    - levels: warn() / info() / debug(), and each level's own .open() for a leveled box
 //    - level-based hiding of verbose logs per module
-//    - rich item printing with every ItemOptions field (depth, keys, indent, showVerticalLines,
-//      printFunction, shortenClasses)
+//    - props: values attached to a log as rest arguments, rendered only where .pp(...) asks, with
+//      every PropsPrinterOptions field (depth, keys, indent, showVerticalLines, printFunction,
+//      shortenClasses)
+//    - PropsPrinter, the public printer an output callback renders props with
 //    - NamedError (wrapping an underlying error) and plain thrown errors
 //    - Loxer.history and Loxer.getModuleLevel(...)
 //    - a production phase wiring prodLog / prodError callbacks to a mock monitoring service
@@ -21,7 +23,7 @@
 //  Run it with:  node playground/OrderService.js
 // ---------------------------------------------------------------------------------------------
 
-import { Loxer, NamedError, resetLoxer } from '../dist/index.js';
+import { Loxer, NamedError, PropsPrinter, resetLoxer } from '../dist/index.js';
 
 // --- tiny helpers ----------------------------------------------------------------------------
 
@@ -58,7 +60,7 @@ const MODULES = {
   SHIP: { color: '#1e88e5', fullName: 'shipping', devLevel: 'debug', prodLevel: 'info' },
 };
 
-// A domain class — used to show `shortenClasses` in item printing.
+// A domain class — used to show `shortenClasses` in props printing.
 class Money {
   constructor(amount, currency) {
     this.amount = amount;
@@ -96,7 +98,9 @@ async function authenticate(userId, token, httpBox) {
   // debug detail: visible in dev (AUTH's devLevel is 'debug') but kept out of the hot path.
   // A level belongs to the call that emits the log, so it is a member of .of(box) — alongside
   // add() (which inherits the box's level) and close() (which always takes it).
-  Loxer.of(box).debug('claims resolved', { sub: user.id, tier: user.tier, scope: ['checkout'] });
+  Loxer.pp()
+    .of(box)
+    .debug('claims resolved', { sub: user.id, tier: user.tier, scope: ['checkout'] });
   Loxer.of(box).close(`authenticated ${user.name}`);
   return user;
 }
@@ -122,7 +126,7 @@ async function loadCart(user, httpBox) {
 
   // Show the full cart, but stop descending after 2 levels so the nested session/ab object is
   // summarized instead of fully expanded.
-  Loxer.of(box).add('cart restored', cart, { depth: 2 });
+  Loxer.pp({ depth: 2 }).of(box).add('cart restored', cart);
   Loxer.of(box).close(`${cart.items.length} line items`);
   return cart;
 }
@@ -148,16 +152,17 @@ async function charge(user, cart, payment, httpBox) {
   const total = cart.items.reduce((sum, i) => sum + i.price.amount * i.qty, 0);
 
   // The gateway declines this particular card. We wrap the low-level gateway error in a
-  // NamedError and attach the payment as a filtered item (only the keys we want in the log).
+  // NamedError and attach the payment as a filtered prop (only the keys we want in the log).
+  // Wrapping an existing error is `new NamedError(name, message, existing)` handed to .error(),
+  // which leaves every argument after it free to be a prop.
   if (payment.card === '4000-0000-0000-0002') {
     const gatewayError = new RangeError('gateway response 402: insufficient_funds');
-    Loxer.of(box).namedError(
-      'PaymentDeclined',
-      `card declined for ${user.name}`,
-      gatewayError,
-      { total, currency: 'EUR', method: payment.method, card: payment.card, cvcOk: true },
-      { keys: ['total', 'currency', 'method'] } // secrets like `card`/`cvcOk` are filtered out
-    );
+    Loxer.pp({ keys: ['total', 'currency', 'method'] }) // `card`/`cvcOk` are filtered out
+      .of(box)
+      .error(
+        new NamedError('PaymentDeclined', `card declined for ${user.name}`, gatewayError),
+        { total, currency: 'EUR', method: payment.method, card: payment.card, cvcOk: true }
+      );
     Loxer.of(box).close('payment declined');
     throw new NamedError('PaymentDeclined', 'payment could not be captured', gatewayError);
   }
@@ -169,7 +174,7 @@ async function charge(user, cart, payment, httpBox) {
     // a function value — printed as its full source because of printFunction: true below
     computeTax: (net) => net * 0.19,
   };
-  Loxer.of(box).add('captured', receipt, { printFunction: true });
+  Loxer.pp({ printFunction: true }).of(box).add('captured', receipt);
   Loxer.of(box).close(`charged ${receipt.charged}`);
   return receipt;
 }
@@ -185,7 +190,7 @@ async function createShipment(user, cart, receipt, httpBox) {
     address: { city: 'London', country: 'UK' },
   };
   // showVerticalLines + a wider indent to make the nested address easy to scan
-  Loxer.of(box).add('label printed', label, { showVerticalLines: true, indent: 4 });
+  Loxer.pp({ showVerticalLines: true, indent: 4 }).of(box).add('label printed', label);
   Loxer.of(box).close(`shipping via ${label.carrier}`);
   return label;
 }
@@ -256,19 +261,17 @@ async function developmentPhase() {
   const unauth = await handleCheckout({ userId: 'usr_9999', token: 'nope', payment: {} });
 
   banner('PHASE 1 — results & introspection');
-  Loxer.log('request outcomes', [ok, declined, unauth]);
+  // three props rather than one array of three: they render as one block either way, but a callback
+  // reading `lox.props[1]` gets the second outcome instead of having to unwrap
+  Loxer.pp().log('request outcomes', ok, declined, unauth);
 
   // getModuleLevel reflects the *active* environment (dev here) and is `undefined` for an
   // unregistered module id.
-  Loxer.log(
-    'active dev levels',
-    {
-      HTTP: Loxer.getModuleLevel('HTTP'),
-      DB: Loxer.getModuleLevel('DB'),
-      unknown: Loxer.getModuleLevel('NOPE'),
-    },
-    { showVerticalLines: false }
-  );
+  Loxer.pp({ showVerticalLines: false }).log('active dev levels', {
+    HTTP: Loxer.getModuleLevel('HTTP'),
+    DB: Loxer.getModuleLevel('DB'),
+    unknown: Loxer.getModuleLevel('NOPE'),
+  });
 
   // The history is newest-first. Show a compact projection of the last handful of entries.
   const recent = Loxer.history.slice(0, 6).map((lox) => ({
@@ -276,12 +279,18 @@ async function developmentPhase() {
     module: lox.moduleText || '—',
     message: lox.message,
   }));
-  Loxer.highlight().log(`history holds ${Loxer.history.length} entries — most recent:`, recent);
+  Loxer.pp()
+    .highlight()
+    .log(`history holds ${Loxer.history.length} entries — most recent:`, recent);
 
   // Demonstrate shortenClasses:false — expand the Money class instance instead of "[Class: Money]".
-  Loxer.m('PAY').log('an explicit Money instance', new Money(129.99, 'EUR'), {
-    shortenClasses: false,
-  });
+  Loxer.pp({ shortenClasses: false })
+    .m('PAY')
+    .log('an explicit Money instance', new Money(129.99, 'EUR'));
+
+  // A freely typed first argument: a non-primitive message renders as one compact line, so a value
+  // can be the whole log without producing "[object Object]".
+  Loxer.m('PAY').log(new Money(4.5, 'EUR'));
 }
 
 // =============================================================================================
@@ -307,6 +316,8 @@ async function productionPhase() {
           module: log.moduleText || 'none',
           type: log.type,
           message: log.message,
+          // the props arrive as the values themselves, ready to be forwarded as structured data
+          props: log.props,
           ms: log.timeConsumption, // populated on .close()/.add() relative to .open()
         });
       },
@@ -315,6 +326,11 @@ async function productionPhase() {
           name: errorLog.error.name,
           message: errorLog.error.message,
           module: errorLog.moduleText || 'none',
+          // a callback renders props itself with the public printer, and honors the call's own
+          // request by reading `printProps` — or ignores it and renders unconditionally
+          props: errorLog.printProps
+            ? PropsPrinter.of(errorLog).print(false)
+            : errorLog.props.length,
           // boxes that were still open when the error fired — great for incident context
           openBoxes: errorLog.openLoxes.map((l) => l.message),
           historyDepth: history.length,

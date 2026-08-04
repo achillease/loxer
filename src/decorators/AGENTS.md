@@ -9,9 +9,9 @@ Decorators are optional public helpers layered on top of the singleton `Loxer` A
 - `@trace(options)` wraps a class method in an open/close box and must preserve the original return
   value.
 - Promise-returning traced methods close the box after resolution and return the resolved payload.
-  Current behavior does not add a catch handler; do not change rejection semantics accidentally.
+  Rejections record the original error, close the box, and rethrow that same value for the caller.
 - A string `trace` option is treated as `moduleId`; object options can configure module, level,
-  highlight mode, message formatting, and item capture. `level` is a `BoxLevel` (every `LogLevel`
+highlight mode, message formatting, and props capture/rendering. `level` is a `BoxLevel` (every `LogLevel`
   except `'error'`, defaulting to `'info'`) and is applied by indexing the matching level's
   `LevelMethods`: `Loxer.h(...).m(moduleId)[level].open(...)`.
 - `'parent.functionName'` renders through `qualifiedFunctionName()` in `src/core/TraceNames.ts`,
@@ -21,4 +21,4 @@ Decorators are optional public helpers layered on top of the singleton `Loxer` A
 
 ## Tests
 
-- Update `test/decorators.test.ts` when changing generated messages, async handling, or item capture.
+- Update `test/decorators.test.ts` when changing generated messages, async handling, or props capture.

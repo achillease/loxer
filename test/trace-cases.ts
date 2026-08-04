@@ -1,4 +1,4 @@
-import type { LogLevel, TraceOptions } from '../src';
+import type { LogLevel, PropsPrinterOptions, TraceOptions } from '../src';
 import { trace } from '../src';
 
 export type DecoratorMode = 'legacy' | 'standard';
@@ -15,7 +15,10 @@ export interface TraceCase {
   expectedLogs: Array<{
     type: string;
     message: string;
-    item?: any;
+    /** the values the log carries; defaults to none */
+    props?: unknown[];
+    /** the rendering the log asked for; defaults to none */
+    printProps?: PropsPrinterOptions;
     highlighted?: boolean;
     moduleId?: string;
     level?: LogLevel;
@@ -63,12 +66,12 @@ export const traceCases: TraceCase[] = [
     original(value: number) {
       return value;
     },
-    options: { moduleId: 'NONE', openMessage: 'types', closeMessage: 'prettyResult' },
+    options: { moduleId: 'NONE', openMessage: 'types', closeMessage: 'result' },
     args: [5],
     expectedResult: 5,
     expectedLogs: [
       { type: 'open', message: 'withTypes(number)', moduleId: 'NONE' },
-      { type: 'close', message: 'withTypes done. returns: \n5', moduleId: 'NONE' },
+      { type: 'close', message: 'withTypes done. returns: 5', moduleId: 'NONE' },
     ],
   },
   {
@@ -108,20 +111,66 @@ export const traceCases: TraceCase[] = [
     ],
   },
   {
-    name: 'argument and result items',
-    methodName: 'withItems',
+    // two arguments, deliberately: a single argument produces `[6]` whether the runtime spreads
+    // them into one prop each or attaches the whole tuple as one prop, so a one-argument case
+    // would assert nothing about the capture shape
+    name: 'argument and result props',
+    methodName: 'withProps',
+    original(value: number, label: string) {
+      return { doubled: value * 2, label };
+    },
+    options: { moduleId: 'NONE', argsAsProps: true, resultAsProps: true },
+    args: [6, 'six'],
+    expectedResult: { doubled: 12, label: 'six' },
+    expectedLogs: [
+      { type: 'open', message: 'withProps()', props: [6, 'six'], moduleId: 'NONE' },
+      {
+        type: 'close',
+        message: 'withProps done',
+        props: [{ doubled: 12, label: 'six' }],
+        moduleId: 'NONE',
+      },
+    ],
+  },
+  {
+    // `printArgs` alone: the open asks for rendering, the close asks for nothing. Both options are
+    // read behind one gate, so naming either side alone has to keep working
+    name: 'printArgs alone renders only the opening log',
+    methodName: 'printedArgs',
+    original(value: number) {
+      return value;
+    },
+    options: { moduleId: 'NONE', argsAsProps: true, printArgs: { depth: 1 } },
+    args: [7],
+    expectedResult: 7,
+    expectedLogs: [
+      {
+        type: 'open',
+        message: 'printedArgs()',
+        props: [7],
+        printProps: { depth: 1 },
+        moduleId: 'NONE',
+      },
+      { type: 'close', message: 'printedArgs done', moduleId: 'NONE' },
+    ],
+  },
+  {
+    // `printResult` alone - the other side of the same gate. `true` is the default configuration
+    name: 'printResult alone renders only the closing log',
+    methodName: 'printedResult',
     original(value: number) {
       return { doubled: value * 2 };
     },
-    options: { moduleId: 'NONE', argsAsItem: true, resultAsItem: true },
-    args: [6],
-    expectedResult: { doubled: 12 },
+    options: { moduleId: 'NONE', resultAsProps: true, printResult: true },
+    args: [4],
+    expectedResult: { doubled: 8 },
     expectedLogs: [
-      { type: 'open', message: 'withItems()', item: [6], moduleId: 'NONE' },
+      { type: 'open', message: 'printedResult()', moduleId: 'NONE' },
       {
         type: 'close',
-        message: 'withItems done',
-        item: { doubled: 12 },
+        message: 'printedResult done',
+        props: [{ doubled: 8 }],
+        printProps: {},
         moduleId: 'NONE',
       },
     ],
@@ -200,7 +249,7 @@ export const traceCases: TraceCase[] = [
     async original(value: number) {
       return { doubled: value * 2 };
     },
-    options: { moduleId: 'NONE', closeMessage: 'result', resultAsItem: true },
+    options: { moduleId: 'NONE', closeMessage: 'result', resultAsProps: true },
     args: [3],
     expectedResult: { doubled: 6 },
     expectedLogs: [
@@ -208,7 +257,7 @@ export const traceCases: TraceCase[] = [
       {
         type: 'close',
         message: 'asyncResult done. returns: {"doubled":6}',
-        item: { doubled: 6 },
+        props: [{ doubled: 6 }],
         moduleId: 'NONE',
       },
     ],
@@ -216,14 +265,23 @@ export const traceCases: TraceCase[] = [
   {
     name: 'async rejection',
     methodName: 'asyncFail',
-    async original() {
+    async original(first: number, second: number) {
       throw asyncFailure;
     },
-    options: 'NONE',
-    args: [],
+    options: { moduleId: 'NONE', argsAsProps: true, printArgs: { depth: 1 } },
+    args: [1, 2],
     expectedThrown: asyncFailure,
-    expectedErrorMessages: [],
-    expectedLogs: [{ type: 'open', message: 'asyncFail()', moduleId: 'NONE' }],
+    expectedErrorMessages: ['boom'],
+    expectedLogs: [
+      {
+        type: 'open',
+        message: 'asyncFail()',
+        moduleId: 'NONE',
+        props: [1, 2],
+        printProps: { depth: 1 },
+      },
+      { type: 'close', message: 'asyncFail failed', moduleId: 'NONE' },
+    ],
   },
 ];
 

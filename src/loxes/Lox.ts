@@ -1,17 +1,19 @@
-import { ItemOptions, ItemType } from '../core/Item.js';
 import type { LogLevel } from '../core/Levels.js';
+// type-only, so the specifier is erased on emit and no runtime cycle is closed
+import type { PropsPrinterOptions } from '../core/PropsPrinter.js';
 import { is } from '../Helpers.js';
 /** @module Lox */
 
 export type LoxType = 'single' | 'open' | 'close' | 'error';
 
-/** @internal */
-export interface LoxProps {
+/** @internal the field-by-field initializer of a {@link Lox}. Named apart from `props`, which is
+ * one of its fields and means the values a log carries. */
+export interface LoxInit {
   id: number;
   message: string;
   highlighted: boolean;
-  item: ItemType | undefined;
-  itemOptions: ItemOptions | undefined;
+  props: unknown[];
+  printProps: PropsPrinterOptions | undefined;
   type: LoxType;
   moduleId: string;
   level: LogLevel;
@@ -28,10 +30,18 @@ export class Lox {
   message: string;
   /** determines if the log was highlighted with `Loxer.highlight()` or `Loxer.h()` */
   highlighted: boolean;
-  /** an optional item like the `console.log(message,`**_`item`_**`)` */
-  item: ItemType | undefined;
-  /** options to configure the (default) output of the item */
-  itemOptions: ItemOptions | undefined;
+  /** the values the log was called with, after its message - like
+   * `console.log(message,`**_`...props`_**`)`
+   * - always an array: a log without props carries an empty one
+   * - every prop reaches the output callbacks and the history by reference, unchanged
+   */
+  props: unknown[];
+  /** the configuration for rendering {@link Lox.props} in the built-in output, as passed to
+   * `Loxer.printProps(...)` / `Loxer.pp(...)`
+   * - `undefined` means the call did not ask for its props to be rendered
+   * - an empty object is a rendering request with default configuration
+   */
+  printProps: PropsPrinterOptions | undefined;
   /** the {@link LoxType type} of the log */
   type: LoxType;
   /** the corresponding key of a module from {@link LoxerOptions.modules}
@@ -52,15 +62,15 @@ export class Lox {
   timestamp: Date;
 
   /** @internal */
-  constructor(props: LoxProps) {
-    this.id = props.id;
-    this.message = props.message;
-    this.highlighted = props.highlighted;
-    this.item = props.item;
-    this.itemOptions = props.itemOptions;
-    this.type = props.type;
-    this.moduleId = props.moduleId;
-    this.level = props.level;
+  constructor(init: LoxInit) {
+    this.id = init.id;
+    this.message = init.message;
+    this.highlighted = init.highlighted;
+    this.props = init.props;
+    this.printProps = init.printProps;
+    this.type = init.type;
+    this.moduleId = init.moduleId;
+    this.level = init.level;
     this.timestamp = new Date();
   }
 

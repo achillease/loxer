@@ -2,7 +2,7 @@
 
 This subtree contains the internal mechanics behind the public `Loxer` API. Keep these helpers
 small and behavior-preserving; most public contracts are asserted from `test/boxed.test.ts`,
-`test/unboxed.test.ts`, `test/item.test.ts`, and `test/format.test.ts`.
+`test/unboxed.test.ts`, `test/props.test.ts`, and `test/format.test.ts`.
 
 ## Invariants
 
@@ -52,8 +52,8 @@ small and behavior-preserving; most public contracts are asserted from `test/box
 - `OutputStreams` must forward raw `OutputLox` / `ErrorLox` objects unchanged to callbacks; default
   console rendering is only the fallback path.
 - `LoxHistory` is newest-first. A configured size of `1` currently disables stored history.
-- `Item` handles arbitrary runtime values; avoid recursive changes that would loop on class graphs
-  or cyclic structures.
+- `PropsPrinter` handles arbitrary runtime values; it must tolerate hostile property access, avoid
+  loops on class graphs or cyclic structures, and bound pathological recursion before it overflows.
 - `TraceNames.ts` owns the rendering of `'parent.functionName'` for the `@trace` decorator
   (`src/decorators/trace.ts`, class read off `this` at call time) and for the marker runtime
   (`src/trace.ts`, parent passed in by the transform, a class or a file). The runtime only joins a
@@ -72,7 +72,7 @@ small and behavior-preserving; most public contracts are asserted from `test/box
 
 - When changing box layout, update or add expectations in `test/boxed.test.ts`; those tests encode
   the visible column behavior without relying on terminal glyphs.
-- When changing item rendering, cover colored and plain output shape where relevant.
+- When changing props rendering, cover colored and plain output shape where relevant.
 - When changing output streams, verify both callback paths and default console fallback behavior.
 - When changing `src/core/color/parseColor.ts`, keep `getRgb()`'s named-color branch returning a
   copy of the matched `COLOR_NAMES` entry, not the shared array — returning the shared reference

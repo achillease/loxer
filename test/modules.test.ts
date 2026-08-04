@@ -35,8 +35,8 @@ function singleLox(moduleId: string, level: 'error' | 'warn' | 'info' | 'debug')
     // `Modules.getModule` never reads the id, but a `Lox` requires one
     id: 0,
     highlighted: false,
-    item: undefined,
-    itemOptions: undefined,
+    props: [],
+    printProps: undefined,
     level,
     message: 'm',
     moduleId,

@@ -1,5 +1,5 @@
 /** @module Error */
-import { eraseBeginningLines } from '../Helpers.js';
+import { eraseBeginningLines, sanitizeControlCharacters } from '../Helpers.js';
 
 /** A customizable Error, that may be created from an existing Error */
 export class NamedError extends Error {
@@ -65,10 +65,7 @@ function isNativeError(error: unknown): error is Error {
 
 /** @internal */
 export function sanitizeErrorMessage(message: string): string {
-  return message.replace(
-    /[\u0000-\u001F\u007F-\u009F]/g,
-    (character) => `\\u${character.charCodeAt(0).toString(16).padStart(4, '0')}`
-  );
+  return sanitizeControlCharacters(message);
 }
 
 /** @internal */

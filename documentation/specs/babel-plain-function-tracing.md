@@ -31,22 +31,23 @@ beside a named function binding. The build transform removes the marker after in
 binding; executing an untransformed marker must fail with a clear configuration error.
 
 `TraceOptions` supports the function-relevant current trace options: `moduleId`, `level`,
-`highlight`, `openMessage` (`functionName`, `className.functionName`, `args`, `types`, or a formatter),
-`closeMessage` (`functionName`, `className.functionName`, `result`, `prettyResult`, or a formatter),
-`argsAsItem`, and `resultAsItem`. `className.functionName` falls back to `functionName` for plain
-functions. Its formatter callbacks are inferred from the marked function's actual argument tuple and
-awaited result. Uncaught failure records the original error and closes the box with `<functionName>
-failed`; formatting failures fall back to the default message and never change application behavior.
+`highlight`, `openMessage` (the default function name, `parent.functionName`, `args`, `types`, or a
+formatter), `closeMessage` (the default function name, `parent.functionName`, `result`, or a
+formatter), `argsAsProps`, `resultAsProps`, `printArgs`, and `printResult`.
+`parent.functionName` falls back to the function name for plain functions. Its formatter callbacks
+are inferred from the marked function's actual argument tuple and awaited result. Uncaught failure
+records the original error and closes the box with `<functionName> failed`; formatting failures fall
+back to the default message and never change application behavior.
 
 ## Acceptance criteria
 
 - [ ] A Babel-capable TypeScript project can opt a supported named plain function into Loxer tracing
       with `trace(target, options)` imported from `loxer/trace`; its options receive normal
       TypeScript autocomplete and type checking.
-- [ ] `trace` supports function-level module, level, highlight, message, and item options equivalent
-      to the useful current `TraceOptions` modes, including `className.functionName` as a
-      function-name fallback; `TraceOptions` infers formatter callback values from
-      the marked function's actual arguments and awaited result.
+- [ ] `trace` supports function-level module, level, highlight, message, props capture, and props
+      rendering options equivalent to the useful current `TraceOptions` modes, including
+      `parent.functionName` as a function-name fallback; `TraceOptions` infers formatter callback
+      values from the marked function's actual arguments and awaited result.
 - [ ] An opt-in synchronous function invocation emits one opening box entry before its body runs and
       one closing box entry after it returns, without requiring `Loxer.open`, `Loxer.of`, or
       `Loxer.close` in that function body.
@@ -60,7 +61,7 @@ failed`; formatting failures fall back to the default message and never change a
       back to the default trace message and does not change the function's result or error behavior.
 - [ ] Direct `Loxer.log`, `Loxer.error`, `Loxer.namedError`, and their documented highlight, level,
       and module modifier forms in an instrumented function's lexical body are linked to that invocation's
-      box. Their existing message, item, modifier, output, level, and error semantics remain observable.
+      box. Their existing message, props, modifier, output, level, and error semantics remain observable.
 - [ ] An instrumented function calling another instrumented function produces separate trace boxes;
       each function's direct entries attach to its own invocation rather than to a globally shared
       "current" box.

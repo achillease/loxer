@@ -9,8 +9,8 @@ artifacts. It is distinct from generated TypeDoc HTML in `docs/`.
 - When adding a feature, update this guide if users need to learn a new concept or option.
 - Images referenced here live under `assets/docs_images/`; prefer stable GitHub raw URLs when the
   Markdown is meant to render outside the repository.
-- `index.md` is the main usage guide, `item.md` explains rich item printing, and `Performance.md`
-  records benchmark methodology and results.
+- `index.md` is the main usage guide, `props.md` explains the values a log carries and how they are
+  rendered, and `Performance.md` records benchmark methodology and results.
 - `debt.md` is the standing register of known-but-unfixed defects and design compromises. Append to
   it — never re-create it — whenever a pass decides to *leave* a real problem in place; a bug found
   and fixed within one change belongs in that change's worklog instead. It is a maintainer document,

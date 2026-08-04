@@ -40,15 +40,16 @@
   expectations in `test/boxed.test.ts`. Those tests assert visible column behavior without
   terminal glyphs.
 - If a change alters `@initLoxer`/`@trace` decorator-generated messages, async/promise handling,
-  or item capture, update `test/decorators.test.ts`.
-- To exercise `Item`/`prettify` (rich item printing) in a test, init `Loxer` without
-  `devLog`/`devError` callbacks — or call `Item.of(lox).prettify(...)` directly. A registered
+  or props capture/rendering, update `test/decorators.test.ts`.
+- To exercise `PropsPrinter` (rich props printing) in a test, init `Loxer` without `devLog` /
+  `devError` callbacks — or call `PropsPrinter.of(lox).print(...)` directly. A registered
   `devLog`/`devError` callback receives the raw lox and bypasses the console fallback in
-  `src/core/OutputStreams.ts`, which is the only path that calls `Item.prettify`; registering it
-  makes a suite assert nothing about item output. Use `config: { disableColors: true }` on init
-  for plain (un-ANSI'd) strings and mock `global.console.log` to capture output — see
-  `test/item.test.ts`. Falsy items (`false`, `0`, `''`, `null`, `undefined`) never reach this path
-  (`if (outputLox.item)` gate).
+  `src/core/OutputStreams.ts`, which is the only path that calls `PropsPrinter.print`; registering
+  it makes a suite assert nothing about rendered props. Use `config: { disableColors: true }` for
+  plain output and mock `global.console.log` to capture it — see `test/props.test.ts`. Falsy props
+  (`false`, `0`, `''`, `null`, `undefined`) render when the call chained `printProps` / `pp`.
+- When reshaping public logging signatures, use a table of observable calls that covers the direct,
+  open-box, and `.of(id)` entry points at every log level, including a visible `debug` module.
 - When a rule must exist in two copies because the packages holding them cannot import each
   other, drive both copies from one shared table of cases and assert they agree — a comment
   claiming two suites pin the copies against each other is not a pin unless breaking either copy
@@ -98,5 +99,5 @@
 - Singleton reset pattern: `test/boxed.test.ts`.
 - Realm-slot reset and second-module-copy loading: `test/realm-singleton.test.ts`.
 - Existing suites, one topic each: `test/boxed.test.ts`, `test/unboxed.test.ts`,
-  `test/item.test.ts`, `test/format.test.ts`, `test/error.test.ts`,
+  `test/props.test.ts`, `test/format.test.ts`, `test/error.test.ts`,
   `test/initialization.test.ts`, `test/decorators.test.ts`.

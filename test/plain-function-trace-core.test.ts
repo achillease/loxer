@@ -24,8 +24,8 @@ test('a transformed function preserves sync result, modifier chains, and its box
       openMessage: 'args',
       closeMessage: 'result',
       highlight: 'all',
-      argsAsItem: true,
-      resultAsItem: true,
+      argsAsProps: true,
+      resultAsProps: true,
     });
     export { calculate };
   `);
@@ -41,8 +41,11 @@ test('a transformed function preserves sync result, modifier chains, and its box
   expect(devLogs[0].highlighted).toBe(true);
   expect(devLogs[1].highlighted).toBe(true);
   expect(devLogs[2].highlighted).toBe(true);
-  expect(devLogs[0].item).toEqual([4]);
-  expect(devLogs[2].item).toBe(8);
+  expect(devLogs[0].props).toEqual([4]);
+  expect(devLogs[2].props).toEqual([8]);
+  // capture is not a rendering request
+  expect(devLogs[0].printProps).toBeUndefined();
+  expect(devLogs[2].printProps).toBeUndefined();
 });
 
 test('a transformed declaration preserves this and rethrows the original synchronous value', async () => {
@@ -746,7 +749,7 @@ test('concurrent list members link direct Loxer calls to their own trace box wit
   expect(idFor('save:end:two')).toBe(saveId);
 });
 
-test('argsAsItem, resultAsItem, level, and highlight apply uniformly across a shared-options list', async () => {
+test('argsAsProps, resultAsProps, level, and highlight apply uniformly across a shared-options list', async () => {
   const traced = await loadTracedModule(`
     function first(value) {
       return value + 1;
@@ -759,8 +762,8 @@ test('argsAsItem, resultAsItem, level, and highlight apply uniformly across a sh
       moduleId: 'TRACE',
       level: 'warn',
       highlight: 'all',
-      argsAsItem: true,
-      resultAsItem: true,
+      argsAsProps: true,
+      resultAsProps: true,
     });
     export { first, second, third };
   `);
@@ -773,12 +776,61 @@ test('argsAsItem, resultAsItem, level, and highlight apply uniformly across a sh
   const closes = devLogs.filter((log) => log.type === 'close');
   expect(opens.map((log) => log.message)).toEqual(['first()', 'second()', 'third()']);
   expect(closes.map((log) => log.message)).toEqual(['first done', 'second done', 'third done']);
-  for (const log of [...opens, ...closes]) {
-    expect(log.level).toBe('warn');
-    expect(log.highlighted).toBe(true);
-  }
-  expect(opens.map((log) => log.item)).toEqual([[1], [1], [1]]);
-  expect(closes.map((log) => log.item)).toEqual([2, 3, 4]);
+  // asserted at array level so a single differing log is named by the diff rather than throwing out
+  // of a loop before the rest is checked
+  expect([...opens, ...closes].map((log) => log.level)).toEqual(Array(6).fill('warn'));
+  expect([...opens, ...closes].map((log) => log.highlighted)).toEqual(Array(6).fill(true));
+  expect(opens.map((log) => log.props)).toEqual([[1], [1], [1]]);
+  expect(closes.map((log) => log.props)).toEqual([[2], [3], [4]]);
+});
+
+test('plain-function markers apply printArgs and printResult independently for direct and shared targets', async () => {
+  const traced = await loadTracedModule(`
+    function argsOnly(first, second) {
+      return first + second;
+    }
+    trace(argsOnly, { moduleId: 'TRACE', argsAsProps: true, printArgs: { depth: 1 } });
+
+    function resultOnly(value) {
+      return { value };
+    }
+    trace(resultOnly, { moduleId: 'ORDER', resultAsProps: true, printResult: true });
+
+    function first(value) {
+      return value + 1;
+    }
+    async function second(value) {
+      return value + 2;
+    }
+    trace([first, second], {
+      moduleId: 'TRACE',
+      argsAsProps: true,
+      resultAsProps: true,
+      printArgs: true,
+      printResult: { keys: [] },
+    });
+    export { argsOnly, first, resultOnly, second };
+  `);
+
+  expect(traced.argsOnly(2, 3)).toBe(5);
+  expect(traced.resultOnly('result')).toEqual({ value: 'result' });
+  expect(traced.first(4)).toBe(5);
+  await expect(traced.second(4)).resolves.toBe(6);
+
+  const opens = devLogs.filter((log) => log.type === 'open');
+  const closes = devLogs.filter((log) => log.type === 'close');
+  expect(opens.map((log) => [log.props, log.printProps])).toEqual([
+    [[2, 3], { depth: 1 }],
+    [[], undefined],
+    [[4], {}],
+    [[4], {}],
+  ]);
+  expect(closes.map((log) => [log.props, log.printProps])).toEqual([
+    [[], undefined],
+    [[{ value: 'result' }], {}],
+    [[5], { keys: [] }],
+    [[6], { keys: [] }],
+  ]);
 });
 
 test('a list marker in a nested scope re-evaluates its shared options on every call', async () => {
@@ -1013,9 +1065,9 @@ test('formatter and cyclic-result failures fall back without changing results', 
   expect(devLogs.map((log) => log.id)).toEqual([trace.id, trace.id]);
 });
 
-test('trace options format types, pretty results, and successful formatter messages', () => {
+test('trace options format types, results, and successful formatter messages', () => {
   const typed = __startTrace('typed', [1, 'text', null], {
-    closeMessage: 'prettyResult',
+    closeMessage: 'result',
     moduleId: 'TRACE',
     openMessage: 'types',
   });
@@ -1030,7 +1082,7 @@ test('trace options format types, pretty results, and successful formatter messa
 
   expect(devLogs.map((log) => log.message)).toEqual([
     'typed(number, string, object)',
-    'typed done. returns: \n{\n "nested": true\n}',
+    'typed done. returns: {"nested":true}',
     'open:Ada',
     'close:Grace',
   ]);
@@ -1041,10 +1093,12 @@ test('parent.functionName trace messages fall back to the function name', () => 
     closeMessage: 'parent.functionName',
     moduleId: 'TRACE',
     openMessage: 'parent.functionName',
+    resultAsProps: true,
   });
   trace.success(undefined);
 
   expect(devLogs.map((log) => log.message)).toEqual(['standalone()', 'standalone done']);
+  expect(devLogs[1].props).toEqual([]);
 });
 
 test('a parent name is sanitized before it reaches the open and close messages', () => {
@@ -1179,14 +1233,14 @@ test('an omitted trace level remains visible while a hidden trace leaves no visi
   expect(Loxer.history).toHaveLength(historyLength);
 });
 
-test('default and destructured traced arrows retain caller arguments for message and item output', async () => {
+test('default and destructured traced arrows retain caller arguments for message and props output', async () => {
   const traced = await loadTracedModule(`
     const zero = () => 'zero';
-    trace(zero, { moduleId: 'TRACE', openMessage: 'args', argsAsItem: true });
+    trace(zero, { moduleId: 'TRACE', openMessage: 'args', argsAsProps: true });
     const defaulted = (first = 'fallback', second = 'two') => first + ':' + second;
-    trace(defaulted, { moduleId: 'ORDER', openMessage: 'args', argsAsItem: true });
+    trace(defaulted, { moduleId: 'ORDER', openMessage: 'args', argsAsProps: true });
     const destructured = ({ value } = { value: 'fallback' }, [tail] = ['tail']) => value + ':' + tail;
-    trace(destructured, { moduleId: 'TRACE', openMessage: 'args', argsAsItem: true });
+    trace(destructured, { moduleId: 'TRACE', openMessage: 'args', argsAsProps: true });
     export { defaulted, destructured, zero };
   `);
 
@@ -1209,7 +1263,7 @@ test('default and destructured traced arrows retain caller arguments for message
     'destructured(undefined, undefined)',
     'destructured([object Object], array)',
   ]);
-  expect(openings.map((log) => log.item)).toEqual([
+  expect(openings.map((log) => log.props)).toEqual([
     [],
     [],
     [undefined, 'given'],

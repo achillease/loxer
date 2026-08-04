@@ -3,8 +3,8 @@ import { OutputLox } from '../loxes/OutputLox.js';
 import { LoxerCallbacks } from '../types.js';
 import { ANSIFormat } from './ANSIFormat.js';
 import { BoxFactory } from './BoxFactory.js';
-import { Item } from './Item.js';
 import { LoxHistory } from './LoxHistory.js';
+import { PropsPrinter } from './PropsPrinter.js';
 
 interface OutputStreamsProps {
   callbacks?: LoxerCallbacks;
@@ -66,14 +66,15 @@ export class OutputStreams {
               .join(' <> ')}]`
           : '';
       const str = msg + stack + openLogs;
-      // prettify the item if present
-      if (errorLox.item) {
+      // render the props where the call asked for it - the request decides, never the values'
+      // truthiness, so `null` and `0` are rendered like anything else
+      if (errorLox.printProps) {
         console.log(
           str +
-            Item.of(errorLox).prettify(!this._areColorsDisabled, {
-              // connect the item box to this log's own box column (module text width + the marker's
-              // position within the box), so it branches off the box layout rather than floating
-              // out at the message column
+            PropsPrinter.of(errorLox).print(!this._areColorsDisabled, {
+              // connect the props block to this log's own box column (module text width + the
+              // marker's position within the box), so it branches off the box layout rather than
+              // floating out at the message column
               depth: errorLox.module.slicedName.length + BoxFactory.getMarkerDepth(errorLox.box),
               color: errorLox.module.color,
             })
@@ -104,14 +105,15 @@ export class OutputStreams {
       const box = BoxFactory.getBoxString(outputLox.box, !this._areColorsDisabled);
       // construct the message
       const str = `${moduleText}${box}${message}\t${timeText}`;
-      // prettify the item
-      if (outputLox.item) {
+      // render the props where the call asked for it - the request decides, never the values'
+      // truthiness, so `null` and `0` are rendered like anything else
+      if (outputLox.printProps) {
         console.log(
           str +
-            Item.of(outputLox).prettify(!this._areColorsDisabled, {
-              // connect the item box to this log's own box column (module text width + the marker's
-              // position within the box), so it branches off the box layout rather than floating
-              // out at the message column
+            PropsPrinter.of(outputLox).print(!this._areColorsDisabled, {
+              // connect the props block to this log's own box column (module text width + the
+              // marker's position within the box), so it branches off the box layout rather than
+              // floating out at the message column
               depth: outputLox.module.slicedName.length + BoxFactory.getMarkerDepth(outputLox.box),
               color: outputLox.module.color,
             })

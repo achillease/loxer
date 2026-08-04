@@ -44,12 +44,72 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/), and this
   raises a `TypeError` when applied to anything that is not a method.
 - Export the types needed to name Loxer's own surface — `OutputLox`, `ErrorLox`, `LoxerOptions`,
   `Module`, `LoxerModules`, `LoxerCallbacks`, `LoxerConfig`, `OfLoxes`, `OpenedLox`,
-  `ExtendedModule`, `LoxType`, `BoxLayoutStyle`, `ItemType`, `ItemOptions`, `ErrorType`, `ModuleId`
+  `ExtendedModule`, `LoxType`, `BoxLayoutStyle`, `PropsPrinterOptions`, `ErrorType`, `ModuleId`
   and `DefaultModuleId` — so a `devLog(lox: OutputLox)` callback can be annotated without reaching
   into the package's internals.
+- Add **props**: every argument after a logging method's message is attached to the log as one of its
+  `props`, in order and by reference, and reaches `devLog` / `prodLog` / `devError` / `prodError` and
+  `Loxer.history` untouched. `Loxer.log('restoring order', payment, cart)` carries two;
+  `lox.props` is always an array, so a callback needs no guard.
+- Add `Loxer.printProps(options?)` and its alias `Loxer.pp(options?)`: a one-shot modifier, alongside
+  `highlight` and `module`, asking the built-in console output to render a log's props below its
+  message and connected to its box column. Chaining it at all is the request — `pp()` and `pp({})`
+  render alike — and the optional `PropsPrinterOptions` argument only configures the rendering. A
+  value is rendered whatever its truthiness, `null` and `0` included.
+- Export `PropsPrinter`, the class the built-in output renders props with, so an output callback can
+  reproduce that block from the package's own surface: `PropsPrinter.of(lox).print(colored, box)`,
+  plus `ofValues(values, options?)` for values that belong to no log and `singleLine(value)` for one
+  value on exactly one line. Reading `lox.printProps` is what honors the call's request; a callback
+  may also render unconditionally.
+- Take a freely typed first argument on every logging method. A primitive is stringified, and an
+  object or function renders as one compact line, so `Loxer.log(payment)`
+  reads as its contents instead of `[object Object]` and a function reports `[Function: name]`.
+  `lox.message` stays a `string` and never carries a control character, so no message can break the
+  box column.
+- Add `printArgs` and `printResult` to `TraceOptions`, so a traced call can have its captured
+  arguments and its result rendered by the built-in output, configured separately per side. Each
+  accepts `true` or a `PropsPrinterOptions` object.
+- Add `Loxer.namedError(name, message, ...props)` to the exported `LogMethods` surface. It existed at
+  runtime but appeared in no type, so calling it was a compile error.
 
 ### Changed
 
+- **Breaking:** Replace the positional `item` / `itemOptions` parameters with **props**. Every
+  logging entry point — `Loxer.log`, `warn`, `info`, `debug`, their `.open()` forms, `Loxer.open`,
+  `Loxer.error`, `Loxer.namedError` and every member of `Loxer.of(id)` — takes
+  `(message?, ...props)`, with `error` keeping an `ErrorType` in position 0. Rendering moves onto the
+  chain: `Loxer.log(msg, item, options)` becomes `Loxer.pp(options).log(msg, item)`, and a log that
+  does not chain `printProps` renders nothing while still carrying its values. This fixes three
+  things at once: a second value is no longer swallowed as configuration (`ItemOptions` was six
+  optional fields, so almost any object bound to that slot, was read as options, and was never
+  printed); configuration is reachable without naming a value; and a falsy value is rendered like any
+  other, where the old truthiness gate dropped `0`, `null`, `false` and `''`.
+- **Breaking:** Rename the concept from *item* to *props* throughout. `lox.item` / `lox.itemOptions`
+  become `lox.props` / `lox.printProps`; the `ItemType` and `ItemOptions` exports are replaced by
+  `PropsPrinterOptions` (`ItemType` has no successor — a prop is `unknown`); the `Item` class becomes
+  the exported `PropsPrinter` and `Item.of(lox).prettify(...)` becomes
+  `PropsPrinter.of(lox).print(...)`; the box glyph reads `┃ props>` / `<props`; and the
+  `TraceOptions` capture flags become `argsAsProps` / `resultAsProps`.
+- **Breaking:** Attach a traced call's arguments as one prop each rather than as a single array, so
+  `argsAsProps` gives a callback `lox.props[1]` for the second argument. `resultAsProps` stays one
+  prop, and a `void` function attaches none rather than a literal `undefined`.
+- **Breaking:** Drop `existingError` from `Loxer.namedError` and `Loxer.of(id).namedError`. An
+  optional `unknown` in front of a rest parameter cannot be told apart from a prop, so omitting it
+  silently wrapped the caller's first prop into the error message with no diagnostic:
+  `namedError('E', 'msg', payment)` produced `'msg =[Error]=> [object Object]'`. Wrapping an error
+  that was caught keeps the explicit path `NamedError` already documents:
+  `Loxer.error(new NamedError(name, message, existing), ...props)`.
+- **Breaking:** Read `PropsPrinterOptions.depth` with an absent option, not `0`, as "unlimited", so
+  `depth: 0` is a usable limit that summarizes even the outermost object as `{n entries}`. The old
+  code stored and compared `0` while its documentation promised `infinity`.
+- Bound PropsPrinter recursion at 100 levels, public box-layout depth at 200, and indentation at 20
+  spaces per level, so pathological caller data cannot overflow the stack or allocate unbounded
+  layout strings. Finite numeric options are truncated and clamped; non-finite values use defaults.
+- Escape control characters in every log message, not only in an error's. A `\n` or `\t` in a message
+  left the box column open from the second line on, split the single-line `OPEN_LOGS` summary, and
+  limited highlight coloring to the first line.
+- **Breaking:** Remove `closeMessage: 'prettyResult'`; a result that needs multi-line rendering uses
+  `resultAsProps` with `printResult` so it stays connected to the trace box safely.
 - **Breaking:** Take a log's level as one of the names `'error' | 'warn' | 'info' | 'debug'`
   (`LogLevel`) instead of the numbers `0`–`3`. `Module.devLevel` / `prodLevel`,
   `LoxerOptions.defaultLevels`, `lox.level` and `TraceOptions.level` accept names only, so an old
@@ -86,6 +146,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/), and this
 
 ### Fixed
 
+- Fix props rendering of malformed or hostile runtime values so a null-prototype object, throwing
+  accessor, proxy, or invalid date cannot interrupt logging or inject terminal controls.
+- Fix `@trace` methods that throw or reject to record the original error and close their trace box
+  while preserving the caller's original failure.
 - Keep a Loxer the project links rather than installs out of Vite's dependency optimizer
   (`vite-plugin-loxer-trace`), and add the directory it lives in to `server.fs.allow` so Vite can
   serve it. Vite's dependency cache is keyed on the lockfile and the resolved config, so a
@@ -114,7 +178,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/), and this
   module.
 - Fix a stack overflow when logging a self-referencing object or array with no explicit depth; a
   back-edge renders as `[Circular]`.
-- Fix `@trace`'s async `closeMessage` (`'result'`, `'prettyResult'` or a callback) reading the
+- Fix `@trace`'s async `closeMessage` (`'result'` or a callback) reading the
   still-pending promise instead of the resolved value.
 - Fix `@trace` dropping `highlight` when it closed an async method's box.
 

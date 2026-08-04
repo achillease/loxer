@@ -1,4 +1,4 @@
-import { Loxer } from '../dist/index.js';
+import { Loxer, PropsPrinter } from '../dist/index.js';
 
 Loxer.init({
   dev: true,
@@ -58,12 +58,27 @@ const a1 = Loxer.m('AUTH').open('login');
 Loxer.of(a1).add('authenticate user');
 const c1 = Loxer.m('CART').open('restore last order session');
 Loxer.of(a1).close('login successful');
-Loxer.of(c1).add('payment pending');
+// props travel with a log whether or not they are rendered — this one carries the payment for a
+// callback to pick up, and prints nothing
+Loxer.of(c1).add('payment pending', payment);
 const p1 = Loxer.m('PAY').open('restore last order payment');
-Loxer.of(p1).error('failed to restore last payment: unable to parse payment!', payment, {
-  keys: ['date'],
-});
+// .pp(...) asks the built-in output to render them, and configures how
+Loxer.pp({ keys: ['date'] })
+  .of(p1)
+  .error('failed to restore last payment: unable to parse payment!', payment);
 Loxer.of(p1).close('no payment restored');
 Loxer.of(c1).close('session restored');
+
+logSpace(3);
+
+// a freely typed first argument: an object reads as its contents instead of [object Object]
+Loxer.m('PAY').log(payment.articles[1]);
+// several props render as one block
+Loxer.pp({ depth: 1 }).m('CART').log('two props', payment, payment.articles);
+
+logSpace(3);
+
+// the printer is public API, so a callback author renders props on demand
+console.log('rendered by hand:' + PropsPrinter.ofValues([payment], { depth: 2 }).print(false));
 
 logSpace(3);

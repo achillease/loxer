@@ -13,12 +13,15 @@
 import {
   initLoxer,
   Loxer,
+  NamedError,
+  PropsPrinter,
   trace as traceDecorator,
   type LogLevel,
   type LoxerModules,
   type LoxerOptions,
   type Module,
   type ModuleId,
+  type PropsPrinterOptions,
 } from 'loxer';
 import { trace as traceMarker } from 'loxer/trace';
 
@@ -141,3 +144,89 @@ traceDecorator({ moduleId: 'DB', openMessage: 'args' });
 traceDecorator('PRES');
 // @ts-expect-error 'PRES' is not a registered module id
 traceDecorator({ moduleId: 'PRES' });
+
+// --- props: rest parameters, freely typed message ---------------------------------------------
+declare const payment: { id: string };
+Loxer.log('restoring order', payment, ['a'], 3, null, undefined);
+Loxer.log();
+Loxer.log(42);
+Loxer.log(true);
+Loxer.log(null);
+Loxer.log(payment);
+Loxer.log(Symbol('sym'));
+Loxer.log(() => 1);
+Loxer.open('checkout', payment);
+Loxer.debug.open('checkout', payment);
+Loxer.error(new Error('boom'), payment);
+Loxer.namedError('CheckoutError', 'the cart was empty', payment);
+const box = Loxer.open('checkout');
+box.add('step', payment);
+box.warn('step', payment);
+box.info('step', payment);
+box.debug('step', payment);
+box.error(new Error('boom'), payment);
+box.namedError('CheckoutError', 'empty', payment);
+box.close('done', payment);
+// @ts-expect-error `namedError`'s message is the error's own and stays a string
+Loxer.namedError('CheckoutError', payment);
+// there is no `existingError` slot: an error handed to `namedError` is one more prop. Wrapping is
+// the explicit path, which no longer competes with a prop for a position
+Loxer.namedError('E', 'msg', new Error('existing'));
+Loxer.error(new NamedError('E', 'msg', new Error('existing')), payment);
+
+// --- printProps / pp on the modifier surface --------------------------------------------------
+Loxer.pp().log('ok', payment);
+Loxer.printProps().log('ok', payment);
+Loxer.pp({}).log('ok', payment);
+Loxer.pp({ depth: 1, keys: ['id'], indent: 4 }).log('ok', payment);
+Loxer.pp().m('PERS').h().log('ok');
+Loxer.h().pp().m('PERS').debug.open('ok');
+Loxer.m('PERS').h().printProps({ depth: 0 }).error(new Error('boom'), payment);
+// @ts-expect-error a modifier can not be chained twice
+Loxer.pp().pp();
+// @ts-expect-error `printProps` is the same modifier as `pp`
+Loxer.pp().printProps();
+// @ts-expect-error a modifier can not be chained twice - the same rule `pp` follows
+Loxer.h().h();
+// @ts-expect-error `depths` is not a `PropsPrinterOptions` field
+Loxer.pp({ depths: 1 }).log('typo');
+const printerOptions: PropsPrinterOptions = { depth: 2, shortenClasses: false };
+void printerOptions;
+
+// --- the public printer -----------------------------------------------------------------------
+Loxer.init({
+  modules,
+  callbacks: {
+    devLog: (lox) => {
+      if (lox.printProps) {
+        const rendered: string = PropsPrinter.of(lox).print();
+        void rendered;
+      }
+      const props: unknown[] = lox.props;
+      void props;
+    },
+    devError: (lox) => {
+      const rendered: string = PropsPrinter.of(lox).print(false, { depth: 4, color: '#fff' });
+      void rendered;
+    },
+  },
+});
+const fromValues: string = PropsPrinter.ofValues([payment], { depth: 1 }).print(false);
+void fromValues;
+const oneLine: string = PropsPrinter.singleLine(payment);
+void oneLine;
+
+// --- the replaced item surface stays replaced --------------------------------------------------
+// @ts-expect-error `ItemType` was replaced by freely-typed props
+type GoneItemType = import('loxer').ItemType;
+// @ts-expect-error `ItemOptions` was replaced by `PropsPrinterOptions`
+type GoneItemOptions = import('loxer').ItemOptions;
+// @ts-expect-error the capture options are named after props
+traceMarker(load, { argsAsItem: true });
+// @ts-expect-error the capture options are named after props
+traceMarker(load, { resultAsItem: true });
+traceMarker(load, { argsAsProps: true, printArgs: { depth: 1 } });
+traceMarker(load, { resultAsProps: true, printResult: true });
+traceDecorator({ argsAsProps: true, printArgs: true, resultAsProps: true, printResult: { keys: [] } });
+// @ts-expect-error `prettyResult` was removed; use `resultAsProps` with `printResult` instead
+traceMarker(load, { closeMessage: 'prettyResult' });

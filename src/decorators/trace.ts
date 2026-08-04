@@ -1,9 +1,10 @@
 import { resolveBoxLevel } from '../core/Levels.js';
+import { resolveTracePrintProps } from '../core/PropsPrinter.js';
 import { classParentName, qualifiedFunctionName } from '../core/TraceNames.js';
 import { is } from '../Helpers.js';
 import { Loxer } from '../Loxer.js';
 import { TraceOptions } from '../tracing-types.js';
-import { ModuleId } from '../types.js';
+import { ErrorType, ModuleId } from '../types.js';
 
 export type { TraceOptions } from '../tracing-types.js';
 
@@ -88,42 +89,78 @@ function createTracedMethod<Args extends readonly unknown[] = readonly unknown[]
       o?.openMessage === 'parent.functionName' || o?.closeMessage === 'parent.functionName';
     // a decorated method's parent is always its class, which the running instance carries
     const fixedName = needsParentName ? resolveClassName(this) : '';
+    // the gate lives in one place for both trace runtimes, so neither can drop a side the other reads
+    const { printArgs, printResult } = resolveTracePrintProps(o);
 
     // open message
     const openMessage = getOpenMessage(o, propertyName, args, fixedName);
 
-    // open the lox
-    const item = o?.argsAsItem ? args : undefined;
-    // every level exposes the same `LevelMethods` shape, so the dispatch is a plain index
-    const loxId = Loxer.h(h === 'all' || h === 'open')
-      .m(moduleId)
-      [level].open(openMessage, item);
+    // open the lox - one prop per argument
+    const openProps = o?.argsAsProps ? args : [];
+    // every level exposes the same `LevelMethods` shape, so the dispatch is a plain index. The
+    // modifier is only chained where rendering was asked for: `pp()` means *render*, so calling it
+    // with an absent configuration would turn rendering on for everyone
+    const loxId = (
+      printArgs !== undefined
+        ? Loxer.pp(printArgs)
+            .h(h === 'all' || h === 'open')
+            .m(moduleId)[level]
+        : Loxer.h(h === 'all' || h === 'open').m(moduleId)[level]
+    ).open(openMessage, ...openProps);
 
-    // call the function
-    const result = original.call(this, ...args);
+    // the result is one prop, and a conditional spread is what keeps a `void` method from attaching
+    // a literal `undefined`. The open's chain has been reset by its own log, so the close asks for
+    // rendering itself
+    const closeWith = (message: string, payload: unknown) => {
+      const closeProps = o?.resultAsProps && payload !== undefined ? [payload] : [];
+      (printResult !== undefined
+        ? Loxer.pp(printResult)
+            .h(h === 'all' || h === 'close')
+            .of(loxId)
+        : Loxer.h(h === 'all' || h === 'close').of(loxId)
+      ).close(message, ...closeProps);
+    };
 
-    if (result && typeof result.then === 'function') {
-      return result.then((payload: any) => {
-        const closeMessage = getCloseMessage(o, propertyName, payload, fixedName);
-        const resultItem = o?.resultAsItem ? payload : undefined;
+    // Reporting and then rethrowing preserves the original synchronous throw and Promise rejection
+    // for the method's caller while ensuring a traced failure cannot leave its box open.
+    const failWith = (error: unknown) => {
+      Loxer.of(loxId).error(error as ErrorType);
+      Loxer.h(h === 'all' || h === 'close')
+        .of(loxId)
+        .close(`${propertyName} failed`);
+    };
 
-        // close the lox with the resolved payload (not the still-pending promise)
-        Loxer.h(h === 'all' || h === 'close')
-          .of(loxId)
-          .close(closeMessage, resultItem);
+    let result: any;
+    try {
+      // call the function
+      result = original.call(this, ...args);
+    } catch (error) {
+      failWith(error);
+      throw error;
+    }
 
-        return payload;
-      });
+    try {
+      if (result && typeof result.then === 'function') {
+        return result.then(
+          (payload: any) => {
+            // close the lox with the resolved payload (not the still-pending promise)
+            closeWith(getCloseMessage(o, propertyName, payload, fixedName), payload);
+
+            return payload;
+          },
+          (error: unknown) => {
+            failWith(error);
+            throw error;
+          }
+        );
+      }
+    } catch (error) {
+      failWith(error);
+      throw error;
     }
 
     // close message
-    const closeMessage = getCloseMessage(o, propertyName, result, fixedName);
-    const resultItem = o?.resultAsItem ? result : undefined;
-
-    // close the lox
-    Loxer.h(h === 'all' || h === 'close')
-      .of(loxId)
-      .close(closeMessage, resultItem);
+    closeWith(getCloseMessage(o, propertyName, result, fixedName), result);
 
     return result;
   };
@@ -185,8 +222,6 @@ function getCloseMessage<Args extends readonly unknown[], Result>(
       closeMessage = cm(result);
     } else if (cm === 'result') {
       closeMessage = propertyKey + ' done. returns: ' + JSON.stringify(result);
-    } else if (cm === 'prettyResult') {
-      closeMessage = propertyKey + ' done. returns: \n' + JSON.stringify(result, null, ' ');
     } else if (cm === 'parent.functionName') {
       closeMessage = qualifiedFunctionName(fixedName, propertyKey) + ' done';
     }

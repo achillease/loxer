@@ -1,7 +1,7 @@
 /** @module Loxer */
 import { BoxLayoutStyle } from './core/BoxFormat.js';
-import { ItemOptions, ItemType } from './core/Item.js';
 import type { LogLevel } from './core/Levels.js';
+import { PropsPrinterOptions } from './core/PropsPrinter.js';
 // type-only, so it is erased on emit and no runtime import cycle exists
 import type { LoxerModuleRegistry } from './index.js';
 import { ErrorLox } from './loxes/ErrorLox.js';
@@ -328,18 +328,16 @@ export interface LoxerConfig {
 export interface LevelMethods {
   /** writes a single log at this level - see {@link LogMethods.log}
    * ---
-   * @param message to log
-   * @param item to append
-   * @param itemOptions to configure the (default) output of the item
+   * @param message to log, of any type
+   * @param props any number of values to attach to the log
    */
-  (message: string, item?: ItemType, itemOptions?: ItemOptions): void;
+  (message?: unknown, ...props: unknown[]): void;
   /** opens a log box at this level - see {@link LogMethods.open}
    * ---
-   * @param message to log
-   * @param item to append
-   * @param itemOptions to configure the (default) output of the item
+   * @param message to log, of any type
+   * @param props any number of values to attach to the log
    */
-  open(message: string, item?: ItemType, itemOptions?: ItemOptions): OpenedLox;
+  open(message?: unknown, ...props: unknown[]): OpenedLox;
 }
 
 export interface LogMethods {
@@ -354,7 +352,7 @@ export interface LogMethods {
    * - it is cached until the logger is initialized
    * - it won't proceed any output if Loxer is disabled
    * - the output will be streamed out to the {@link LoxerOptions.callbacks} declared in `Loxer.init(options)`
-   * - if no callbacks are given at the initialization, all logs will be logged with `console.log(message, item)`,
+   * - if no callbacks are given at the initialization, all logs will be logged with `console.log(...)`,
    *   but only in development mode
    * - it logs at level `'info'`, exactly like {@link LogMethods.info Loxer.info()}
    * - can be chained with `.highlight().log(...)` or `.h().log(...)` to highlight the log
@@ -362,12 +360,23 @@ export interface LogMethods {
    * - all functions can be chained in combination and different order like: `Loxer.h().m('Account').log(...)`
    * - for another {@link LogLevel} use {@link LogMethods.warn Loxer.warn()},
    *   {@link LogMethods.debug Loxer.debug()} or {@link LogMethods.error Loxer.error()}
+   *
+   * ### Message and props
+   * ```typescript
+   *     Loxer.log('restoring order', payment, cart);
+   * ```
+   *
+   * - every value after the message is attached to the log as one of its
+   *   {@link OutputLox.props props}, in order, and reaches the callbacks and the history unchanged
+   * - attaching props renders nothing. Chain {@link Modifiers.printProps Loxer.printProps()} (or
+   *   {@link Modifiers.pp Loxer.pp()}) to have the built-in output render them
+   * - the message may be of any type. A primitive is stringified, a non-primitive renders as one
+   *   compact line, so `Loxer.log(payment)` reads instead of printing `[object Object]`
    * ---
-   * @param message to log
-   * @param item to append
-   * @param itemOptions to configure the (default) output of the item
+   * @param message to log, of any type
+   * @param props any number of values to attach to the log
    */
-  log(message: string, item?: ItemType, itemOptions?: ItemOptions): void;
+  log(message?: unknown, ...props: unknown[]): void;
   /** ## Warning Log
    *
    * ```typescript
@@ -436,12 +445,31 @@ export interface LogMethods {
    *   `level: 'error'`.
    * - there is no `Loxer.error.open()`: an error is a single event rather than a box (see
    *   {@link BoxLevel})
+   * - position 0 is always the error, never a message: every value after it is attached as one of
+   *   the log's {@link OutputLox.props props}
    * ---
    * @param error an `Error` or `string` | `number`| `boolean` | `object` (converted to an Error)
-   * @param item to append
-   * @param itemOptions to configure the (default) output of the item
+   * @param props any number of values to attach to the log
    */
-  error(error: ErrorType, item?: ItemType, itemOptions?: ItemOptions): void;
+  error(error: ErrorType, ...props: unknown[]): void;
+  /** ## Named error Log
+   *
+   * ```typescript
+   *     Loxer.namedError('CheckoutError', 'the cart was empty', cart);
+   * ```
+   *
+   * #### A shortcut for `Loxer.error(new NamedError(name, message))`, with props.
+   *
+   * - behaves exactly like {@link LogMethods.error} otherwise
+   * - the error's message is the given `message` alone
+   * - to wrap an error that was caught, name it explicitly:
+   *   `Loxer.error(new NamedError(name, message, caught), ...props)`
+   * ---
+   * @param name the `Error.name` of the created error
+   * @param message the `Error.message` of the created error
+   * @param props any number of values to attach to the log
+   */
+  namedError(name: string, message: string, ...props: unknown[]): void;
   /** ## Open a boxed Log
    *
    * ```typescript
@@ -455,7 +483,7 @@ export interface LogMethods {
    * - it is cached until the logger is initialized
    * - it won't proceed any output if Loxer is disabled
    * - the output will be streamed out to the {@link LoxerOptions.callbacks} declared in `Loxer.init(options)`
-   * - if no callbacks are given at the initialization, all logs will be logged with `console.log(message, item)`,
+   * - if no callbacks are given at the initialization, all logs will be logged with `console.log(...)`,
    *   but only in development mode
    * - can be chained with `.highlight().open(...)` or `.h().open(...)` to highlight the log
    * - it opens the box at level `'info'`. For another level use that level's `.open()`, e.g.
@@ -463,11 +491,10 @@ export interface LogMethods {
    * - can be chained with `.module().open(...)` or `.m().open(...)` to assign a module to the log - otherwise it's `NONE`
    * - all functions can be chained in combination and different order like: `Loxer.h().m('Account').debug.open(...)`
    * ---
-   * @param message to log
-   * @param item to append
-   * @param itemOptions to configure the (default) output of the item
+   * @param message to log, of any type
+   * @param props any number of values to attach to the log
    */
-  open(message: string, item?: ItemType, itemOptions?: ItemOptions): OpenedLox;
+  open(message?: unknown, ...props: unknown[]): OpenedLox;
   /** ## Assign logs / errors to an opened Log
    *
    * ```typescript
@@ -501,10 +528,10 @@ export interface LogMethods {
    * - errors are output whatever the level says
    *
    * ### Returned functions
-   * - `add: (message: string, item?: any)` - assigns a single log to the box at the box's own level
-   * - `warn` / `info` / `debug: (message: string, item?: any)` - the same, at a level of their own
-   * - `error: (error?: Error | string)` - assigns an error log to the box
-   * - `close: (message: string, item?: any)` - assigns a log to the box, that also closes the box (and its box layout)
+   * - `add: (message?, ...props)` - assigns a single log to the box at the box's own level
+   * - `warn` / `info` / `debug: (message?, ...props)` - the same, at a level of their own
+   * - `error: (error, ...props)` - assigns an error log to the box
+   * - `close: (message?, ...props)` - assigns a log to the box, that also closes the box (and its box layout)
    * - **ATTENTION**: calling `add()`, `error()` or `close()` after closing the box, the log will not be appended to the box but
    *   logged anyways with a Warning
    * ---
@@ -526,37 +553,32 @@ export interface OfLoxes {
    * - it takes the level of the opening log. To name a level, use {@link OfLoxes.warn},
    *   {@link OfLoxes.info} or {@link OfLoxes.debug}
    */
-  add(message: string, item?: ItemType, itemOptions?: ItemOptions): void;
+  add(message?: unknown, ...props: unknown[]): void;
   /** assigns a single `'warn'` level log to a log box
    * - the log reports `'warn'` and is shown wherever the module reaches `'warn'`, even where the
    *   box itself is hidden
    */
-  warn(message: string, item?: ItemType, itemOptions?: ItemOptions): void;
+  warn(message?: unknown, ...props: unknown[]): void;
   /** assigns a single `'info'` level log to a log box
    * - the log reports `'info'` and is shown wherever the module reaches `'info'`, even where the
    *   box itself is hidden
    */
-  info(message: string, item?: ItemType, itemOptions?: ItemOptions): void;
+  info(message?: unknown, ...props: unknown[]): void;
   /** assigns a single `'debug'` level log to a log box
    * - the log reports `'debug'` and is shown wherever the module reaches `'debug'`, which is the
    *   last level, so a box at any level can hold one
    */
-  debug(message: string, item?: ItemType, itemOptions?: ItemOptions): void;
+  debug(message?: unknown, ...props: unknown[]): void;
   /** closes an opened log box and imitates the behavior of {@link LogMethods.log}
    * - it takes the level of the opening log and accepts none of its own, so a box and its close are
    *   always either both shown or both hidden
    */
-  close(message: string, item?: ItemType, itemOptions?: ItemOptions): void;
+  close(message?: unknown, ...props: unknown[]): void;
   /** assigns an error log to a log box and imitates the behavior of {@link LogMethods.error} */
-  error(error: ErrorType, item?: ItemType, itemOptions?: ItemOptions): void;
-  /** a direct shortcut for Loxer.of(...).error(new NamedError(...)). It combines the parameters of the {@link NamedError} and the `.error()` method */
-  namedError(
-    name: string,
-    message: string,
-    existingError?: unknown,
-    item?: ItemType,
-    itemOptions?: ItemOptions
-  ): void;
+  error(error: ErrorType, ...props: unknown[]): void;
+  /** a direct shortcut for `Loxer.of(...).error(new NamedError(name, message))` - see
+   * {@link LogMethods.namedError} */
+  namedError(name: string, message: string, ...props: unknown[]): void;
 }
 
 export interface OpenedLox extends OfLoxes {
@@ -570,7 +592,43 @@ export interface OpenedLox extends OfLoxes {
 
 type h = 'h' | 'highlight';
 type m = 'm' | 'module';
+type pp = 'pp' | 'printProps';
 export interface Modifiers<Delete extends string> {
+  /** ## Render a log's props (shortcut)
+   * #### Is a shortcut for {@link Modifiers.printProps Loxer.printProps()}.
+   *
+   * ---
+   * @param options to configure the rendering
+   */
+  pp(options?: PropsPrinterOptions): LogMethods & Omit<Modifiers<Delete | pp>, Delete | pp>;
+  /** ## Render a log's props
+   *
+   * ```typescript
+   *     Loxer.printProps().log('restoring order', payment)
+   *     Loxer.printProps({ depth: 1 }).open('checkout', cart)
+   *     Loxer.printProps().error(error, payment)
+   * ```
+   *
+   * #### Asks the built-in output to render the values a log carries.
+   *
+   * Props are attached to every log that is called with them, and reach the
+   * {@link LoxerOptions.callbacks} and the history whether or not this is chained. What it decides
+   * is whether the built-in console output *renders* them below the message, connected to the log's
+   * box column.
+   *
+   * - chaining it at all is the request: `Loxer.printProps()` and `Loxer.printProps({})` render
+   *   alike. The parameter carries formatting configuration, not the decision
+   * - a value is rendered whatever its truthiness, `null` and `0` included
+   * - it is a one-shot modifier like {@link Modifiers.highlight} and {@link Modifiers.module}: the
+   *   next log renders nothing unless it chains this itself
+   * - a log without props renders no block
+   * - an output callback receives the raw lox instead and reaches the same rendering through
+   *   `PropsPrinter.of(lox).print()`, reading `lox.printProps` to honor the request
+   *
+   * ---
+   * @param options to configure the rendering
+   */
+  printProps(options?: PropsPrinterOptions): LogMethods & Omit<Modifiers<Delete | pp>, Delete | pp>;
   /** ## Highlight a log (shortcut)
    * #### Is a shortcut for {@link Modifiers.highlight Loxer.highlight()}.
    *

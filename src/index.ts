@@ -1,5 +1,6 @@
 export * from './core/ANSIFormat.js';
 export * from './core/BoxFactory.js';
+export { PropsPrinter } from './core/PropsPrinter.js';
 export { BoxLayouts } from './core/BoxFormat.js';
 export type { BoxSymbols } from './core/BoxFormat.js';
 export * from './decorators/initLoxer.js';
@@ -10,7 +11,7 @@ export type { ErrorLox } from './loxes/ErrorLox.js';
 export type { OutputLox } from './loxes/OutputLox.js';
 // referenced by the option / lox types below, so a consumer can name every member's type
 export type { BoxLayoutStyle } from './core/BoxFormat.js';
-export type { ItemOptions, ItemType } from './core/Item.js';
+export type { PropsPrinterOptions } from './core/PropsPrinter.js';
 export type { ExtendedModule } from './core/Modules.js';
 export type { LoxType } from './loxes/Lox.js';
 export type {

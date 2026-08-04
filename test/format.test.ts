@@ -89,8 +89,8 @@ const lox0 = new OutputLox({
   message: 'Lox1!',
   moduleId: 'Module',
   type: 'open',
-  item: undefined,
-  itemOptions: undefined,
+  props: [],
+  printProps: undefined,
 });
 lox0.module.color = '#fff';
 lox0.module.slicedName = 'Module';
@@ -103,8 +103,8 @@ const lox1 = new OutputLox({
   message: 'Lox1!',
   moduleId: 'Module',
   type: 'close',
-  item: undefined,
-  itemOptions: undefined,
+  props: [],
+  printProps: undefined,
 });
 lox1.module.color = '#fff';
 lox1.module.slicedName = 'Module';
@@ -117,8 +117,8 @@ const lox2 = new OutputLox({
   message: 'Lox2!',
   moduleId: 'Module',
   type: 'single',
-  item: undefined,
-  itemOptions: undefined,
+  props: [],
+  printProps: undefined,
 });
 lox2.module.color = '#fff';
 lox2.module.slicedName = 'Module';
@@ -133,8 +133,8 @@ const lox4 = new OutputLox({
   message: 'Lox4!',
   moduleId: 'Module',
   type: 'single',
-  item: undefined,
-  itemOptions: undefined,
+  props: [],
+  printProps: undefined,
 });
 lox4.module.color = '#fff';
 lox4.module.slicedName = 'Module';

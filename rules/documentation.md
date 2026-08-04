@@ -81,7 +81,7 @@
 ## Files
 
 - `documentation/index.md` — main usage guide.
-- `documentation/item.md` — rich item printing.
+- `documentation/props.md` — rich props printing.
 - `documentation/Performance.md` — benchmark methodology and results.
 - `documentation/debt.md` — standing register of known-but-unfixed defects. Append; don't re-create.
   A maintainer document, not a guide — the "describe the current design" rules above govern the

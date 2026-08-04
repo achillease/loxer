@@ -16,7 +16,7 @@
 - get significantly better visualization of the logs
 - visualize the data flow (including time measurement)
 - full Typescript support
-- rich output of values (items) for debugging purposes
+- rich output of values (props) for debugging purposes
 
 With Loxer, logs never have to be deleted again, as they hardly use any resources when switched off. Logs and error records can easily be forwarded to crash reporting systems such as Firebase. This makes it possible to get error reports that are just as good in the production environment as in the development environment. Furthermore, errors in concurrent functional processes can be detected more easily.
 

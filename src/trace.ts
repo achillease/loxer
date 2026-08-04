@@ -1,5 +1,7 @@
 import { resolveBoxLevel } from './core/Levels.js';
+import { resolveTracePrintProps } from './core/PropsPrinter.js';
 import { qualifiedFunctionName } from './core/TraceNames.js';
+import { sanitizeControlCharacters } from './Helpers.js';
 import { Loxer } from './Loxer.js';
 import {
   FunctionCloseMessage,
@@ -192,11 +194,19 @@ export function __startTrace(
       ? qualifiedFunctionName(sanitizeMessage(parentName), safeName)
       : safeName;
   const openMessage = getOpenMessage(safeName, parentQualifiedName, args, options.openMessage);
-  const item = options.argsAsItem ? args : undefined;
-  // every level exposes the same `LevelMethods` shape, so the dispatch is a plain index
-  const id = Loxer.h(isHighlighted(highlight, 'open'))
-    .m(moduleId)
-    [level].open(openMessage, item).id;
+  // the gate lives in one place for both trace runtimes, so neither can drop a side the other reads
+  const { printArgs, printResult } = resolveTracePrintProps(options);
+  // one prop per argument, so a callback reads them the way the call passed them
+  const openProps = options.argsAsProps ? args : [];
+  const highlightOpen = isHighlighted(highlight, 'open');
+  // every level exposes the same `LevelMethods` shape, so the dispatch is a plain index. The
+  // modifier is only chained where rendering was asked for: `pp()` means *render*, so calling it
+  // with an absent configuration would turn rendering on for everyone
+  const id = (
+    printArgs !== undefined
+      ? Loxer.pp(printArgs).h(highlightOpen).m(moduleId)[level]
+      : Loxer.h(highlightOpen).m(moduleId)[level]
+  ).open(openMessage, ...openProps).id;
 
   return {
     id,
@@ -207,9 +217,15 @@ export function __startTrace(
         result,
         options.closeMessage
       );
-      Loxer.h(isHighlighted(highlight, 'close'))
-        .of(id)
-        .close(closeMessage, options.resultAsItem ? result : undefined);
+      // the result is one prop, and a conditional spread is what keeps a `void` function from
+      // attaching a literal `undefined`
+      const closeProps = options.resultAsProps && result !== undefined ? [result] : [];
+      const highlightClose = isHighlighted(highlight, 'close');
+      // the open's chain has been reset by its own log, so the close asks for rendering itself
+      (printResult !== undefined
+        ? Loxer.pp(printResult).h(highlightClose).of(id)
+        : Loxer.h(highlightClose).of(id)
+      ).close(closeMessage, ...closeProps);
     },
     failure(error: any): void {
       Loxer.of(id).error(error);
@@ -251,10 +267,7 @@ function getOpenMessage(
 }
 
 function sanitizeMessage(value: unknown): string {
-  return String(value).replace(
-    /[\u0000-\u001F\u007F-\u009F]/g,
-    (character) => `\\u${character.charCodeAt(0).toString(16).padStart(4, '0')}`
-  );
+  return sanitizeControlCharacters(String(value));
 }
 
 function getCloseMessage(
@@ -273,11 +286,6 @@ function getCloseMessage(
       const serialized = JSON.stringify(result);
 
       return serialized === undefined ? fallback : `${functionName} done. returns: ${serialized}`;
-    }
-    if (style === 'prettyResult') {
-      const serialized = JSON.stringify(result, null, ' ');
-
-      return serialized === undefined ? fallback : `${functionName} done. returns: \n${serialized}`;
     }
     if (style === 'parent.functionName') {
       return `${parentQualifiedName} done`;

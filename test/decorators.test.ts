@@ -1,4 +1,4 @@
-import type { LogLevel } from '../src';
+import type { LogLevel, PropsPrinterOptions } from '../src';
 import { initLoxer, Loxer, resetLoxer, trace } from '../src';
 import { ErrorLox, OutputLox } from '../src/loxes';
 import { classParentNameCases } from './class-parent-name-cases';
@@ -31,7 +31,7 @@ class Service {
   withArgs(n: number, s: string) {
     return { n, s };
   }
-  @trace({ moduleId: 'NONE', openMessage: 'types', closeMessage: 'prettyResult' })
+  @trace({ moduleId: 'NONE', openMessage: 'types', closeMessage: 'result' })
   withTypes(n: number) {
     return n;
   }
@@ -51,10 +51,20 @@ class Service {
   custom(n: number) {
     return n * 2;
   }
-  @trace({ moduleId: 'NONE', argsAsItem: true, resultAsItem: true })
-  withItems(n: number) {
+  @trace({ moduleId: 'NONE', argsAsProps: true, resultAsProps: true })
+  withProps(n: number, label: string) {
+    return { doubled: n * 2, label };
+  }
+  @trace({ moduleId: 'NONE', argsAsProps: true, printArgs: { depth: 1 } })
+  printedArgs(n: number) {
+    return n;
+  }
+  @trace({ moduleId: 'NONE', resultAsProps: true, printResult: true })
+  printedResult(n: number) {
     return { doubled: n * 2 };
   }
+  @trace({ moduleId: 'NONE', resultAsProps: true })
+  voidWithProps(): void {}
   @trace({ moduleId: 'NONE', highlight: 'all' })
   highlighted(n: number) {
     return n;
@@ -63,9 +73,13 @@ class Service {
   async asyncOk(n: number) {
     return n + 1;
   }
-  @trace('NONE')
+  @trace({ moduleId: 'NONE', resultAsProps: true })
   async asyncFail() {
     throw new Error('boom');
+  }
+  @trace({ moduleId: 'NONE', argsAsProps: true })
+  syncFail(value: number) {
+    throw new Error(`sync:${value}`);
   }
   @trace({ moduleId: 'NONE', closeMessage: 'result' })
   async asyncResult(n: number) {
@@ -145,11 +159,11 @@ test('@trace args / result message formatting', () => {
   expect(devLogs[1].message).toBe('withArgs done. returns: {"n":3,"s":"x"}');
 });
 
-test('@trace types / prettyResult message formatting', () => {
+test('@trace types / result message formatting', () => {
   const s = new Service();
   s.withTypes(5);
   expect(devLogs[0].message).toBe('withTypes(number)');
-  expect(devLogs[1].message).toBe('withTypes done. returns: \n5');
+  expect(devLogs[1].message).toBe('withTypes done. returns: 5');
 });
 
 test('@trace parent.functionName message formatting', () => {
@@ -166,11 +180,43 @@ test('@trace custom message callbacks receive args and result', () => {
   expect(devLogs[1].message).toBe('close:8');
 });
 
-test('@trace argsAsItem / resultAsItem attach items to the logs', () => {
+test('@trace argsAsProps / resultAsProps attach props to the logs', () => {
   const s = new Service();
-  s.withItems(6);
-  expect(devLogs[0].item).toEqual([6]);
-  expect(devLogs[1].item).toEqual({ doubled: 12 });
+  s.withProps(6, 'six');
+  // two arguments, so the assertion tells one prop per argument apart from the whole tuple as one
+  expect(devLogs[0].props).toEqual([6, 'six']);
+  expect(devLogs[1].props).toEqual([{ doubled: 12, label: 'six' }]);
+  // attaching props is not asking for them to be rendered
+  expect(devLogs[0].printProps).toBeUndefined();
+  expect(devLogs[1].printProps).toBeUndefined();
+});
+
+test('@trace resultAsProps omits an undefined result', () => {
+  const s = new Service();
+  s.voidWithProps();
+  expect(devLogs[1].props).toEqual([]);
+});
+
+test('@trace printArgs configures rendering for the opening log alone', () => {
+  const s = new Service();
+  s.printedArgs(7);
+  expect(devLogs[0].printProps).toEqual({ depth: 1 });
+  expect(devLogs[1].printProps).toBeUndefined();
+});
+
+test('@trace printResult configures rendering for the closing log alone', () => {
+  const s = new Service();
+  s.printedResult(4);
+  expect(devLogs[0].printProps).toBeUndefined();
+  // `true` is the request with default configuration
+  expect(devLogs[1].printProps).toEqual({});
+});
+
+test('@trace attaches no props where neither capture option was named', () => {
+  const s = new Service();
+  s.simple(1);
+  expect(devLogs[0].props).toEqual([]);
+  expect(devLogs[1].props).toEqual([]);
 });
 
 test('@trace highlight: all highlights both open and close', () => {
@@ -189,14 +235,26 @@ test('@trace async method closes the box after resolution and returns the payloa
   expect(devLogs[1].type).toBe('close');
 });
 
-test('@trace async rejection propagates and (by design) does not close the box', async () => {
+test('@trace async rejection records the original error, closes the box, and propagates', async () => {
   const s = new Service();
   await expect(s.asyncFail()).rejects.toThrow('boom');
-  // the open box was emitted...
-  expect(devLogs[0].message).toBe('asyncFail()');
-  expect(devLogs[0].type).toBe('open');
-  // ...but there is no catch handler, so no close log is ever emitted
-  expect(devLogs.some((l) => l.type === 'close')).toBe(false);
+  expect(devErrors).toHaveLength(1);
+  expect(devErrors[0].error.message).toBe('boom');
+  expect(devLogs.map((log) => [log.type, log.message, log.props])).toEqual([
+    ['open', 'asyncFail()', []],
+    ['close', 'asyncFail failed', []],
+  ]);
+});
+
+test('@trace synchronous throw records the original error, closes the box, and propagates', () => {
+  const s = new Service();
+  expect(() => s.syncFail(3)).toThrow('sync:3');
+  expect(devErrors).toHaveLength(1);
+  expect(devErrors[0].error.message).toBe('sync:3');
+  expect(devLogs.map((log) => [log.type, log.message, log.props])).toEqual([
+    ['open', 'syncFail()', [3]],
+    ['close', 'syncFail failed', []],
+  ]);
 });
 
 test('@trace async close message reflects the resolved value, not the pending promise', async () => {
@@ -215,7 +273,8 @@ test.each(traceCases)(
     const standard = await runTraceCase('standard', testCase);
     const expected = testCase.expectedLogs.map((log) => ({
       highlighted: log.highlighted ?? false,
-      item: log.item,
+      props: log.props ?? [],
+      printProps: log.printProps,
       level: log.level ?? 'info',
       message: log.message,
       moduleId: expectedModuleId(log.moduleId),
@@ -467,7 +526,8 @@ interface TraceCaseResult {
   prodLogCount: number;
   records: Array<{
     highlighted: boolean;
-    item: unknown;
+    props: unknown[];
+    printProps: PropsPrinterOptions | undefined;
     level: LogLevel;
     message: string;
     moduleId: string;
@@ -498,7 +558,8 @@ async function runTraceCase(
     prodLogCount: prodLogs.length,
     records: devLogs.map((log) => ({
       highlighted: log.highlighted,
-      item: log.item,
+      props: log.props,
+      printProps: log.printProps,
       level: log.level,
       message: log.message,
       moduleId: log.moduleId,

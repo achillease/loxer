@@ -6,14 +6,14 @@ import {
   NamedError,
   sanitizeErrorMessage,
 } from './core/Error.js';
-import { ItemType, ItemOptions } from './core/Item.js';
-import { BoxLevel } from './core/Levels.js';
+import { BoxLevel, LogLevel } from './core/Levels.js';
 import { Loxes } from './core/Loxes.js';
 import { LoxHistory } from './core/LoxHistory.js';
 import { Modules } from './core/Modules.js';
 import { OutputStreams } from './core/OutputStreams.js';
+import { PropsPrinter, PropsPrinterOptions } from './core/PropsPrinter.js';
 import { realmSlot } from './core/Realm.js';
-import { is, isNES } from './Helpers.js';
+import { is, isNES, sanitizeControlCharacters } from './Helpers.js';
 import { ErrorLox } from './loxes/ErrorLox.js';
 import { Lox, LoxType } from './loxes/Lox.js';
 import { OutputLox } from './loxes/OutputLox.js';
@@ -26,6 +26,34 @@ import {
   OfLoxes,
   OpenedLox,
 } from './types.js';
+
+/** Turns a log's first argument into the `string` that `lox.message` is.
+ *
+ * A primitive takes `String()`, while an object or a function renders as one compact line through
+ * {@link PropsPrinter.singleLine}, so
+ * `Loxer.log(payment)` reads as its contents rather than as `[object Object]` and a function reports
+ * `[Function: name]` rather than its whole body.
+ *
+ * An omitted first argument and an explicit `undefined` both produce an empty message: a default
+ * parameter cannot tell them apart, and the `(message?, ...props)` shape is worth more than the
+ * distinction.
+ *
+ * The result carries control-character escaping, which is what makes the single line unconditional:
+ * a `\n` in a message would leave the box column open from the second line on.
+ */
+function stringifyMessage(message: unknown): string {
+  if (message === undefined) {
+    return '';
+  }
+  if (message === null) {
+    return 'null';
+  }
+  if (typeof message === 'object' || typeof message === 'function') {
+    return sanitizeControlCharacters(PropsPrinter.singleLine(message));
+  }
+
+  return sanitizeControlCharacters(String(message));
+}
 
 /** The inert box handle handed out while Loxer is disabled: every member is a no-op. */
 function disabledOfLoxes(): OfLoxes {
@@ -124,6 +152,7 @@ class LoxerInstance implements LoxerType {
   private resetState() {
     this._isHighlighted = false;
     this._moduleId = 'NONE';
+    this._printProps = undefined;
   }
 
   // id #####################################################################
@@ -151,6 +180,21 @@ class LoxerInstance implements LoxerType {
     return this;
   }
 
+  // printProps #############################################################
+
+  /** the rendering configuration the current chain asked for, or `undefined` where it asked for
+   * nothing. One field carries both the decision and its configuration, which is what makes an
+   * empty object a rendering request. */
+  private _printProps: PropsPrinterOptions | undefined;
+  printProps(options?: PropsPrinterOptions) {
+    return this.pp(options);
+  }
+  pp(options: PropsPrinterOptions = {}) {
+    this._printProps = options;
+
+    return this;
+  }
+
   // levels #################################################################
 
   /** Builds one level's {@link LevelMethods}: `Loxer.debug(...)` plus `Loxer.debug.open(...)`.
@@ -160,11 +204,11 @@ class LoxerInstance implements LoxerType {
    * `Loxer.h().m('DB').debug.open(...)` (and a hoisted `const d = Loxer.debug`) correct.
    */
   private makeLevel(level: BoxLevel): LevelMethods {
-    const methods = ((message: string = '', item?: ItemType, itemOptions?: ItemOptions) => {
-      this.logAtLevel(level, message, item, itemOptions);
+    const methods = ((message?: unknown, ...props: unknown[]) => {
+      this.logAtLevel(level, message, props);
     }) as LevelMethods;
-    methods.open = (message: string, item?: ItemType, itemOptions?: ItemOptions) =>
-      this.openAtLevel(level, message, item, itemOptions);
+    methods.open = (message?: unknown, ...props: unknown[]) =>
+      this.openAtLevel(level, message, props);
 
     return methods;
   }
@@ -189,47 +233,54 @@ class LoxerInstance implements LoxerType {
 
   // log functions ##########################################################
 
-  log(message: string = '', item?: ItemType, itemOptions?: ItemOptions) {
-    this.logAtLevel('info', message, item, itemOptions);
+  log(message?: unknown, ...props: unknown[]) {
+    this.logAtLevel('info', message, props);
   }
 
-  private logAtLevel(level: BoxLevel, message: string, item?: ItemType, itemOptions?: ItemOptions) {
+  private logAtLevel(level: BoxLevel, message: unknown, props: unknown[]) {
     if (this._isDisabled) {
       return;
     }
+    const moduleId = this._moduleId;
     this.switchOutput(
       new Lox({
         id: this.nextId(),
         highlighted: this._isHighlighted,
-        item,
-        itemOptions,
+        props,
+        printProps: this._printProps,
         level,
-        message,
-        moduleId: this._moduleId,
+        message: this.outputMessage(message, level, moduleId),
+        moduleId,
         type: 'single',
       })
     );
   }
 
-  namedError(
-    name: string,
-    message: string,
-    existingError?: unknown,
-    item?: ItemType,
-    itemOptions?: ItemOptions
-  ) {
-    this.internalError(
-      new NamedError(name, message, existingError),
-      undefined,
-      undefined,
-      undefined,
-      item,
-      itemOptions
-    );
+  /** The message a `'single'` log carries — left empty for one the level gate is about to drop.
+   *
+   * This is shared by direct, open, close, and added logs. Turning an object into a message walks
+   * it, and that runs on every call, ahead of the gate that
+   * decides whether the log is written at all: `Loxer.debug(largeDomainObject)` in a module that logs
+   * up to `'error'` would otherwise pay for a rendering nothing reads. A hidden normal log reaches
+   * no output callback, no history and no open-box buffer, so the message it never shows is free to
+   * stay empty.
+   *
+   * Errors bypass this method because they are written whatever their module allows.
+   */
+  private outputMessage(message: unknown, level: LogLevel, moduleId: string): string {
+    // before `init()` the modules carry defaults and the log is queued for replay, so the gate it
+    // will meet is not knowable yet and the message has to be built now
+    return this._isInitialized && this._modules.isHiddenAt(level, moduleId)
+      ? ''
+      : stringifyMessage(message);
   }
 
-  error(error: ErrorType, item?: ItemType, itemOptions?: ItemOptions) {
-    this.internalError(error, undefined, undefined, undefined, item, itemOptions);
+  namedError(name: string, message: string, ...props: unknown[]) {
+    this.internalError(new NamedError(name, message), undefined, undefined, undefined, props);
+  }
+
+  error(error: ErrorType, ...props: unknown[]) {
+    this.internalError(error, undefined, undefined, undefined, props);
   }
 
   private internalError(
@@ -237,16 +288,15 @@ class LoxerInstance implements LoxerType {
     logId: number | undefined,
     moduleId: string = this._moduleId,
     messagePrefix: string = '',
-    item?: ItemType,
-    itemOptions?: ItemOptions
+    props: unknown[] = []
   ) {
     const sureError = castError(error);
     this.switchOutput(
       new Lox({
         id: logId ?? this.nextId(),
         highlighted: this._isHighlighted,
-        item,
-        itemOptions,
+        props,
+        printProps: this._printProps,
         // errors are output whatever the module allows, so this records the log's level rather than
         // a threshold the error has to pass
         level: 'error',
@@ -258,27 +308,23 @@ class LoxerInstance implements LoxerType {
     );
   }
 
-  open(message: string, item?: ItemType, itemOptions?: ItemOptions) {
-    return this.openAtLevel('info', message, item, itemOptions);
+  open(message?: unknown, ...props: unknown[]) {
+    return this.openAtLevel('info', message, props);
   }
 
-  private openAtLevel(
-    level: BoxLevel,
-    message: string,
-    item?: ItemType,
-    itemOptions?: ItemOptions
-  ): OpenedLox {
+  private openAtLevel(level: BoxLevel, message: unknown, props: unknown[]): OpenedLox {
     if (this._isDisabled) {
       return { id: 0, ...disabledOfLoxes() };
     }
+    const moduleId = this._moduleId !== 'NONE' ? this._moduleId : 'DEFAULT';
     const lox = new Lox({
       id: this.nextId(),
       highlighted: this._isHighlighted,
-      item,
-      itemOptions,
+      props,
+      printProps: this._printProps,
       level,
-      message,
-      moduleId: this._moduleId !== 'NONE' ? this._moduleId : 'DEFAULT',
+      message: this.outputMessage(message, level, moduleId),
+      moduleId,
       type: 'open',
     });
     this.switchOutput(lox);
@@ -298,14 +344,14 @@ class LoxerInstance implements LoxerType {
     if (!is(openLox)) {
       /** reports a call on a box that is gone, naming the method the consumer actually used */
       const missing =
-        (method: string) => (message: string, item?: ItemType, itemOptions?: ItemOptions) => {
+        (method: string) =>
+        (message?: unknown, ...props: unknown[]) => {
           this.internalError(
-            new LoxerError(message),
+            new LoxerError(stringifyMessage(message)),
             id,
             undefined,
             `${method}() on a not (anymore) existing Lox. MESSAGE: `,
-            item,
-            itemOptions
+            props
           );
         };
 
@@ -315,30 +361,22 @@ class LoxerInstance implements LoxerType {
         info: missing('info'),
         debug: missing('debug'),
         close: missing('close'),
-        error: (error: ErrorType, item?: ItemType, itemOptions?: ItemOptions) => {
+        error: (error: ErrorType, ...props: unknown[]) => {
           this.internalError(
             error,
             id,
             undefined,
             'error() on a not (anymore) existing Lox. ERROR: ',
-            item,
-            itemOptions
+            props
           );
         },
-        namedError: (
-          name: string,
-          message: string,
-          existingError?: unknown,
-          item?: ItemType,
-          itemOptions?: ItemOptions
-        ) => {
+        namedError: (name: string, message: string, ...props: unknown[]) => {
           this.internalError(
-            new NamedError(name, message, existingError),
+            new NamedError(name, message),
             id,
             undefined,
             'error() on a not (anymore) existing Lox. ERROR: ',
-            item,
-            itemOptions
+            props
           );
         },
       };
@@ -350,8 +388,8 @@ class LoxerInstance implements LoxerType {
     /** appends a single log at an explicit level, or - without one - at the box's own level */
     const append =
       (level: BoxLevel | undefined) =>
-      (message: string, item?: ItemType, itemOptions?: ItemOptions) => {
-        this.appendToOpenLox('single', openLox, moduleId, message, level, item, itemOptions);
+      (message?: unknown, ...props: unknown[]) => {
+        this.appendToOpenLox('single', openLox, moduleId, message, level, props);
       };
 
     return {
@@ -359,35 +397,14 @@ class LoxerInstance implements LoxerType {
       warn: append('warn'),
       info: append('info'),
       debug: append('debug'),
-      close: (message: string, item?: ItemType, itemOptions?: ItemOptions) => {
-        this.appendToOpenLox(
-          'close',
-          openLox,
-          openLox.moduleId,
-          message,
-          undefined,
-          item,
-          itemOptions
-        );
+      close: (message?: unknown, ...props: unknown[]) => {
+        this.appendToOpenLox('close', openLox, openLox.moduleId, message, undefined, props);
       },
-      error: (error: ErrorType, item?: ItemType, itemOptions?: ItemOptions) => {
-        this.internalError(error, openLox.id, moduleId, undefined, item, itemOptions);
+      error: (error: ErrorType, ...props: unknown[]) => {
+        this.internalError(error, openLox.id, moduleId, undefined, props);
       },
-      namedError: (
-        name: string,
-        message: string,
-        existingError?: unknown,
-        item?: ItemType,
-        itemOptions?: ItemOptions
-      ) => {
-        this.internalError(
-          new NamedError(name, message, existingError),
-          openLox.id,
-          moduleId,
-          undefined,
-          item,
-          itemOptions
-        );
+      namedError: (name: string, message: string, ...props: unknown[]) => {
+        this.internalError(new NamedError(name, message), openLox.id, moduleId, undefined, props);
       },
     };
   }
@@ -396,10 +413,9 @@ class LoxerInstance implements LoxerType {
     type: LoxType,
     openLox: Lox,
     moduleId: string,
-    message: string,
+    message: unknown,
     requestedLevel: BoxLevel | undefined,
-    item?: ItemType,
-    itemOptions?: ItemOptions
+    props: unknown[]
   ) {
     const { id, level: openLevel } = openLox;
     // An added log keeps the level its caller named. A level says how severe the log *is*, and it
@@ -412,10 +428,10 @@ class LoxerInstance implements LoxerType {
       new Lox({
         id,
         highlighted: this._isHighlighted,
-        item,
-        itemOptions,
+        props,
+        printProps: this._printProps,
         level,
-        message,
+        message: this.outputMessage(message, level, moduleId),
         moduleId,
         type,
       })

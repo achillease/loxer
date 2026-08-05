@@ -51,6 +51,12 @@ small and behavior-preserving; most public contracts are asserted from `test/box
   overlapping boxes keep their column positions.
 - `OutputStreams` must forward raw `OutputLox` / `ErrorLox` objects unchanged to callbacks; default
   console rendering is only the fallback path.
+- `OutputStreams`'s props indentation must equal the width of what its console line prints before the
+  module text — the time field it chose plus its separator — because that number is what rendered
+  props are indented by to line up under the message. Both console lines (log and error) pass the one
+  `TIMESTAMP_INDENTATION` constant, so a separator changed on one line alone silently misaligns that
+  line's props. The templates carry `time` (8 columns) and `timeStamp` (19); the constant names which
+  one the console prints.
 - `LoxHistory` is newest-first. A configured size of `1` currently disables stored history.
 - `PropsPrinter` handles arbitrary runtime values; it must tolerate hostile property access, avoid
   loops on class graphs or cyclic structures, and bound pathological recursion before it overflows.

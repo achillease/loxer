@@ -345,23 +345,27 @@ test('public structured renderers reproduce the default development console outp
   Loxer.init({ dev: true });
   (console.log as Mock).mockClear();
 
+  // the default console leads with `time`, the 8-character time of day, so the props indentation it
+  // passes is that width plus the separator before the module text
   Loxer.pp().log('log', 'prop');
   const outputLox = Loxer.history[0] as OutputLox;
-  const outputTemplate = OutputLoxRenderer(outputLox, 19 + 2 + outputLox.module.slicedName.length);
+  const outputTemplate = OutputLoxRenderer(outputLox, 8 + 1 + outputLox.module.slicedName.length);
   expect(outputTemplate.message).toBe('log');
+  expect(outputTemplate.time).toBe(outputTemplate.timeStamp.slice(11));
+  expect(outputTemplate.time).toHaveLength(8);
   expect(outputTemplate.props).toContain("'prop'");
   expect(outputTemplate.props).not.toContain('\x1b[');
   expect(outputTemplate.colored.props).toContain('\x1b[');
   expect((console.log as Mock).mock.calls[0][0]).toBe(
-    `${outputTemplate.colored.timeStamp}: ${outputTemplate.colored.module}${outputTemplate.colored.box}${outputTemplate.colored.message}\t${outputTemplate.colored.timeConsumption}${outputTemplate.colored.props}`
+    `${outputTemplate.colored.time} ${outputTemplate.colored.module}${outputTemplate.colored.box}${outputTemplate.colored.message}\t${outputTemplate.colored.timeConsumption}${outputTemplate.colored.props}`
   );
 
   Loxer.h().error(new Error('errorText'));
   const errorLox = Loxer.history[0] as ErrorLox;
-  const errorTemplate = ErrorLoxRenderer(errorLox, 19 + 2 + errorLox.module.slicedName.length);
+  const errorTemplate = ErrorLoxRenderer(errorLox, 8 + 1 + errorLox.module.slicedName.length);
   expect(errorTemplate.stack).not.toBe('');
   expect((console.log as Mock).mock.calls[1][0]).toBe(
-    `${errorTemplate.colored.timeStamp}: ${errorTemplate.colored.module}${errorTemplate.colored.box}${errorTemplate.colored.message}\t${errorTemplate.colored.timeConsumption}${errorTemplate.colored.props}${errorTemplate.colored.stack}${errorTemplate.colored.openLogs}`
+    `${errorTemplate.colored.time}: ${errorTemplate.colored.module}${errorTemplate.colored.box}${errorTemplate.colored.message}\t${errorTemplate.colored.timeConsumption}${errorTemplate.colored.props}${errorTemplate.colored.stack}${errorTemplate.colored.openLogs}`
   );
 });
 
@@ -425,6 +429,7 @@ test('public renderers expose complete plain and colored fields without changing
     'openLogs',
     'props',
     'stack',
+    'time',
     'timeConsumption',
     'timeStamp',
   ]);
@@ -435,6 +440,7 @@ test('public renderers expose complete plain and colored fields without changing
     'openLogs',
     'props',
     'stack',
+    'time',
     'timeConsumption',
     'timeStamp',
   ]);
@@ -445,6 +451,7 @@ test('public renderers expose complete plain and colored fields without changing
     template.box,
     template.props,
     template.timeStamp,
+    template.time,
     template.stack,
     template.openLogs,
   ]) {

@@ -56,6 +56,7 @@ export function OutputLoxRenderer(
     }),
     props: renderProps(lox, false, propsIndentation),
     timeStamp,
+    time: timeStamp.slice(11),
     colored,
   };
 }
@@ -74,13 +75,14 @@ export function ColoredOutputLoxRenderer(
   return {
     module: colored.moduleText,
     message: colored.message,
-    timeConsumption: colored.timeText,
+    timeConsumption: colored.timeConsumption,
     box: BoxFactory.getBoxString(lox.box, {
       colored: true,
       boxLayoutStyle: options.boxLayoutStyle,
     }),
     props: renderProps(lox, true, propsIndentation),
     timeStamp: colored.timestamp,
+    time: colored.time,
   };
 }
 

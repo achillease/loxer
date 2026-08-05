@@ -8,7 +8,7 @@ interface OutputStreamsProps {
   output?: LoxerOutputStream;
 }
 
-const TIMESTAMP_INDENTATION = 19 + 2;
+const TIMESTAMP_INDENTATION = 8 + 1;
 
 /** @internal */
 export class OutputStreams {
@@ -33,7 +33,7 @@ export class OutputStreams {
     } else {
       const lox = ColoredErrorLoxRenderer(errorLox, this.getPropsIndentation(errorLox));
       console.log(
-        `${lox.timeStamp}: ${lox.module}${lox.box}${lox.message}\t${lox.timeConsumption}${lox.props}${lox.stack}${lox.openLogs}`
+        `${lox.time}: ${lox.module}${lox.box}${lox.message}\t${lox.timeConsumption}${lox.props}${lox.stack}${lox.openLogs}`
       );
     }
   }
@@ -50,7 +50,7 @@ export class OutputStreams {
     } else {
       const lox = ColoredOutputLoxRenderer(outputLox, this.getPropsIndentation(outputLox));
       console.log(
-        `${lox.timeStamp}: ${lox.module}${lox.box}${lox.message}\t${lox.timeConsumption}${lox.props}`
+        `${lox.time} ${lox.module}${lox.box}${lox.message}\t${lox.timeConsumption}${lox.props}`
       );
     }
   }

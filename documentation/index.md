@@ -738,7 +738,17 @@ To symbolize that the logs are more than just simple messages, they are named `*
 
 [`OutputLoxRenderer`][outputLoxRenderer] and [`ErrorLoxRenderer`][errorLoxRenderer] return plain
 fields together with a `colored` field set. Each field is independently composable, so a destination
-can preserve the box and props while arranging timestamps and messages for its own format.
+can preserve the box and props while arranging times and messages for its own format.
+
+Two fields carry the moment the log appeared, and a destination prints one of them: `time` is the
+time of day (`HH:MM:SS`, 8 characters) and `timeStamp` is the full date and time
+(`YYYY-MM-DD HH:MM:SS`, 19 characters). A terminal that logs one session live rarely needs the date;
+a file or a log service usually does. `timeConsumption` is unrelated to both — it is the elapsed time
+a box reports, and it is empty for a log that belongs to no box.
+
+The renderer's second argument is the number of columns the destination prints **before** the
+message, which is what rendered props are indented to line up under. So it counts the time field the
+destination actually chose, its separator, and the module text:
 
 ```typescript
 import { ErrorLoxRenderer, OutputLoxRenderer, type LoxerOutputRendererOptions } from 'loxer';
@@ -748,19 +758,24 @@ const rendererOptions: LoxerOutputRendererOptions = {
   colors: { warnColor: '#ffa50f', errorColor: '#ff0000' },
 };
 
+// `time` (8) + the space after it (1)
+const timeWidth = 8 + 1;
+
 Loxer.init({
   output(event) {
     if (event.kind === 'error') {
-      const rendered = ErrorLoxRenderer(event.lox, 21 + event.lox.module.slicedName.length, rendererOptions);
-      console.log(`${rendered.colored.timeStamp}: ${rendered.colored.module}${rendered.colored.box}${rendered.colored.message}${rendered.colored.stack}`);
+      const rendered = ErrorLoxRenderer(event.lox, timeWidth + event.lox.module.slicedName.length, rendererOptions);
+      console.log(`${rendered.colored.time} ${rendered.colored.module}${rendered.colored.box}${rendered.colored.message}${rendered.colored.stack}`);
       return;
     }
 
-    const rendered = OutputLoxRenderer(event.lox, 21 + event.lox.module.slicedName.length, rendererOptions);
-    console.log(`${rendered.colored.timeStamp}: ${rendered.colored.module}${rendered.colored.box}${rendered.colored.message}${rendered.colored.props}`);
+    const rendered = OutputLoxRenderer(event.lox, timeWidth + event.lox.module.slicedName.length, rendererOptions);
+    console.log(`${rendered.colored.time} ${rendered.colored.module}${rendered.colored.box}${rendered.colored.message}${rendered.colored.props}`);
   },
 });
 ```
+
+Printing `timeStamp` instead is the same code with `19 + 1` as the width.
 
 Pass `LoxerOutputRendererOptions` to either renderer to select the fallback box layout, close-title
 opacity, and ANSI colors for that destination. A module's `boxLayoutStyle` always overrides the

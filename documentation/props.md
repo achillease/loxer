@@ -294,7 +294,8 @@ Loxer.init({
   output(event: LoxerOutputEvent) {
     if (event.kind === 'error') return;
 
-    const rendered = OutputLoxRenderer(event.lox, 21 + event.lox.module.slicedName.length);
+    // 8 columns of `time` plus its trailing space, so the props line up under the message
+    const rendered = OutputLoxRenderer(event.lox, 8 + 1 + event.lox.module.slicedName.length);
     console.log(rendered.message + rendered.props);
   },
 });

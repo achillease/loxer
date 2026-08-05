@@ -268,12 +268,20 @@ export interface LoxerOutputRendererOptions {
 
 /** One plain or ANSI-colored field set returned by an output renderer. */
 export interface OutputLoxTemplateFields {
+  /** The sliced module name. - length: depends on the module text slice */
   module: string;
+  /** The message of the log. */
   message: string;
+  /** The time consumption of the log. Only for logs inside or closing a box. - length: depends on the time consumption */
   timeConsumption: string;
+  /** The box layout of the log. */
   box: string;
+  /** The properties of the log. */
   props: string;
+  /** The timestamp of the log. (YYYY-MM-DD HH:MM:SS) - length: 19 */
   timeStamp: string;
+  /** The time of the log. (HH:MM:SS) - length: 8 */
+  time: string;
 }
 
 /** Destination-independent plain and ANSI-colored rendering of an {@link OutputLox}. */

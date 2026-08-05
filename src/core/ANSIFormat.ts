@@ -135,9 +135,10 @@ export class ANSIFormat {
   }
 
   /**
-   * @param lox to get colored props from
+   * @param lox to get the colored text of
    * @param options colors and module-title opacity for the returned text
-   * @returns the colored props of the given lox
+   * @returns the lox's message, module text, box time consumption, full timestamp and time of day,
+   * each individually ANSI-colored
    */
   static colorLox(
     lox: OutputLox,
@@ -145,8 +146,9 @@ export class ANSIFormat {
   ): {
     message: string;
     moduleText: string;
-    timeText: string;
+    timeConsumption: string;
     timestamp: string;
+    time: string;
   } {
     let message = lox.highlighted
       ? this.colorHighlight(lox.message, options.colors?.highlightColor)
@@ -168,8 +170,9 @@ export class ANSIFormat {
     return {
       message,
       moduleText: this.colorize(lox.module.slicedName, lox.module.color, options.moduleOpacity),
-      timeText: this.fgTime(lox.timeText),
+      timeConsumption: this.fgTime(lox.timeText),
       timestamp: this.fgTime(lox.timestamp.toISOString().replace('T', ' ').slice(0, 19)),
+      time: this.fgTime(lox.timestamp.toISOString().replace('T', ' ').slice(11, 19)),
     };
   }
 

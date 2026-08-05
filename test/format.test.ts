@@ -36,11 +36,11 @@ test('background coloring', () => {
 test('lox coloring', () => {
   const log1 = ANSIFormat.colorLox(lox1);
   expect(log1.message).toBe('\x1b[38;2;180;255;180mLox1!\x1b[0m');
-  expect(log1.timeText).toBe('\x1b[38;2;70;70;70m[123ms]\x1b[0m');
+  expect(log1.timeConsumption).toBe('\x1b[38;2;70;70;70m[123ms]\x1b[0m');
   expect(log1.moduleText).toBe('\x1b[38;2;255;255;255mModule\x1b[0m');
   const log2 = ANSIFormat.colorLox(lox2);
   expect(log2.message).toBe('\x1b[7mLox2!\x1b[0m');
-  expect(log2.timeText).toBe('\x1b[38;2;70;70;70m[123ms]\x1b[0m');
+  expect(log2.timeConsumption).toBe('\x1b[38;2;70;70;70m[123ms]\x1b[0m');
   expect(log2.moduleText).toBe('\x1b[38;2;255;255;255mModule\x1b[0m');
   lox3.highlighted = true;
   lox3.module.color = '#fff';
@@ -50,12 +50,12 @@ test('lox coloring', () => {
   expect(log3.message).toBe(
     '\x1b[48;2;255;0;0m\x1b[38;2;255;255;255mError\x1b[0m: \x1b[38;2;255;0;0mLox1!\x1b[0m'
   );
-  expect(log3.timeText).toBe('\x1b[38;2;70;70;70m[123ms]\x1b[0m');
+  expect(log3.timeConsumption).toBe('\x1b[38;2;70;70;70m[123ms]\x1b[0m');
   expect(log3.moduleText).toBe('\x1b[38;2;153;153;153mModule\x1b[0m');
   // a `'warn'` level log is colored from its own level, inside a box as much as outside one
   const log4 = ANSIFormat.colorLox(lox4);
   expect(log4.message).toBe('\x1b[38;2;255;165;15mLox4!\x1b[0m');
-  expect(log4.timeText).toBe('\x1b[38;2;70;70;70m[123ms]\x1b[0m');
+  expect(log4.timeConsumption).toBe('\x1b[38;2;70;70;70m[123ms]\x1b[0m');
   expect(log4.moduleText).toBe('\x1b[38;2;255;255;255mModule\x1b[0m');
 });
 

@@ -11,8 +11,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/), and this
 
 - Add `OutputLoxRenderer` and `ErrorLoxRenderer` to build reusable plain and ANSI-colored output
   templates from a log or error. Custom destinations can compose module, message, timing, box,
-  props, timestamp, stack, and open-log context for their own transport, while the development
-  console uses the same templates.
+  props, stack, and open-log context for their own transport, while the development console uses the
+  same templates. Each template carries the moment of the log twice, so a destination prints whichever
+  suits it: `time` is the time of day (`HH:MM:SS`), `timeStamp` the full date and time
+  (`YYYY-MM-DD HH:MM:SS`). The development console prints `time`.
 - Add public typed output events so a destination can distinguish development from production and
   normal logs from errors; error events include an independent history snapshot.
 
@@ -87,7 +89,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/), and this
   presentation.
 - **Breaking:** Move console color, close-title opacity, and default box-layout preferences from
   `LoxerConfig` to renderer options. Output destinations now choose their own plain or ANSI
-  presentation and fallback box layout without changing event data.
+  presentation and fallback box layout without changing event data. `ANSIFormat.colorLox` takes those
+  as one options object (`colorLox(lox, { moduleOpacity, colors })`) in place of its `opacity` and
+  `highlightColor` parameters, and returns the box time consumption as `timeConsumption` rather than
+  `timeText` — the name the output templates use — alongside the added `timestamp` and `time` fields.
 
 - **Breaking:** Replace the positional `item` / `itemOptions` parameters with **props**. Every
   logging entry point — `Loxer.log`, `warn`, `info`, `debug`, their `.open()` forms, `Loxer.open`,

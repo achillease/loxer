@@ -165,16 +165,6 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/), and this
   accessor, proxy, or invalid date cannot interrupt logging or inject terminal controls.
 - Fix `@trace` methods that throw or reject to record the original error and close their trace box
   while preserving the caller's original failure.
-- Keep a Loxer the project links rather than installs out of Vite's dependency optimizer
-  (`vite-plugin-loxer-trace`), and add the directory it lives in to `server.fs.allow` so Vite can
-  serve it. Vite's dependency cache is keyed on the lockfile and the resolved config, so a
-  pre-bundled working copy went on serving the build that was current when the cache was written —
-  through every rebuild, until `node_modules/.vite` was deleted by hand. An installed Loxer is
-  pre-bundled exactly as before. `server.fs.allow` is the boundary deciding which files the dev
-  server serves to a browser, and Loxer's directory — outside the project, for a linked copy — is
-  added to it silently, including to a list the project drew itself; only `vite dev` reads it, so a
-  build or preview is unaffected. Set `dedupe: false` to keep that boundary, and the rest of the
-  single-copy config, entirely your own.
 - Fix logs from duplicate same-major Loxer module copies becoming stuck before initialization, so
   configuration, history and open boxes remain shared within one JavaScript realm.
 - Warn when logs remain queued before `Loxer.init()` or exceed the startup queue limit, instead of

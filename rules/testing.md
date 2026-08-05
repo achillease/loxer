@@ -24,7 +24,7 @@
 - Drive a table of cases with `test.each`, never a `for` loop inside one `test()`. A loop lets an
   early row throw and silently skip every later row, while a per-row `test.each` failure names the
   row instead of diffing a whole array — see `test.each(traceCases)` in `test/decorators.test.ts`
-  and the `isInstalledPackagePath` table in `test/vite-plugin-loxer-trace.test.ts`.
+  and the `classParentName` table in `test/class-parent-name-cases.ts`.
 - If a change touches global logger state, call `resetLoxer()` in `afterEach` and re-init `Loxer`
   in `beforeEach` — see `test/boxed.test.ts` for the pattern.
 - If a suite loads a second copy of Loxer (`vi.resetModules()`, then re-`import` the module), also

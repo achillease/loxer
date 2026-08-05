@@ -127,10 +127,10 @@ export default defineConfig({
 });
 ```
 
-The adapter also contributes the Vite settings that keep the page on one copy of Loxer, adapted to
-how the project has it: an installed Loxer is pre-bundled, and a linked one is served as source from
-a directory added to `server.fs.allow`, so that a rebuild of the working copy takes effect on
-reload. `loxerTrace({ dedupe: false })` leaves all of it to you.
+The adapter also contributes the Vite settings that keep the page on one copy of Loxer:
+`resolve.dedupe` and an `optimizeDeps.include` naming both entry points, so the `loxer/trace` import
+it injects cannot force a mid-session re-optimization. `loxerTrace({ dedupe: false })` leaves both to
+you.
 
 `openMessage` accepts `functionName`, `parent.functionName`, `args`, `types`, or a formatter;
 `closeMessage` accepts `functionName`, `parent.functionName`, `result`, or a formatter. `moduleId`,

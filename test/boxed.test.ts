@@ -1,4 +1,5 @@
-import { Loxer, resetLoxer } from '../src';
+import { outputFromCallbacks } from './output-capture';
+import { Loxer, OutputLoxRenderer, resetLoxer } from '../src';
 import { ErrorLox, OutputLox } from '../src/loxes';
 
 let devLogs: OutputLox[] = [];
@@ -27,19 +28,25 @@ let devOut: (OutputLox | ErrorLox)[] = [];
 beforeEach(() => {
   Loxer.init({
     dev: true,
-    callbacks: {
+    output: outputFromCallbacks({
       devError,
       devLog,
       prodError,
       prodLog,
-    },
+    }),
     defaultLevels: {
       devLevel: 'info',
       prodLevel: 'error',
     },
     modules: {
       ONE: { color: '#ff0', devLevel: 'info', prodLevel: 'error', fullName: 'Module 1' },
-      TWO: { color: '#00f', devLevel: 'debug', prodLevel: 'error', fullName: 'Module 2' },
+      TWO: {
+        color: '#00f',
+        devLevel: 'debug',
+        prodLevel: 'error',
+        fullName: 'Module 2',
+        boxLayoutStyle: 'double',
+      },
     },
     config: {
       moduleTextSlice: 10,
@@ -371,6 +378,20 @@ test('a log added to a visible box keeps a level the module itself would hide', 
   expect(devLogs.length).toBe(3);
   expect(devLogs.some((l) => l.message === 'debug inside a visible box')).toBe(false);
   checkBoxes(['open.ONE.<-open', 'close.ONE.>-close']);
+});
+
+test('renderer box styles use its fallback unless the module explicitly overrides it', () => {
+  const one = Loxer.m('ONE').open('fallback box');
+  const two = Loxer.m('TWO').open('module override box');
+
+  const oneLox = devLogs.find((lox) => lox.id === one.id);
+  const twoLox = devLogs.find((lox) => lox.id === two.id);
+  if (!oneLox || !twoLox) {
+    throw new Error('Expected both opening logs');
+  }
+
+  expect(OutputLoxRenderer(oneLox, 0, { boxLayoutStyle: 'heavy' }).box).toBe('┏━ ');
+  expect(OutputLoxRenderer(twoLox, 0, { boxLayoutStyle: 'heavy' }).box).toBe('┃╓← ');
 });
 
 test('module boxing', () => {

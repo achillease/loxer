@@ -1,3 +1,4 @@
+import { outputFromCallbacks } from './output-capture';
 import { fileURLToPath } from 'node:url';
 import ts from 'typescript';
 import { Loxer, resetLoxer, trace } from '../src';
@@ -15,11 +16,11 @@ test('TypeScript standard decorator emit invokes the real @trace protocol', asyn
   const logs: OutputLox[] = [];
   Loxer.init({
     dev: true,
-    callbacks: {
+    output: outputFromCallbacks({
       devLog(log) {
         logs.push(log);
       },
-    },
+    }),
   });
   logs.length = 0;
   (globalThis as Record<string, unknown>).__loxerStandardTrace = trace;

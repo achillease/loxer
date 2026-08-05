@@ -5,7 +5,7 @@ import { Loxes } from './Loxes.js';
 
 export type Box = (BoxSegment | 'empty')[];
 
-export type BoxSegment = { box: keyof BoxSymbols; color: string; boxLayout: BoxLayoutStyle };
+export type BoxSegment = { box: keyof BoxSymbols; color: string; boxLayout?: BoxLayoutStyle };
 
 /** A Factory used to construct the BoxLayout for `*Lox`es */
 export class BoxFactory {
@@ -61,7 +61,7 @@ export class BoxFactory {
     let found = false;
     for (const bufferLox of loxes.getBuffer()) {
       const itemColor = bufferLox?.module.color ?? '';
-      const boxLayout = bufferLox?.module.boxLayoutStyle ?? 'round';
+      const boxLayout = bufferLox?.module.boxLayoutStyle;
       if (!found) {
         if (lox.id === bufferLox?.id) {
           // print occurrence
@@ -111,25 +111,29 @@ export class BoxFactory {
    *
    * ## Single Usage
    * ```typescript
-   * const lox: OutputLox = ... // the lox in an output callback (also `ErrorLox`)
-   * const box = BoxFactory.getBoxString(lox.box, !this._colorsDisabled);
+   * const lox: OutputLox = ... // `event.lox` in an output stream (also `ErrorLox`)
+   * const box = BoxFactory.getBoxString(lox.box, { colored: true });
    * ```
    *
    * @param box the `Box` of an `OutputLox` or `ErrorLox`
-   * @param colored should the symbols be wrapped in ANSI colors
+   * @param options selects colored output and a fallback box layout
    * @returns a stringified version of the given box
    */
-  static getBoxString(box: Box, colored: boolean | undefined): string {
+  static getBoxString(
+    box: Box,
+    options: { colored?: boolean; boxLayoutStyle?: BoxLayoutStyle } = {}
+  ): string {
     const result = box
       .map((segment) => {
         if (segment === 'empty') {
           return ' ';
         }
-        if (colored) {
-          return ANSIFormat.colorize(BoxLayouts[segment.boxLayout][segment.box], segment.color);
+        const boxLayout = segment.boxLayout ?? options.boxLayoutStyle ?? 'round';
+        if (options.colored ?? true) {
+          return ANSIFormat.colorize(BoxLayouts[boxLayout][segment.box], segment.color);
         }
 
-        return BoxLayouts[segment.boxLayout][segment.box];
+        return BoxLayouts[boxLayout][segment.box];
       })
       .join('');
 

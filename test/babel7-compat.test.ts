@@ -1,3 +1,4 @@
+import { outputFromCallbacks } from './output-capture';
 import babel7 from 'babel7';
 import { Loxer, resetLoxer } from '../src';
 import { __observeTraceResult, __setTraceFunctionLength, __startTrace, trace } from '../src/trace';
@@ -27,10 +28,10 @@ beforeEach(() => {
   (globalThis as any).__babel7StartTrace = __startTrace;
   Loxer.init({
     dev: true,
-    callbacks: {
+    output: outputFromCallbacks({
       devError() {},
       devLog() {},
-    },
+    }),
   });
 });
 

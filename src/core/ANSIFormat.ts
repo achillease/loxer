@@ -2,6 +2,7 @@ import { Color } from './color/index.js';
 import { safeNumber } from '../Helpers.js';
 import { ErrorLox } from '../loxes/ErrorLox.js';
 import { OutputLox } from '../loxes/OutputLox.js';
+import type { LoxColorOptions } from '../types.js';
 
 export class ANSIFormat {
   /** @internal */
@@ -68,20 +69,38 @@ export class ANSIFormat {
   }
 
   /** returns a string to color the following text's background red */
-  static bgError(text: string): string {
+  static bgError(
+    text: string,
+    backgroundColor: string = '#f00',
+    textColor: string = '#fff'
+  ): string {
+    const background = Color(backgroundColor);
+    const foreground = Color(textColor);
+
     return (
-      this.colorBackground(255, 0, 0) + this.colorForeground(255, 255, 255) + text + this.CODE.Reset
+      this.colorBackground(
+        Math.round(background.red()),
+        Math.round(background.green()),
+        Math.round(background.blue())
+      ) +
+      this.colorForeground(
+        Math.round(foreground.red()),
+        Math.round(foreground.green()),
+        Math.round(foreground.blue())
+      ) +
+      text +
+      this.CODE.Reset
     );
   }
 
   /** returns a string to color the following text red */
-  static fgError(text: string): string {
-    return this.colorForeground(255, 0, 0) + text + this.CODE.Reset;
+  static fgError(text: string, color: string = '#f00'): string {
+    return this.colorize(text, color);
   }
 
   /** returns a string to color the following text yellow */
-  static fgWarn(text: string): string {
-    return this.colorForeground(255, 165, 15) + text + this.CODE.Reset;
+  static fgWarn(text: string, color: string = '#ffa50f'): string {
+    return this.colorize(text, color);
   }
 
   /** returns a string to color the following text green */
@@ -117,34 +136,40 @@ export class ANSIFormat {
 
   /**
    * @param lox to get colored props from
-   * @param opacity of the returned moduleId
-   * @param highlightColor for the message (if the lox is highlighted) - defaults to `inverted`
+   * @param options colors and module-title opacity for the returned text
    * @returns the colored props of the given lox
    */
   static colorLox(
     lox: OutputLox,
-    opacity: number = 1,
-    highlightColor?: string
+    options: LoxColorOptions = {}
   ): {
     message: string;
     moduleText: string;
     timeText: string;
+    timestamp: string;
   } {
-    let message = lox.highlighted ? this.colorHighlight(lox.message, highlightColor) : lox.message;
+    let message = lox.highlighted
+      ? this.colorHighlight(lox.message, options.colors?.highlightColor)
+      : lox.message;
     if (!lox.highlighted && lox.type === 'close') {
       message = this.fgCloseLog(lox.message);
     }
     if (lox.level === 'warn') {
-      message = `${this.fgWarn(lox.message)}`;
+      message = this.fgWarn(lox.message, options.colors?.warnColor);
     }
     if (lox instanceof ErrorLox) {
-      message = `${this.bgError(lox.error.name)}: ${this.fgError(lox.message)}`;
+      message = `${this.bgError(
+        lox.error.name,
+        options.colors?.errorNameBackgroundColor,
+        options.colors?.errorNameColor
+      )}: ${this.fgError(lox.message, options.colors?.errorColor)}`;
     }
 
     return {
       message,
-      moduleText: this.colorize(lox.module.slicedName, lox.module.color, opacity),
+      moduleText: this.colorize(lox.module.slicedName, lox.module.color, options.moduleOpacity),
       timeText: this.fgTime(lox.timeText),
+      timestamp: this.fgTime(lox.timestamp.toISOString().replace('T', ' ').slice(0, 19)),
     };
   }
 

@@ -12,9 +12,9 @@
 <li><a href="" aria-current="page">ErrorLox</a></li></ul>
 <h1>Class ErrorLox</h1></div>
 <section class="tsd-panel tsd-comment">
-<div class="tsd-comment tsd-typography"><p>This is a log streamed to the <code>devError</code>or <code>prodError</code> output stream defined at the LoxerCallbacks.</p>
+<div class="tsd-comment tsd-typography"><p>An error emitted to the configured output stream as an event with <code>kind: 'error'</code>.</p>
 </div></section>
-<section class="tsd-panel tsd-hierarchy" data-refl="391">
+<section class="tsd-panel tsd-hierarchy" data-refl="434">
 <h4>Hierarchy (<a href="../hierarchy.html#Logs.ErrorLox">View Summary</a>)</h4>
 <ul class="tsd-hierarchy">
 <li class="tsd-hierarchy-item"><a href="Logs.OutputLox.html" class="tsd-signature-type tsd-kind-class">OutputLox</a>
@@ -94,7 +94,7 @@
 <code>console.log(message,</code><strong><em><code>...props</code></em></strong><code>)</code></p>
 <ul>
 <li>always an array: a log without props carries an empty one</li>
-<li>every prop reaches the output callbacks and the history by reference, unchanged</li>
+<li>every prop reaches the output stream and history by reference, unchanged</li>
 </ul>
 </div><aside class="tsd-sources">
 <p>Inherited from <a href="Logs.OutputLox.html">OutputLox</a>.<a href="Logs.OutputLox.html#props">props</a></p></aside></section>

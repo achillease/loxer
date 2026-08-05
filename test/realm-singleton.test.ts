@@ -1,3 +1,4 @@
+import { outputFromCallbacks } from './output-capture';
 import { vi } from 'vitest';
 import { clearRealmSlot } from '../src/core/Realm';
 import type { ErrorLox, OutputLox } from '../src/loxes';
@@ -64,7 +65,7 @@ test('a log written through the second copy reaches the callbacks and history of
   const a = await loadCopy();
   const b = await loadCopy();
 
-  a.Loxer.init({ dev: true, callbacks: { devLog, devError } });
+  a.Loxer.init({ dev: true, output: outputFromCallbacks({ devLog, devError }) });
   b.Loxer.log('written through copy B');
 
   // without the shared slot this log would sit in copy B's pre-init queue forever - the reported bug
@@ -79,7 +80,7 @@ test('a module registered through one copy is known to the other', async () => {
 
   a.Loxer.init({
     dev: true,
-    callbacks: { devLog, devError },
+    output: outputFromCallbacks({ devLog, devError }),
     modules: { DB: { color: '#0ff', devLevel: 'debug', prodLevel: 'error', fullName: 'Database' } },
   });
 
@@ -93,7 +94,7 @@ test('a module registered through one copy is known to the other', async () => {
 test('boxes opened through different copies get distinct ids and each close finds its own box', async () => {
   const a = await loadCopy();
   const b = await loadCopy();
-  a.Loxer.init({ dev: true, callbacks: { devLog, devError } });
+  a.Loxer.init({ dev: true, output: outputFromCallbacks({ devLog, devError }) });
 
   // interleaved, so a module-scoped id counter would hand both copies the same numbers into the
   // one shared `_loxes` map
@@ -126,7 +127,7 @@ test('boxes opened through different copies get distinct ids and each close find
 test('an id counter shared by both copies keeps counting up across them', async () => {
   const a = await loadCopy();
   const b = await loadCopy();
-  a.Loxer.init({ dev: true, callbacks: { devLog, devError } });
+  a.Loxer.init({ dev: true, output: outputFromCallbacks({ devLog, devError }) });
 
   const first = a.Loxer.open('open through A').id;
   const second = b.Loxer.open('open through B').id;
@@ -140,7 +141,7 @@ test('an id counter shared by both copies keeps counting up across them', async 
 test('resetLoxer resets the instance in place, so a held reference observes it', async () => {
   const a = await loadCopy();
   const L = a.Loxer;
-  L.init({ dev: true, callbacks: { devLog, devError } });
+  L.init({ dev: true, output: outputFromCallbacks({ devLog, devError }) });
   L.log('before the reset');
   expect(L.history.length).toBe(2);
 
@@ -154,7 +155,7 @@ test('resetLoxer resets the instance in place, so a held reference observes it',
 
   // the held reference works against the re-initialized instance too
   devLogs = [];
-  c.Loxer.init({ dev: true, callbacks: { devLog, devError } });
+  c.Loxer.init({ dev: true, output: outputFromCallbacks({ devLog, devError }) });
   L.log('after the re-init');
   expect(devLogs.map((l) => l.message)).toEqual(['Loxer initialized', 'after the re-init']);
 });
@@ -162,7 +163,7 @@ test('resetLoxer resets the instance in place, so a held reference observes it',
 test('resetLoxer through one copy is observed by the other', async () => {
   const a = await loadCopy();
   const b = await loadCopy();
-  a.Loxer.init({ dev: true, callbacks: { devLog, devError } });
+  a.Loxer.init({ dev: true, output: outputFromCallbacks({ devLog, devError }) });
   a.Loxer.log('before the reset');
 
   b.resetLoxer();

@@ -1,3 +1,4 @@
+import { outputFromCallbacks } from './output-capture';
 import { Loxer, resetLoxer } from '../src';
 import { ErrorLox, OutputLox } from '../src/loxes';
 import {
@@ -51,14 +52,14 @@ beforeEach(() => {
   (globalThis as any).__loxerTraceLoxer = Loxer;
   Loxer.init({
     dev: true,
-    callbacks: {
+    output: outputFromCallbacks({
       devError(error) {
         devErrors.push(error);
       },
       devLog(log) {
         devLogs.push(log);
       },
-    },
+    }),
     defaultLevels: { devLevel: 'info', prodLevel: 'error' },
     modules: {
       TRACE: { color: '#00ff99', devLevel: 'info', prodLevel: 'error', fullName: 'Trace' },

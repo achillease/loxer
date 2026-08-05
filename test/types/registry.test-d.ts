@@ -1,3 +1,4 @@
+import { outputFromCallbacks } from '../output-capture.js';
 // Type-level test for the `LoxerModuleRegistry` augmentation.
 //
 // Run with `pnpm typecheck:types` AFTER `pnpm build`: it imports `loxer` by its own package name,
@@ -11,17 +12,28 @@
 // Negative cases are pinned with `@ts-expect-error`, so a clean exit means the errors were really
 // produced - if the narrowing regresses, the unused directives fail the check.
 import {
+  ErrorLoxRenderer,
   initLoxer,
   Loxer,
   NamedError,
+  OutputLoxRenderer,
   PropsPrinter,
   trace as traceDecorator,
+  type ErrorLox,
+  type ErrorLoxTemplate,
   type LogLevel,
+  type LoxerColorOptions,
   type LoxerModules,
+  type LoxerOutputEvent,
+  type LoxerOutputRendererOptions,
+  type LoxerOutputStream,
   type LoxerOptions,
   type Module,
   type ModuleId,
+  type OutputLoxTemplate,
+  type OutputLoxTemplateFields,
   type PropsPrinterOptions,
+  type OutputLox,
 } from 'loxer';
 import { trace as traceMarker } from 'loxer/trace';
 
@@ -196,7 +208,7 @@ void printerOptions;
 // --- the public printer -----------------------------------------------------------------------
 Loxer.init({
   modules,
-  callbacks: {
+  output: outputFromCallbacks({
     devLog: (lox) => {
       if (lox.printProps) {
         const rendered: string = PropsPrinter.of(lox).print();
@@ -209,10 +221,61 @@ Loxer.init({
       const rendered: string = PropsPrinter.of(lox).print(false, { depth: 4, color: '#fff' });
       void rendered;
     },
-  },
+  }),
 });
 const fromValues: string = PropsPrinter.ofValues([payment], { depth: 1 }).print(false);
 void fromValues;
+
+// --- the public structured output templates ---------------------------------------------------
+declare const outputLox: OutputLox;
+declare const errorLox: ErrorLox;
+const rendererColors: LoxerColorOptions = {
+  highlightColor: '#123456',
+  warnColor: '#654321',
+  errorColor: '#ff0000',
+  errorNameBackgroundColor: '#000000',
+  errorNameColor: '#ffffff',
+};
+const rendererOptions: LoxerOutputRendererOptions = {
+  endTitleOpacity: 0.5,
+  boxLayoutStyle: 'double',
+  colors: rendererColors,
+};
+const outputTemplate: OutputLoxTemplate = OutputLoxRenderer(outputLox, 21, rendererOptions);
+const outputFields: OutputLoxTemplateFields = outputTemplate.colored;
+const outputFieldsAreStrings: string[] = [
+  outputFields.module,
+  outputFields.message,
+  outputFields.timeConsumption,
+  outputFields.box,
+  outputFields.props,
+  outputFields.timeStamp,
+];
+const errorTemplate: ErrorLoxTemplate = ErrorLoxRenderer(errorLox, 21, rendererOptions);
+const errorFieldsAreStrings: string[] = [
+  errorTemplate.module,
+  errorTemplate.message,
+  errorTemplate.timeConsumption,
+  errorTemplate.box,
+  errorTemplate.props,
+  errorTemplate.timeStamp,
+  errorTemplate.stack,
+  errorTemplate.openLogs,
+  errorTemplate.colored.stack,
+  errorTemplate.colored.openLogs,
+];
+const consumerOutput: LoxerOutputStream = (event: LoxerOutputEvent) => {
+  if (event.kind === 'error') {
+    const history: (OutputLox | ErrorLox)[] = event.history;
+    void history;
+  } else {
+    // @ts-expect-error history exists only on error events
+    void event.history;
+  }
+};
+void outputFieldsAreStrings;
+void errorFieldsAreStrings;
+void consumerOutput;
 const oneLine: string = PropsPrinter.singleLine(payment);
 void oneLine;
 

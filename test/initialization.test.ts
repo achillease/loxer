@@ -1,5 +1,12 @@
+import { outputFromCallbacks } from './output-capture';
 import { vi, type Mock } from 'vitest';
-import { Loxer, resetLoxer } from '../src';
+import {
+  ErrorLoxRenderer,
+  Loxer,
+  OutputLoxRenderer,
+  resetLoxer,
+  type LoxerOutputEvent,
+} from '../src';
 import { Loxes } from '../src/core/Loxes';
 import { Modules } from '../src/core/Modules';
 import { ErrorLox, OutputLox } from '../src/loxes';
@@ -63,12 +70,12 @@ afterAll(() => {
 test('initialization', () => {
   Loxer.init({
     dev: true,
-    callbacks: {
+    output: outputFromCallbacks({
       devError,
       devLog,
       prodError,
       prodLog,
-    },
+    }),
     defaultLevels: {
       devLevel: 'info',
       prodLevel: 'error',
@@ -88,7 +95,7 @@ test('initialization', () => {
 test('defaultLevels do not leak into a later Loxer instance', () => {
   Loxer.init({
     dev: true,
-    callbacks: { devLog, devError },
+    output: outputFromCallbacks({ devLog, devError }),
     defaultLevels: { devLevel: 'error', prodLevel: 'error' },
   });
   // the init log is 'info' and therefore muted by the given default level
@@ -96,7 +103,7 @@ test('defaultLevels do not leak into a later Loxer instance', () => {
 
   resetLoxer();
   devLogs = [];
-  Loxer.init({ dev: true, callbacks: { devLog, devError } });
+  Loxer.init({ dev: true, output: outputFromCallbacks({ devLog, devError }) });
   // the built-in 'info' default is back: the previous init must not have rewritten the shared
   // DEFAULT_MODULES const for the rest of the process
   expect(devLogs.length).toBe(1);
@@ -104,13 +111,13 @@ test('defaultLevels do not leak into a later Loxer instance', () => {
 });
 
 test('default init', () => {
-  Loxer.init({ callbacks: { devLog, devError } });
+  Loxer.init({ output: outputFromCallbacks({ devLog, devError }) });
   expect(devLogs.length).toBe('development' === process.env.NODE_ENV ? 1 : 0);
   'development' === process.env.NODE_ENV && expect(devLogs[0].message).toBe('Loxer initialized');
 });
 
 test('disabled init', () => {
-  Loxer.init({ dev: true, config: { disabled: true }, callbacks: { devLog, devError } });
+  Loxer.init({ dev: true, config: { disabled: true }, output: outputFromCallbacks({ devLog, devError }) });
   expect(devLogs.length).toBe(0);
   // expect(devLogs[0].message).toBe('Loxer initialized');
 });
@@ -135,7 +142,7 @@ test('queueing logs', () => {
   expect(devLogs.length).toBe(0);
   expect(devErrors.length).toBe(0);
 
-  Loxer.init({ dev: true, callbacks: { devLog, devError } });
+  Loxer.init({ dev: true, output: outputFromCallbacks({ devLog, devError }) });
 
   expect(devLogs.length).toBe(4);
   expect(devErrors.length).toBe(1);
@@ -163,7 +170,7 @@ test('queued logs resolve their level against the module table given at init', (
 
   Loxer.init({
     dev: true,
-    callbacks: { devLog, devError },
+    output: outputFromCallbacks({ devLog, devError }),
     defaultLevels: { devLevel: 'info', prodLevel: 'error' },
   });
 
@@ -189,7 +196,7 @@ test('a queued log is hidden by a threshold that only the init call introduces',
 
   Loxer.init({
     dev: true,
-    callbacks: { devLog, devError },
+    output: outputFromCallbacks({ devLog, devError }),
     // stricter than the built-in 'info' default: an 'info' log that would have been visible at
     // enqueue time must now be dropped, which is only possible if the table used is this one
     defaultLevels: { devLevel: 'warn', prodLevel: 'error' },
@@ -225,7 +232,7 @@ test('a pre-init queue that nothing drains reports itself once, past the thresho
   expect(warnings()).toHaveLength(1);
 
   // reporting does not consume the queue - every log still replays at init
-  Loxer.init({ dev: true, callbacks: { devLog, devError } });
+  Loxer.init({ dev: true, output: outputFromCallbacks({ devLog, devError }) });
   expect(devLogs.map((l) => l.message)).toEqual([
     'Loxer initialized',
     'the first queued log',
@@ -242,7 +249,7 @@ test('init inside the threshold reports nothing and disarms the queue timer', ()
   expect(vi.getTimerCount()).toBe(1);
 
   vi.advanceTimersByTime(10);
-  Loxer.init({ dev: true, callbacks: { devLog, devError } });
+  Loxer.init({ dev: true, output: outputFromCallbacks({ devLog, devError }) });
 
   expect(devLogs.map((l) => l.message)).toEqual(['Loxer initialized', 'queued in the healthy gap']);
   expect(warnings()).toEqual([]);
@@ -265,7 +272,7 @@ test('resetLoxer with a pending queue reports nothing on a later advance', () =>
   expect(warnings()).toEqual([]);
 
   // the reset emptied the queue too, so a later init replays nothing but its own log
-  Loxer.init({ dev: true, callbacks: { devLog, devError } });
+  Loxer.init({ dev: true, output: outputFromCallbacks({ devLog, devError }) });
   expect(devLogs.map((l) => l.message)).toEqual(['Loxer initialized']);
 });
 
@@ -283,7 +290,7 @@ test('the pre-init queue caps, reports the overflow immediately and drops the ne
   expect(warnings()[0]).toContain(`${PENDING_QUEUE_CAP} log cap`);
   expect(warnings()[0]).not.toContain('queued 0');
 
-  Loxer.init({ dev: true, callbacks: { devLog, devError } });
+  Loxer.init({ dev: true, output: outputFromCallbacks({ devLog, devError }) });
 
   // exactly the cap replays, plus the init log itself
   expect(devLogs).toHaveLength(PENDING_QUEUE_CAP + 1);
@@ -318,7 +325,7 @@ test('an overflowing queue keeps the opening log at its head, so a pre-init .of(
     Loxer.log(`overflow ${i}`);
   }
 
-  Loxer.init({ dev: true, callbacks: { devLog, devError } });
+  Loxer.init({ dev: true, output: outputFromCallbacks({ devLog, devError }) });
 
   expect(devLogs).toHaveLength(PENDING_QUEUE_CAP + 1);
   expect(devLogs[1].message).toBe('an opened box, queued first');
@@ -333,93 +340,174 @@ test('an overflowing queue keeps the opening log at its head, so a pre-init .of(
   expect(devErrors).toEqual([]);
 });
 
-test('OutputStreams', () => {
+test('public structured renderers reproduce the default development console output', () => {
+  resetLoxer();
+  Loxer.init({ dev: true });
   (console.log as Mock).mockClear();
-  let os = new OutputStreams({ disableColors: true, endTitleOpacity: 1 });
-  const ol = new OutputLox({
-    highlighted: false,
-    id: 0,
-    props: ['prop'],
-    printProps: {},
-    level: 'info',
-    message: 'log',
-    moduleId: 'NONE',
-    type: 'open',
-  });
-  const cl = new OutputLox({
-    highlighted: false,
-    id: 0,
-    props: [],
-    printProps: undefined,
-    level: 'info',
-    message: 'log',
-    moduleId: 'NONE',
-    type: 'close',
-  });
-  const el = new ErrorLox(
-    new Lox({
-      highlighted: false,
-      id: 1,
-      props: ['prop'],
-      printProps: {},
-      level: 'info',
-      message: 'error',
-      moduleId: 'NONE',
-      type: 'error',
-    }),
-    new Error('errorText')
-  );
-  const el2 = new ErrorLox(
-    new Lox({
-      highlighted: true,
-      id: 2,
-      props: [],
-      printProps: undefined,
-      level: 'info',
-      message: 'error2',
-      moduleId: 'NONE',
-      type: 'error',
-    }),
-    new Error('errorText2')
-  );
-  el.openLoxes = [ol, cl];
-  el2.openLoxes = [ol, cl];
-  const hy = new LoxHistory(1);
-  hy.add(ol);
-  hy.add(cl);
-  os.logOut(true, ol);
-  os.logOut(true, cl);
-  os.logOut(false, cl);
-  os.errorOut(true, el, hy);
-  os.errorOut(true, el2, hy);
-  os.errorOut(false, el2, hy);
-  os = new OutputStreams({
-    callbacks: {
-      prodError: () => {},
-      prodLog: () => {},
-    },
-  });
-  os.logOut(true, cl);
-  os.logOut(false, cl);
-  os.errorOut(true, el2, hy);
-  os.errorOut(false, el2, hy);
 
-  // the no-callback stream renders to the console fallback path (which runs PropsPrinter.print)
-  const outputs = (console.log as Mock).mock.calls.map((c) => String(c[0]));
-  expect(outputs.length).toBeGreaterThan(0);
-  // the open log's message and its string prop were rendered
-  expect(outputs.some((o) => o.includes('log') && o.includes("'prop'"))).toBe(true);
-  // the highlighted error (el2) renders its stack: 'errorText2' appears ONLY via the
-  // concatenated Error.stack (OutputStreams.ts:61), so this fails if stack rendering breaks
-  expect(outputs.some((o) => o.includes('errorText2'))).toBe(true);
-  // the non-highlighted error (el) does NOT get its stack rendered — only its message
-  expect(outputs.some((o) => o.includes('errorText') && !o.includes('errorText2'))).toBe(false);
-  // both error messages themselves were rendered
-  expect(outputs.some((o) => o.includes('error2'))).toBe(true);
+  Loxer.pp().log('log', 'prop');
+  const outputLox = Loxer.history[0] as OutputLox;
+  const outputTemplate = OutputLoxRenderer(outputLox, 19 + 2 + outputLox.module.slicedName.length);
+  expect(outputTemplate.message).toBe('log');
+  expect(outputTemplate.props).toContain("'prop'");
+  expect(outputTemplate.props).not.toContain('\x1b[');
+  expect(outputTemplate.colored.props).toContain('\x1b[');
+  expect((console.log as Mock).mock.calls[0][0]).toBe(
+    `${outputTemplate.colored.timeStamp}: ${outputTemplate.colored.module}${outputTemplate.colored.box}${outputTemplate.colored.message}\t${outputTemplate.colored.timeConsumption}${outputTemplate.colored.props}`
+  );
+
+  Loxer.h().error(new Error('errorText'));
+  const errorLox = Loxer.history[0] as ErrorLox;
+  const errorTemplate = ErrorLoxRenderer(errorLox, 19 + 2 + errorLox.module.slicedName.length);
+  expect(errorTemplate.stack).not.toBe('');
+  expect((console.log as Mock).mock.calls[1][0]).toBe(
+    `${errorTemplate.colored.timeStamp}: ${errorTemplate.colored.module}${errorTemplate.colored.box}${errorTemplate.colored.message}\t${errorTemplate.colored.timeConsumption}${errorTemplate.colored.props}${errorTemplate.colored.stack}${errorTemplate.colored.openLogs}`
+  );
 });
 
+test('the output stream receives discriminated raw log and error events', () => {
+  const events: LoxerOutputEvent[] = [];
+  resetLoxer();
+  Loxer.init({ dev: true, output: (event) => events.push(event) });
+  events.splice(0);
+  (console.log as Mock).mockClear();
+
+  Loxer.log('ordinary');
+  Loxer.error(new Error('broken'));
+
+  expect(events.map((event) => [event.environment, event.kind])).toEqual([
+    ['dev', 'log'],
+    ['dev', 'error'],
+  ]);
+  const [log, error] = events;
+  if (log.kind !== 'log' || error.kind !== 'error') {
+    throw new Error('Expected one log event followed by one error event');
+  }
+  expect(log.lox).toBe(Loxer.history[1]);
+  expect(error.lox).toBe(Loxer.history[0]);
+  expect(error.history).toContain(error.lox);
+  expect((console.log as Mock).mock.calls).toEqual([]);
+});
+
+test('public renderers expose complete plain and colored fields without changing logger state', () => {
+  const events: LoxerOutputEvent[] = [];
+  resetLoxer();
+  Loxer.init({ dev: true, output: (event) => events.push(event) });
+  events.splice(0);
+
+  const box = Loxer.pp().open('open context', { request: 'r-1' });
+  Loxer.h().pp().of(box).error(new Error('highlighted failure'), { request: 'r-1' });
+  Loxer.error(new Error('plain failure'));
+
+  const highlighted = events.find(
+    (event): event is Extract<LoxerOutputEvent, { kind: 'error' }> =>
+      event.kind === 'error' && event.lox.message === 'highlighted failure'
+  );
+  const plain = events.find(
+    (event): event is Extract<LoxerOutputEvent, { kind: 'error' }> =>
+      event.kind === 'error' && event.lox.message === 'plain failure'
+  );
+  if (!highlighted || !plain) {
+    throw new Error('Expected highlighted and unhighlighted error events');
+  }
+
+  const historyBefore = [...Loxer.history];
+  const boxBefore = [...highlighted.lox.box];
+  const openLoxesBefore = [...highlighted.lox.openLoxes];
+  const propsBefore = [...highlighted.lox.props];
+  const template = ErrorLoxRenderer(highlighted.lox, 21);
+
+  expect(Object.keys(template).sort()).toEqual([
+    'box',
+    'colored',
+    'message',
+    'module',
+    'openLogs',
+    'props',
+    'stack',
+    'timeConsumption',
+    'timeStamp',
+  ]);
+  expect(Object.keys(template.colored).sort()).toEqual([
+    'box',
+    'message',
+    'module',
+    'openLogs',
+    'props',
+    'stack',
+    'timeConsumption',
+    'timeStamp',
+  ]);
+  for (const field of [
+    template.module,
+    template.message,
+    template.timeConsumption,
+    template.box,
+    template.props,
+    template.timeStamp,
+    template.stack,
+    template.openLogs,
+  ]) {
+    expect(field).not.toContain('\x1b[');
+  }
+  for (const field of Object.values(template.colored)) {
+    expect(typeof field).toBe('string');
+  }
+  expect(template.props).toContain("request: 'r-1'");
+  expect(template.colored.props).toContain('\x1b[');
+  expect(template.stack).not.toBe('');
+  expect(template.colored.stack).toBe(template.stack);
+  expect(template.openLogs).toContain('open context');
+
+  const plainTemplate = ErrorLoxRenderer(plain.lox);
+  expect(plainTemplate.stack).toBe('');
+  expect(plainTemplate.openLogs).toBe('');
+  expect(plainTemplate.colored.stack).toBe('');
+  expect(plainTemplate.colored.openLogs).toBe('');
+
+  expect(Loxer.history).toEqual(historyBefore);
+  expect(highlighted.lox.box).toEqual(boxBefore);
+  expect(highlighted.lox.openLoxes).toEqual(openLoxesBefore);
+  expect(highlighted.lox.props).toEqual(propsBefore);
+});
+
+test('an error event owns a history snapshot independent from later logs and consumer mutation', () => {
+  const events: LoxerOutputEvent[] = [];
+  resetLoxer();
+  Loxer.init({ dev: true, output: (event) => events.push(event) });
+  events.splice(0);
+
+  Loxer.log('before error');
+  Loxer.error(new Error('snapshot error'));
+  const error = events.find(
+    (event): event is Extract<LoxerOutputEvent, { kind: 'error' }> => event.kind === 'error'
+  );
+  if (!error) {
+    throw new Error('Expected an error event');
+  }
+  const snapshotMessages = error.history.map((lox) => lox.message);
+
+  Loxer.log('after error');
+  expect(snapshotMessages).toEqual(['snapshot error', 'before error', 'Loxer initialized']);
+  expect(error.history.map((lox) => lox.message)).toEqual(snapshotMessages);
+  expect(Loxer.history.map((lox) => lox.message)).toEqual([
+    'after error',
+    'snapshot error',
+    'before error',
+    'Loxer initialized',
+  ]);
+
+  error.history.splice(0, error.history.length);
+  expect(error.history).toEqual([]);
+  expect(Loxer.history.map((lox) => lox.message)).toEqual([
+    'after error',
+    'snapshot error',
+    'before error',
+    'Loxer initialized',
+  ]);
+});
 test('Rest', () => {
-  Loxer.init({ dev: false, config: { historyCacheSize: 1 }, callbacks: { devLog, devError } });
+  Loxer.init({ dev: false, config: { historyCacheSize: 1 }, output: outputFromCallbacks({ devLog, devError }) });
   const l = new Loxes();
   // an unfindable id (NaN) resolves to no open lox
   expect(l.findOpenLox(Number('wrong'))).toBeUndefined();

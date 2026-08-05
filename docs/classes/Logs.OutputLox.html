@@ -12,9 +12,9 @@
 <li><a href="" aria-current="page">OutputLox</a></li></ul>
 <h1>Class OutputLox</h1></div>
 <section class="tsd-panel tsd-comment">
-<div class="tsd-comment tsd-typography"><p>This is a log streamed to the <code>devLog</code>or <code>prodLog</code> output stream defined at the LoxerCallbacks.</p>
+<div class="tsd-comment tsd-typography"><p>A visible ordinary log emitted to the configured output stream as an event with <code>kind: 'log'</code>.</p>
 </div></section>
-<section class="tsd-panel tsd-hierarchy" data-refl="420">
+<section class="tsd-panel tsd-hierarchy" data-refl="463">
 <h4>Hierarchy (<a href="../hierarchy.html#Logs.OutputLox">View Summary</a>)</h4>
 <ul class="tsd-hierarchy">
 <li class="tsd-hierarchy-item"><span class="tsd-signature-type">Lox</span>
@@ -84,7 +84,7 @@
 <code>console.log(message,</code><strong><em><code>...props</code></em></strong><code>)</code></p>
 <ul>
 <li>always an array: a log without props carries an empty one</li>
-<li>every prop reaches the output callbacks and the history by reference, unchanged</li>
+<li>every prop reaches the output stream and history by reference, unchanged</li>
 </ul>
 </div><aside class="tsd-sources">
 <p>Inherited from Lox.props</p></aside></section>

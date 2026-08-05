@@ -1,4 +1,4 @@
-import { BoxFactory, BoxLayouts, Loxer, type LoxerModules } from 'loxer';
+import { BoxLayouts, Loxer, type LoxerModules, type LoxerOutputEvent } from 'loxer';
 import { trace } from 'loxer/trace';
 import './style.css';
 
@@ -38,7 +38,7 @@ declare module 'loxer' {
   interface LoxerModuleRegistry extends Record<keyof typeof modules, true> {}
 }
 
-type CallbackBox = Parameters<typeof BoxFactory.getBoxString>[0];
+type CallbackBox = LoxerOutputEvent['lox']['box'];
 
 type TraceRecord = {
   box: CallbackBox;
@@ -48,18 +48,6 @@ type TraceRecord = {
   moduleColor: string;
   moduleId: string;
   time: string;
-  type: string;
-};
-
-type CallbackLox = {
-  box: CallbackBox;
-  id: number;
-  message: string;
-  module: {
-    color: string;
-  };
-  moduleId: string;
-  timeText: string;
   type: string;
 };
 
@@ -76,7 +64,7 @@ app.innerHTML = `
       <h1>Plain-function trace demo</h1>
       <p class="intro">
         Each action below calls a normal TypeScript function marked with
-        <code>trace(functionName, options)</code>. The panel shows the real Loxer callbacks.
+        <code>trace(functionName, options)</code>. The panel shows the real Loxer output events.
       </p>
     </header>
 
@@ -124,14 +112,7 @@ const records: TraceRecord[] = [];
 Loxer.init({
   dev: true,
   modules,
-  config: {
-    boxLayoutStyle: 'round',
-    disableColors: true,
-  },
-  callbacks: {
-    devError: (lox) => record('error', lox),
-    devLog: (lox) => record('log', lox),
-  },
+  output: record,
 });
 
 function calculateTotal(unitPrice: number, quantity: number): number {
@@ -253,11 +234,13 @@ getElement<HTMLButtonElement>('clear-output').addEventListener(
   )
 );
 
-function record(kind: TraceRecord['kind'], lox: CallbackLox): void {
+function record(event: LoxerOutputEvent): void {
+  const { lox } = event;
+
   records.push({
     box: [...lox.box],
     id: lox.id,
-    kind,
+    kind: event.kind,
     message: lox.message,
     moduleColor: lox.module.color,
     moduleId: lox.moduleId,
@@ -304,7 +287,7 @@ function renderRecords(): void {
           glyph.textContent = ' ';
         } else {
           glyph.style.color = segment.color;
-          glyph.textContent = BoxLayouts[segment.boxLayout][segment.box];
+          glyph.textContent = BoxLayouts[segment.boxLayout ?? 'round'][segment.box];
         }
         box.append(glyph);
       }

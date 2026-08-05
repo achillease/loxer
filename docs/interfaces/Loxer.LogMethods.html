@@ -42,9 +42,8 @@
 
 <h4 id="behaves-like-logmethodslog-at-level-see-levelmethods" class="tsd-anchor-link">Behaves like <a href="#log" class="tsd-kind-method">LogMethods.log</a>, at level <code>'warn'</code>. See <a href="Loxer.LevelMethods.html" class="tsd-kind-interface">LevelMethods</a>.<a href="#behaves-like-logmethodslog-at-level-see-levelmethods" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h4>
 <ul>
-<li>it is an ordinary log, streamed to <code>devLog</code> / <code>prodLog</code>. Only <a href="#error" class="tsd-kind-method">LogMethods.error</a> writes
-to <code>devError</code> / <code>prodError</code>, and no <code>Error</code> is created for a warning</li>
-<li>a callback that wants to react to the level reads <code>outputLox.level</code></li>
+<li>it is an ordinary log, emitted as an output event with <code>kind: 'log'</code>; no <code>Error</code> is created</li>
+<li>an output stream that reacts to the level reads <code>event.lox.level</code></li>
 </ul>
 </div></section>
 <section class="tsd-panel tsd-member">
@@ -87,9 +86,8 @@ as <code>Loxer.open(...)</code>.</p>
 <ul>
 <li>it is cached until the logger is initialized</li>
 <li>it won't proceed any output if Loxer is disabled</li>
-<li>the output will be streamed out to the <a href="Loxer.LoxerOptions.html#callbacks" class="tsd-kind-property">LoxerOptions.callbacks</a> declared in <code>Loxer.init(options)</code></li>
-<li>if no callbacks are given at the initialization, all logs will be logged with <code>console.log(...)</code>,
-but only in development mode</li>
+<li>the visible log reaches <a href="Loxer.LoxerOptions.html#output" class="tsd-kind-property">LoxerOptions.output</a> when the initialization supplied one</li>
+<li>without an output stream, development renders the log to the console and production is silent</li>
 <li>it logs at level <code>'info'</code>, exactly like <a href="#info" class="tsd-kind-property">Loxer.info()</a></li>
 <li>can be chained with <code>.highlight().log(...)</code> or <code>.h().log(...)</code> to highlight the log</li>
 <li>can be chained with <code>.module().log(...)</code> or <code>.m().log(...)</code> to assign a module to the log - otherwise it's <code>NONE</code></li>
@@ -103,7 +101,7 @@ but only in development mode</li>
 
 <ul>
 <li>every value after the message is attached to the log as one of its
-<a href="../classes/Logs.ErrorLox.html#props" class="tsd-kind-property">props</a>, in order, and reaches the callbacks and the history unchanged</li>
+<a href="../classes/Logs.ErrorLox.html#props" class="tsd-kind-property">props</a>, in order, and reaches the output stream and history unchanged</li>
 <li>attaching props renders nothing. Chain <a href="Loxer.Modifiers.html#printprops" class="tsd-kind-method">Loxer.printProps()</a> (or
 <a href="Loxer.Modifiers.html#pp" class="tsd-kind-method">Loxer.pp()</a>) to have the built-in output render them</li>
 <li>the message may be of any type. A primitive is stringified, a non-primitive renders as one
@@ -135,9 +133,8 @@ compact line, so <code>Loxer.log(payment)</code> reads instead of printing <code
 <ul>
 <li>it is cached until the logger is initialized</li>
 <li>it won't proceed any output if Loxer is disabled</li>
-<li>the errors will be streamed out to the <a href="Loxer.LoxerOptions.html#callbacks" class="tsd-kind-property">LoxerOptions.callbacks</a> declared in <code>Loxer.init(options)</code></li>
-<li>if no callbacks are given at the initialization, all errors will be logged with <code>console.log(error)</code>,
-but only in development mode</li>
+<li>the error reaches <a href="Loxer.LoxerOptions.html#output" class="tsd-kind-property">LoxerOptions.output</a> as an event with <code>kind: 'error'</code> when one is supplied</li>
+<li>without an output stream, development renders the error to the console and production is silent</li>
 <li>the given <code>Error</code> will be appended to the output error</li>
 <li>if the message is of type <code>string</code> | <code>number</code> | <code>boolean</code> | <code>object</code>, then a <code>new Error(message.toString())</code>
 will be created and appended</li>
@@ -215,9 +212,8 @@ the log's <a href="../classes/Logs.ErrorLox.html#props" class="tsd-kind-property
 <li>it returns an id (<code>typeof number</code>) that can be used with <code>Loxer.of(id)</code> to assign other logs to it</li>
 <li>it is cached until the logger is initialized</li>
 <li>it won't proceed any output if Loxer is disabled</li>
-<li>the output will be streamed out to the <a href="Loxer.LoxerOptions.html#callbacks" class="tsd-kind-property">LoxerOptions.callbacks</a> declared in <code>Loxer.init(options)</code></li>
-<li>if no callbacks are given at the initialization, all logs will be logged with <code>console.log(...)</code>,
-but only in development mode</li>
+<li>the visible opening log reaches <a href="Loxer.LoxerOptions.html#output" class="tsd-kind-property">LoxerOptions.output</a> when the initialization supplied one</li>
+<li>without an output stream, development renders the log to the console and production is silent</li>
 <li>can be chained with <code>.highlight().open(...)</code> or <code>.h().open(...)</code> to highlight the log</li>
 <li>it opens the box at level <code>'info'</code>. For another level use that level's <code>.open()</code>, e.g.
 <code>Loxer.debug.open(...)</code> — see <a href="Loxer.LevelMethods.html" class="tsd-kind-interface">LevelMethods</a></li>

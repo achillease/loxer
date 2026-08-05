@@ -15,15 +15,15 @@
 //    - props: values attached to a log as rest arguments, rendered only where .pp(...) asks, with
 //      every PropsPrinterOptions field (depth, keys, indent, showVerticalLines, printFunction,
 //      shortenClasses)
-//    - PropsPrinter, the public printer an output callback renders props with
+//    - structured output templates, rendered by the destination that receives an event
 //    - NamedError (wrapping an underlying error) and plain thrown errors
 //    - Loxer.history and Loxer.getModuleLevel(...)
-//    - a production phase wiring prodLog / prodError callbacks to a mock monitoring service
+//    - a production phase forwarding the unified output stream to a mock monitoring service
 //
 //  Run it with:  node playground/OrderService.js
 // ---------------------------------------------------------------------------------------------
 
-import { Loxer, NamedError, PropsPrinter, resetLoxer } from '../dist/index.js';
+import { ErrorLoxRenderer, Loxer, NamedError, OutputLoxRenderer, resetLoxer } from '../dist/index.js';
 
 // --- tiny helpers ----------------------------------------------------------------------------
 
@@ -218,22 +218,29 @@ async function handleCheckout(req) {
 }
 
 // =============================================================================================
-//  Phase 1 — DEVELOPMENT: no callbacks, so Loxer renders its pretty boxed output to the console.
+//  Phase 1 — DEVELOPMENT: render the output stream to the console with the public templates.
 // =============================================================================================
 
 async function developmentPhase() {
   Loxer.init({
     dev: true,
     modules: MODULES,
-    config: {
-      moduleTextSlice: 10, // room for "database" / "shipping"
-      endTitleOpacity: 0.6, // fade the module name back in on the closing log
-      highlightColor: '#2b2b2b', // background used by .h()/.highlight()
-      historyCacheSize: 100,
+    config: { historyCacheSize: 100 },
+    output(event) {
+      const indentation = 19 + 2 + event.lox.module.slicedName.length;
+      const options = { endTitleOpacity: 0.6, colors: { highlightColor: '#2b2b2b' } };
+      const rendered =
+        event.kind === 'error'
+          ? ErrorLoxRenderer(event.lox, indentation, options).colored
+          : OutputLoxRenderer(event.lox, indentation, options).colored;
+      const errorContext = event.kind === 'error' ? rendered.stack + rendered.openLogs : '';
+      console.log(
+        `${rendered.timeStamp}: ${rendered.module}${rendered.box}${rendered.message}\t${rendered.timeConsumption}${rendered.props}${errorContext}`
+      );
     },
   });
 
-  banner('PHASE 1 — development mode (built-in console rendering)');
+  banner('PHASE 1 — development mode (output stream + console renderer)');
 
   // A couple of standalone logs before the traffic starts. log() ≡ info().
   Loxer.log('server listening on :3000');
@@ -294,8 +301,9 @@ async function developmentPhase() {
 }
 
 // =============================================================================================
-//  Phase 2 — PRODUCTION: register callbacks. Loxer no longer prints; instead it streams raw
-//  OutputLox / ErrorLox objects to *us*, which is how you'd forward to a real monitoring backend.
+//  Phase 2 — PRODUCTION: register one output stream. Loxer no longer prints; instead it streams
+//  discriminated raw OutputLox / ErrorLox events to *us*, which is how you'd forward to a real
+//  monitoring backend.
 // =============================================================================================
 
 async function productionPhase() {
@@ -309,10 +317,11 @@ async function productionPhase() {
     modules: MODULES,
     defaultLevels: { devLevel: 'info', prodLevel: 'info' },
     config: { historyCacheSize: 25 },
-    callbacks: {
-      // Only prod streams are wired; devLog/devError stay unset (dev keeps the console fallback).
-      prodLog(log) {
+    output(event) {
+      if (event.kind === 'log') {
+        const log = event.lox;
         monitoring.logs.push({
+          environment: event.environment,
           module: log.moduleText || 'none',
           type: log.type,
           message: log.message,
@@ -320,27 +329,28 @@ async function productionPhase() {
           props: log.props,
           ms: log.timeConsumption, // populated on .close()/.add() relative to .open()
         });
-      },
-      prodError(errorLog, history) {
-        monitoring.errors.push({
-          name: errorLog.error.name,
-          message: errorLog.error.message,
-          module: errorLog.moduleText || 'none',
-          // a callback renders props itself with the public printer, and honors the call's own
-          // request by reading `printProps` — or ignores it and renders unconditionally
-          props: errorLog.printProps
-            ? PropsPrinter.of(errorLog).print(false)
-            : errorLog.props.length,
+        return;
+      }
+
+      const { lox: errorLog, history } = event;
+      const rendered = ErrorLoxRenderer(errorLog);
+      monitoring.errors.push({
+        environment: event.environment,
+        name: errorLog.error.name,
+        message: errorLog.error.message,
+        module: errorLog.moduleText || 'none',
+        // The structured renderer honors the call's own printProps request. A destination can
+        // still forward errorLog.props itself when it needs raw structured values.
+          props: rendered.props || errorLog.props.length,
           // boxes that were still open when the error fired — great for incident context
           openBoxes: errorLog.openLoxes.map((l) => l.message),
           historyDepth: history.length,
-        });
-      },
+      });
     },
   });
 
-  banner('PHASE 2 — production mode (callbacks → mock monitoring service)');
-  console.log('(Loxer prints nothing itself now — everything flows through the callbacks.)\n');
+  banner('PHASE 2 — production mode (output stream → mock monitoring service)');
+  console.log('(Loxer prints nothing itself now — everything flows through the output stream.)\n');
 
   await Promise.all([
     handleCheckout({

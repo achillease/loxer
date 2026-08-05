@@ -1,5 +1,6 @@
 export * from './core/ANSIFormat.js';
 export * from './core/BoxFactory.js';
+export { ErrorLoxRenderer, OutputLoxRenderer } from './core/OutputRenderer.js';
 export { PropsPrinter } from './core/PropsPrinter.js';
 export { BoxLayouts } from './core/BoxFormat.js';
 export type { BoxSymbols } from './core/BoxFormat.js';
@@ -17,17 +18,24 @@ export type { LoxType } from './loxes/Lox.js';
 export type {
   BoxLevel,
   DefaultModuleId,
+  ErrorLoxTemplate,
   ErrorType,
   LevelMethods,
   LogLevel,
-  LoxerCallbacks,
+  LoxColorOptions,
   LoxerConfig,
+  LoxerColorOptions,
   LoxerModules,
+  LoxerOutputEvent,
+  LoxerOutputRendererOptions,
+  LoxerOutputStream,
   LoxerOptions,
   Module,
   ModuleId,
   OfLoxes,
   OpenedLox,
+  OutputLoxTemplate,
+  OutputLoxTemplateFields,
   RegisteredModules,
 } from './types.js';
 

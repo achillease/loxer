@@ -1,8 +1,11 @@
+import { outputFromCallbacks } from './output-capture';
 import { vi, type Mock } from 'vitest';
 import {
   ANSIFormat,
   BoxFactory,
+  ErrorLoxRenderer,
   Loxer,
+  OutputLoxRenderer,
   PropsPrinter,
   resetLoxer,
   type LogLevel,
@@ -30,9 +33,29 @@ function prodError(log: ErrorLox) {
 function initProps(colored: boolean, devLevel: LogLevel = 'info') {
   Loxer.init({
     dev: true,
-    callbacks: { prodLog, prodError },
+    output: (event) => {
+      if (event.environment === 'dev') {
+        const propsIndentation = event.lox.module.slicedName.length;
+        if (event.kind === 'log') {
+          const template = OutputLoxRenderer(event.lox, propsIndentation);
+          const rendered = colored ? template.colored : template;
+          console.log(
+            `${rendered.module}${rendered.box}${rendered.message}\t${rendered.timeConsumption}${rendered.props}`
+          );
+        } else {
+          const template = ErrorLoxRenderer(event.lox, propsIndentation);
+          const rendered = colored ? template.colored : template;
+          console.log(
+            `${rendered.module}${rendered.box}${rendered.message}\t${rendered.timeConsumption}${rendered.props}${rendered.stack}${rendered.openLogs}`
+          );
+        }
+      } else if (event.kind === 'log') {
+        prodLog(event.lox);
+      } else {
+        prodError(event.lox);
+      }
+    },
     modules: { IT: { fullName: 'Props', color: '#0f0', devLevel, prodLevel: 'error' } },
-    config: { disableColors: !colored },
   });
   (console.log as Mock).mockClear();
 }
@@ -89,7 +112,7 @@ test('a direct devLog callback receives requested props unchanged without render
   const payment = { id: 'p1' };
   const cart = ['a', 'b'];
   resetLoxer();
-  Loxer.init({ dev: true, callbacks: { devLog: (log) => devLogs.push(log), prodLog, prodError } });
+  Loxer.init({ dev: true, output: outputFromCallbacks({ devLog: (log) => devLogs.push(log), prodLog, prodError }) });
   devLogs.splice(0);
 
   Loxer.pp().log('restoring order', payment, cart, 3);
@@ -187,7 +210,7 @@ test('a dead box still attaches the props of the call that reached it', () => {
 
 test('props are dropped where Loxer is disabled', () => {
   resetLoxer();
-  Loxer.init({ dev: true, config: { disabled: true }, callbacks: { prodLog, prodError } });
+  Loxer.init({ dev: true, config: { disabled: true }, output: outputFromCallbacks({ prodLog, prodError }) });
   Loxer.pp().log('nothing', 'prop');
   expect(Loxer.history.length).toBe(0);
 });
@@ -284,13 +307,12 @@ test('a devError callback receives raw requested props', () => {
   resetLoxer();
   Loxer.init({
     dev: true,
-    callbacks: {
+    output: outputFromCallbacks({
       devError: (error) => devErrors.push(error),
       prodLog,
       prodError,
-    },
+    }),
     modules: { IT: { fullName: 'Props', color: '#0f0', devLevel: 'debug', prodLevel: 'error' } },
-    config: { disableColors: true },
   });
   (console.log as Mock).mockClear();
 

@@ -101,13 +101,13 @@ export function resolveTracePrintProps(options?: {
 /** A helper class that renders the **props** of a `Lox` into a readable string.
  *
  * The built-in console output uses it for every log whose call chained
- * `Loxer.printProps(...)` / `Loxer.pp(...)`. An output callback receives the raw lox instead, and
- * reaches the same rendering through {@link PropsPrinter.of}:
+ * `Loxer.printProps(...)` / `Loxer.pp(...)`. An output stream receives the raw lox inside its
+ * discriminated event and reaches the same rendering through {@link PropsPrinter.of}:
  *
  * ```typescript
- * devLog: (lox) => {
- *   if (lox.printProps) {
- *     console.log(lox.message + PropsPrinter.of(lox).print());
+ * output: (event) => {
+ *   if (event.kind === 'log' && event.lox.printProps) {
+ *     console.log(event.lox.message + PropsPrinter.of(event.lox).print());
  *   }
  * }
  * ```

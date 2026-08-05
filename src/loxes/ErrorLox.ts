@@ -2,7 +2,7 @@ import { Lox } from './Lox.js';
 import { OutputLox } from './OutputLox.js';
 /** @module ErrorLox */
 
-/** This is a log streamed to the `devError`or `prodError` output stream defined at the {@link LoxerCallbacks}. */
+/** An error emitted to the configured output stream as an event with `kind: 'error'`. */
 export class ErrorLox extends OutputLox {
   /** the error that was initially given, or created by Loxer */
   error: Error;

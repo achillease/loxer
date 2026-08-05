@@ -9,7 +9,7 @@
 - [4. Highlighting - `Loxer.highlight()`](#4-highlighting---loxerhighlight)
 - [5. Levels - `Loxer.warn()` / `Loxer.info()` / `Loxer.debug()`](#5-levels---loxerwarn--loxerinfo--loxerdebug)
 - [6. Modules - `Loxer.module()`](#6-modules---loxermodule)
-- [7. Output - `LoxerCallbacks`](#7-output---loxercallbacks)
+- [7. Output - `LoxerOutputStream`](#7-output---loxeroutputstream)
 - [8. Boxes](#8-boxes)
 - [Appendix: Migrating from Loxer 2](#appendix-migrating-from-loxer-2)
 
@@ -17,7 +17,7 @@ Instructions on how to use props can be found **[on the props documentation][pro
 
 # Overview
 
-Loxer's main goal is to increase the safety of applications by showing the developer the data flow of the application with the help of logs. For this, it is possible for him to provide logs with levels, to categorize them in modules, to expand error messages with additional information and to connect logs with one another. A box is created for this, which begins with an opening log, is continued with any number of logs and errors and ends with a closing log. This is then visualized with a kind of branching system. Loxer also serves as a middleware logger by allowing the user to determine the output streams himself using callbacks. In this way, it can be achieved, for example, that the behavior of an application in the production environment is recorded and, in the event of an error, detailed information about the cause is forwarded to an analysis service such as firebase crashlytics.
+Loxer's main goal is to increase application safety by showing data flow through logs. Logs can have levels, belong to modules, carry error details, and connect into boxes. A box begins with an opening log, continues with logs and errors, and ends with a closing log; the built-in renderer visualizes that relationship with branches. Loxer can send each visible log or error to an output stream, which lets an application forward production errors to an analysis service such as Firebase Crashlytics.
 
 The following sections describe the use of Loxer in detail. Further information can be found in the [API Reference][api].
 
@@ -173,14 +173,14 @@ reports its own name, the same as `functionName` does, which is also what a deco
 when a call reaches it detached from its class. Formatters and result serialization fall back to the
 default message when they fail, without changing the application result.
 
-`openMessage: 'args'` and result message modes create formatted message strings for callbacks; built-in
+`openMessage: 'args'` and result message modes create formatted message strings for output handlers; built-in
 argument formatting escapes control characters. `argsAsProps` and `resultAsProps` are the modes that
-send the original values on to the callbacks as the log's [props][propsDocs]: `argsAsProps` attaches
+send the original values on to the output stream as the log's [props][propsDocs]: `argsAsProps` attaches
 one prop per argument to the opening log, `resultAsProps` attaches a defined resolved result as a
 single prop to the closing log (a `void` result attaches none). `printArgs` and `printResult`
 additionally have the built-in output render
 them, and each accepts a `PropsPrinterOptions` object in place of `true` to bound that rendering. Do
-not enable message or props capture for secrets or personal data unless the receiving callback
+not enable message or props capture for secrets or personal data unless the receiving output handler
 redacts or otherwise protects that data.
 
 # 1. Initialization - [`Loxer.init()`][loxer.init]
@@ -205,7 +205,7 @@ This method can be called anywhere in your application.
 
 Logging before `Loxer.init()` runs loses nothing: those logs wait in a queue and are output in order once init happens, levelled against the modules that init supplies. The queue keeps the 1000 oldest logs and drops beyond that, which preserves the startup story it exists for.
 
-A queue that never drains reports itself. If logs have been waiting longer than 5 seconds, Loxer writes one `console.warn` — the only channel it has, since the output callbacks arrive with `init()` — naming how many logs are waiting, the first of them, and the two things that keep a queue from draining: an `init()` that never runs, or a bundler that loaded two copies of Loxer so that `init()` reached a different one than the logs. An application that initializes late on purpose, for instance while it fetches its configuration, will see this warning; it is accumulating unflushed logs, which is what the message reports.
+A queue that never drains reports itself. If logs have been waiting longer than 5 seconds, Loxer writes one `console.warn` — the only channel it has before `init()` receives its output stream — naming how many logs are waiting, the first of them, and the two things that keep a queue from draining: an `init()` that never runs, or a bundler that loaded two copies of Loxer so that `init()` reached a different one than the logs. An application that initializes late on purpose, for instance while it fetches its configuration, will see this warning; it is accumulating unflushed logs, which is what the message reports.
 
 ### LoxerOptions:
 
@@ -216,8 +216,8 @@ Anyways, the options are an object with the following structure:
   modules?: RegisteredModules;
   // determines if Loxer is running in a development or production environment
   dev?: boolean;
-  // Functions called as an output stream for Loxer
-  callbacks?: LoxerCallbacks;
+  // Receives each visible log or error
+  output?: LoxerOutputStream;
   // The configuration of Loxer
   config?: LoxerConfig;
   // The default levels of the built-in modules, in production or development
@@ -236,11 +236,11 @@ More about the details of the options can be found in the following sections.
 # 2. Simple logs - [`Loxer.log()`][loxer.log]
 
 To make a simple log, all you have to do is call `Loxer.log(message?: unknown, ...props: unknown[])`.
-In the default - unless otherwise specified in `Loxer.init(options.callbacks)` - the message is logged
-with `console.log(...)`. All you have to do is replacing `console` with `Loxer`.
+In development, a logger with no `output` stream renders the message to the console. In production,
+it remains silent until an output stream is supplied.
 
 Every argument after the message is one of the log's **[props][propsDocs]**: data that travels with
-the log to the callbacks and the history, and that the built-in output renders where the call chained
+the log to the output stream and the history, and that the built-in output renders where the call chained
 `Loxer.printProps()` (short: `pp()`).
 
 ###### Example
@@ -267,7 +267,7 @@ as one compact line, so `Loxer.log(person)` reads as its contents.
 ### Rendering props - [`Loxer.printProps()`][loxer.printprops]
 
 Props are attached to the log whether or not they are rendered, which is what makes attaching one
-consequence-free: they reach the [output streams](#7-output---loxercallbacks) and `Loxer.history` by
+consequence-free: they reach the [output stream](#7-output---loxeroutputstream) and `Loxer.history` by
 reference, and the built-in console output prints them only where the call chained `printProps()` (or
 `pp()`).
 
@@ -369,7 +369,10 @@ Loxer.of(lox).error(new NamedError('MyError', 'crashed', someGivenError), paymen
 
 # 4. Highlighting - [`Loxer.highlight()`][loxer.highlight]
 
-Highlighting logs has the advantage of being able to view a certain log relatively quickly from a large number of logs. To highlight a log, it just needs to be chained with `.highlight()` or `.h()`, with the last one being a shortcut. The output message will then have inverted background and text colors by default. This can be configured in the [LoxerConfig][loxerConfig] which is part of the `Loxer.init(...)`
+Highlighting makes a log easy to locate among many others. Chain `.highlight()` or its `.h()` alias;
+the built-in renderer inverts the message foreground and background by default. A destination can
+choose a highlight color through `LoxerOutputRendererOptions.colors.highlightColor` when it calls an
+output renderer.
 
 ###### Example
 
@@ -442,9 +445,8 @@ Loxer.h().m('CART').debug('cache rebuilt');
 Loxer.m('CART').h().debug.open('recalculating cart');
 ```
 
-> - `Loxer.warn()` is an ordinary log and goes to the `devLog` / `prodLog` output stream. Only
->   `Loxer.error()` writes to `devError` / `prodError`. A callback that wants to react to the level
->   reads `outputLox.level`.
+> - `Loxer.warn()` and `Loxer.error()` both reach `output`. The event's `kind` distinguishes normal
+>   logs from errors; the lox's `level` distinguishes a warning from other normal logs.
 > - `Loxer.error()` takes an `Error` rather than a message and opens no box, so it has no `.open()`.
 >   For the same reason the `level` trace option is a [`BoxLevel`][loxer.boxlevel] - every `LogLevel`
 >   except `'error'`.
@@ -605,17 +607,19 @@ literal.
 
 ```typescript
 export const DEFAULT_MODULES: LoxerModules = {
-  NONE: { fullName: '', color: '#fff', devLevel: 'info', prodLevel: 'error', boxLayoutStyle: 'round' },
-  DEFAULT: { fullName: '', color: '#fff', devLevel: 'info', prodLevel: 'error', boxLayoutStyle: 'round' },
+  NONE: { fullName: '', color: '#fff', devLevel: 'info', prodLevel: 'error' },
+  DEFAULT: { fullName: '', color: '#fff', devLevel: 'info', prodLevel: 'error' },
   INVALID: {
     fullName: 'INVALIDMODULE',
     color: '#f00',
     devLevel: 'info',
     prodLevel: 'error',
-    boxLayoutStyle: 'round',
   },
 };
 ```
+
+The built-in modules leave box layout selection to the output renderer's fallback. Set a module's
+`boxLayoutStyle` only when that module needs to override the destination's fallback.
 
 The `NONE` module is automatically assigned when there is no module method chained in a logging method. The output will have no box layout and no module name as prefix.
 
@@ -644,42 +648,40 @@ Loxer.m('Wrong').log('this one to the INVALID module');
 
 <!-- ------------------------------------------------------------------------------------------- -->
 
-# 7. Output - [`LoxerCallbacks`][loxerCallbacks]
+# 7. Output - [`LoxerOutputStream`][loxerOutputStream]
 
-Loxer isn't just an extension for the console. It is an independent logger that in the default case uses the console as an output medium in the development environment. There are 4 different output streams available, which can be specified as `callbacks: LoxerCallbacks` in the `Loxer.init(options)`.
-
-The `type LoxerCallbacks` has the following structure:
+Loxer sends every visible log and error through one `output` function. The event identifies its
+environment and uses `kind` to discriminate the lox and the error-only history. Errors are emitted
+regardless of their module threshold; ordinary logs are emitted only when their level is within what
+their module logs up to.
 
 ```typescript
-{
-  /** Function called when logging in development mode. */
-  devLog?: (outputLog: OutputLox) => void;
-  /** Function called when logging in production mode. */
-  prodLog?: (outputLog: OutputLox) => void;
-  /** Function called when errors are recorded in production mode. */
-  prodError?: (errorLog: ErrorLox, history: (OutputLox | ErrorLox)[]) => void;
-  /** Function called when errors are recorded in development mode. */
-  devError?: (errorLog: ErrorLox, history: (OutputLox | ErrorLox)[]) => void;
+import {
+  ErrorLoxRenderer,
+  Loxer,
+  OutputLoxRenderer,
+  type LoxerOutputEvent,
+} from 'loxer';
+
+function forward(event: LoxerOutputEvent) {
+  if (event.kind === 'error') {
+    reportError(event.lox.error, event.history);
+    return;
+  }
+
+  writeAuditLog({ environment: event.environment, level: event.lox.level, props: event.lox.props });
 }
+
+Loxer.init({ dev: false, output: forward });
 ```
 
-Whenever a log's level is within what its module logs up to, it is forwarded (depending on the environment) to the `devLog` or` prodLog` output stream. Error logs are always forwarded to the corresponding output stream (`devError` or `prodError`). You can tell Loxer the environment as `options.dev: boolean` in the `Loxer.init(options)`. In the default case it is `dev = process.env.NODE_ENV === 'development'`.
+`environment` is `'dev'` or `'prod'`. A `'log'` event carries an `OutputLox`; an `'error'` event
+carries an `ErrorLox` plus a snapshot of the history at the time of the error. The stream receives
+the raw loxes, not console text. Treat their props as caller-owned data and apply the destination's
+redaction, retention, and access policy before forwarding them.
 
-The `devLog` and `devError` callbacks default to printing the colored logs to the console. `prodLog` and `prodError` default to log nothing in order to keep the application clean in production environment. This is expressed in the fact that the production streams only interact with the user-specific ones and have no defaults.
-
-In order to occupy a stream itself, the corresponding output log is passed to the callback.
-
-###### Example Declaration
-
-```typescript
-Loxer.init({
-  callbacks: {
-    devLog: (outputLog) => {
-      // ... do something with the OutputLox
-    },
-  },
-});
-```
+When no stream is supplied, development renders colored output to `console.log`; production remains
+silent. Supplying `output` replaces that fallback in both environments.
 
 ### Output logs
 
@@ -732,92 +734,37 @@ To symbolize that the logs are more than just simple messages, they are named `*
 
 > For more detailed information about the Lox's properties (as well as all other components of Loxer), a look at the [API reference][logs] is recommended.
 
-### Callbacks
+### Rendering a destination
 
-Now that we know how the output streams work and what the transferred `*Lox` look like, it is a good idea to take a look at how the `dev*` streams are used internally.
-
-###### devLog internally
-
-```typescript
-private devLogOut(outputLox: OutputLox) {
-  if (this._callbacks?.devLog) {
-    this._callbacks.devLog(outputLox);
-  } else {
-    // colorize the output if wanted
-    const opacity = outputLox.type === 'close' ? this._endTitleOpacity : 1;
-    const colored = ANSIFormat.colorLox(outputLox, opacity, this._highlightColor);
-    const message = this._colorsDisabled ? outputLox.message : colored.message;
-    const moduleText = this._colorsDisabled ? outputLox.module.slicedName : colored.moduleText;
-    const timeText = this._colorsDisabled ? outputLox.timeText : colored.timeText;
-    // generate the box layout
-    const box = BoxFactory.getBoxString(outputLox.box, !this._colorsDisabled);
-    // construct the message
-    const str = `${moduleText}${box}${message}\t${timeText}`;
-    // render the props where the call asked for it
-    if (outputLox.printProps) {
-      console.log(
-        str +
-          PropsPrinter.of(outputLox).print(true, {
-            depth: outputLox.module.slicedName.length + BoxFactory.getMarkerDepth(outputLox.box),
-            color: outputLox.module.color,
-          })
-      );
-    } else {
-      console.log(str);
-    }
-  }
-}
-```
-
-As you can see here, the `OutputLox` is forwarded unchanged to the `devLog` stream. The `else` branch (the default) shows how the `OutputLox` can be processed.
-
-- The helper class [`ANSIFormat`][ansiFormat] offers some static methods for the coloring of the output unsing the `[x1b` ANSI code.
-- The helper class [`BoxFactory`][boxFactory] offers a method `.getBoxString(...)` which generates the known box layout, that is used by default.
-- The helper class [`PropsPrinter`][propsPrinter] offers a method chain `.of(Lox).print(OPTIONS)` which renders the inherited `lox.props` in a similar way as the `console` does with its secondary parameters. Reading `lox.printProps` is what honors the call's own request; a callback may also render unconditionally. For more information on that see page **[Props][propsDocs]**
-
-The `ErrorLox` can be used in the same way:
-
-###### devError internally
+[`OutputLoxRenderer`][outputLoxRenderer] and [`ErrorLoxRenderer`][errorLoxRenderer] return plain
+fields together with a `colored` field set. Each field is independently composable, so a destination
+can preserve the box and props while arranging timestamps and messages for its own format.
 
 ```typescript
-private devErrorOut(errorLox: ErrorLox, history: LoxHistory) {
-    if (this._callbacks?.devError) {
-      this._callbacks.devError(errorLox, history.stack);
-    } else {
-      // colorize the output if wanted
-      const colored = ANSIFormat.colorLox(errorLox);
-      const message = this._colorsDisabled ? errorLox.message : colored.message;
-      const moduleText = this._colorsDisabled ? errorLox.module.slicedName : colored.moduleText;
-      const timeText = this._colorsDisabled ? errorLox.timeText : colored.timeText;
-      // generate the box layout
-      const box = BoxFactory.getBoxString(errorLox.box, !this._colorsDisabled);
-      // construct the log message
-      const msg = moduleText + box + message + timeText;
-      const stack = errorLox.highlighted && errorLox.error.stack ? errorLox.error.stack : '';
-      const openLogs =
-        errorLox.highlighted && errorLox.openLoxes.length > 0
-          ? `\nOPEN_LOGS: [${errorLox.openLoxes
-              .map((outputLox) => outputLox.message)
-              .join(' <> ')}]`
-          : '';
-      const str = msg + stack + openLogs;
-      // render the props where the call asked for it
-      if (errorLox.printProps) {
-        console.log(
-          str +
-            PropsPrinter.of(errorLox).print(true, {
-              depth: errorLox.module.slicedName.length + BoxFactory.getMarkerDepth(errorLox.box),
-              color: errorLox.module.color,
-            })
-        );
-      } else {
-        console.log(str);
-      }
+import { ErrorLoxRenderer, OutputLoxRenderer, type LoxerOutputRendererOptions } from 'loxer';
+
+const rendererOptions: LoxerOutputRendererOptions = {
+  boxLayoutStyle: 'round',
+  colors: { warnColor: '#ffa50f', errorColor: '#ff0000' },
+};
+
+Loxer.init({
+  output(event) {
+    if (event.kind === 'error') {
+      const rendered = ErrorLoxRenderer(event.lox, 21 + event.lox.module.slicedName.length, rendererOptions);
+      console.log(`${rendered.colored.timeStamp}: ${rendered.colored.module}${rendered.colored.box}${rendered.colored.message}${rendered.colored.stack}`);
+      return;
     }
-}
+
+    const rendered = OutputLoxRenderer(event.lox, 21 + event.lox.module.slicedName.length, rendererOptions);
+    console.log(`${rendered.colored.timeStamp}: ${rendered.colored.module}${rendered.colored.box}${rendered.colored.message}${rendered.colored.props}`);
+  },
+});
 ```
 
-The `prod*` streams are both just forwarded to the user callbacks. These can be used to interact with other 3rd party services like [Firebase Crashlytics][pkg.crashlytics].
+Pass `LoxerOutputRendererOptions` to either renderer to select the fallback box layout, close-title
+opacity, and ANSI colors for that destination. A module's `boxLayoutStyle` always overrides the
+renderer fallback. Renderers format without changing the lox, its box, or logger history.
 
 # 8. Boxes
 
@@ -877,30 +824,24 @@ Loxer.of(lox).add('this log is shown but as error');
 
 The box layout which is output to the console by default consists of unicode box drawing characters. For this purpose, during the processing of the log, it is determined which row of box symbols belongs to a log. In addition, the box symbols are assigned the colors of the respective modules. The resulting list is then added to the log as a property. This list can then be evaluated.
 
-The default BoxLayout used for the default output streams can be configured in the [LoxerConfig][loxerConfig] with the property [BoxLayoutStyle][boxLayoutStyle]. Other than that, every [LoxerModule][loxerModule] that is defined at the initialization can take a separate `boxLayoutStyle`.
+The renderer's `LoxerOutputRendererOptions.boxLayoutStyle` selects the fallback box layout. A module
+may select a separate `boxLayoutStyle`, which takes precedence for every segment belonging to it.
 
 The following is an example of how the box layout is processed internally for the default console output:
 
-###### Getting the box as a colored string:
+###### Rendering the box with a fallback layout:
 
 ```typescript
-static getBoxString(box: Box, colored: boolean | undefined): string {
-  const result = box
-    .map((segment) => {
-      if (segment === 'empty') {
-        return ' ';
-      }
-      if (colored) {
-        return ANSIFormat.colorize(BoxLayouts[segment.boxLayout][segment.box], segment.color);
-      }
-      return BoxLayouts[segment.boxLayout][segment.box];
-    })
-    .join('');
-  return result.length > 0 ? `${result} ` : result;
-}
+const box = BoxFactory.getBoxString(lox.box, {
+  colored: true,
+  boxLayoutStyle: 'round',
+});
 ```
 
-The `BoxLayouts` are a collection of Unicode symbols from the [Box Drawing][pkg.boxDrawing] table. This collection has different types that are also configured via [`options.config.boxLayoutStyle`][boxLayoutStyle].
+`BoxFactory.getBoxString` uses each segment's module layout when it has one and applies
+`boxLayoutStyle` only as the fallback. `BoxLayouts` is a collection of Unicode symbols from the
+[Box Drawing][pkg.boxDrawing] table. `OutputLoxRenderer` and `ErrorLoxRenderer` pass the same
+renderer fallback while producing their template fields.
 
 You are free to set own symbols for the personal output streams. In this case, a box layout must implement the following interface:
 
@@ -1003,6 +944,19 @@ errors it used to mean. Translate the literal rather than relying on the fallbac
 The last row applies to `openMessage` and `closeMessage` alike. A decorated method reports the same
 message it did, since its parent is its class.
 
+### Output integration
+
+| Loxer 2 | Loxer 3 |
+| ------- | ------- |
+| `callbacks.devLog(lox)` / `callbacks.prodLog(lox)` | `output({ environment, kind: 'log', lox })` |
+| `callbacks.devError(error, history)` / `callbacks.prodError(error, history)` | `output({ environment, kind: 'error', lox: error, history })` |
+| Console formatting inside a callback | `OutputLoxRenderer(lox, indentation, options)` or `ErrorLoxRenderer(lox, indentation, options)` |
+| Render colors and fallback box style in `LoxerConfig` | Pass `LoxerOutputRendererOptions` to the renderer for that destination |
+
+Narrow `event.kind` before reading `history` or error-specific fields. The output stream receives raw
+loxes; renderer templates supply plain fields and their ANSI-colored counterparts without changing
+the logger state.
+
 ### Items
 
 Loxer 2 gave a log one `item` plus a positional `itemOptions`, and rendered the item whenever the
@@ -1037,7 +991,6 @@ like `Loxer.log` is: `Loxer.debug('…')` inside a traced body becomes part of t
 [outputLox]: https://pcprinz.github.io/loxer/classes/Logs.OutputLox.html
 [errorLox]: https://pcprinz.github.io/loxer/classes/Logs.ErrorLox.html
 [logs]: https://pcprinz.github.io/loxer/modules/Logs.html
-[boxLayoutStyle]: https://pcprinz.github.io/loxer/interfaces/Loxer.LoxerConfig.html#boxLayoutStyle
 [boxFactory]: https://pcprinz.github.io/loxer/classes/index.BoxFactory.html
 [ansiFormat]: https://pcprinz.github.io/loxer/classes/index.ANSIFormat.html
 [propsPrinter]: https://pcprinz.github.io/loxer/classes/Formatting.PropsPrinter.html
@@ -1047,7 +1000,9 @@ like `Loxer.log` is: `Loxer.debug('…')` inside a traced body becomes part of t
 [loxerModuleRegistry]: https://pcprinz.github.io/loxer/interfaces/index.LoxerModuleRegistry.html
 [registeredModules]: https://pcprinz.github.io/loxer/types/Loxer.RegisteredModules.html
 [loxer.getmodulelevel]: https://pcprinz.github.io/loxer/interfaces/Loxer.LoxerCore.html#getmodulelevel
-[loxerCallbacks]: https://pcprinz.github.io/loxer/interfaces/Loxer.LoxerCallbacks.html
+[loxerOutputStream]: https://pcprinz.github.io/loxer/types/Loxer.LoxerOutputStream.html
+[outputLoxRenderer]: https://pcprinz.github.io/loxer/functions/index.OutputLoxRenderer.html
+[errorLoxRenderer]: https://pcprinz.github.io/loxer/functions/index.ErrorLoxRenderer.html
 [loxer.init]: https://pcprinz.github.io/loxer/interfaces/Loxer.LoxerCore.html#init
 [loxer.log]: https://pcprinz.github.io/loxer/interfaces/Loxer.LogMethods.html#log
 [loxer.error]: https://pcprinz.github.io/loxer/interfaces/Loxer.LogMethods.html#error

@@ -167,7 +167,7 @@ export class Loxes {
 
   /** Reports a queue that is filling with nothing to flush it — once, ever, per instance.
    *
-   * `console` is the only channel available by definition: the output callbacks are registered by
+   * `console` is the only channel available by definition: the output stream is registered by
    * `init()`, which is the very thing that has not happened. The wording names both candidate
    * causes as a question rather than an assertion, because an app that inits late on purpose is
    * still accumulating unflushed logs and its author still benefits from knowing.

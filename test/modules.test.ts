@@ -1,4 +1,5 @@
 import { Loxer, resetLoxer } from '../src';
+import { outputFromCallbacks } from './output-capture';
 import { Modules } from '../src/core/Modules';
 import { ErrorLox, OutputLox } from '../src/loxes';
 import { Lox } from '../src/loxes/Lox';
@@ -89,7 +90,7 @@ test("a module without levels logs up to 'info' instead of muting itself", () =>
 });
 
 test('a module without levels stays loggable through the public API', () => {
-  Loxer.init({ dev: true, callbacks, modules: { MAL: MALFORMED } });
+  Loxer.init({ dev: true, output: outputFromCallbacks(callbacks), modules: { MAL: MALFORMED } });
 
   Loxer.m('MAL').log('shown log');
   Loxer.m('MAL').warn('shown warn');

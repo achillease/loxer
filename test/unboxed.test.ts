@@ -1,3 +1,4 @@
+import { outputFromCallbacks } from './output-capture';
 import { Loxer, resetLoxer } from '../src';
 import { ErrorLox, OutputLox } from '../src/loxes';
 
@@ -24,12 +25,12 @@ let histories: (OutputLox | ErrorLox)[][] = [];
 beforeEach(() => {
   Loxer.init({
     dev: true,
-    callbacks: {
+    output: outputFromCallbacks({
       devError,
       devLog,
       prodError,
       prodLog,
-    },
+    }),
     defaultLevels: {
       devLevel: 'info',
       prodLevel: 'error',

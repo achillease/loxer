@@ -3,7 +3,7 @@ import { DEFAULT_EXTENDED_MODULE, ExtendedModule } from '../core/Modules.js';
 import { Lox } from './Lox.js';
 /** @module OutputLox */
 
-/** This is a log streamed to the `devLog`or `prodLog` output stream defined at the {@link LoxerCallbacks}. */
+/** A visible ordinary log emitted to the configured output stream as an event with `kind: 'log'`. */
 export class OutputLox extends Lox {
   /** the box layout of the log which an array of `type { box: keyof BoxSymbol; color: string }`, where:
    * - `keyof BoxSymbol` is a string which represents the form of the box segment (character)

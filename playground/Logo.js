@@ -1,11 +1,22 @@
-import { Loxer } from '../dist/index.js';
+import { ErrorLoxRenderer, Loxer, OutputLoxRenderer } from '../dist/index.js';
+
+const rendererOptions = { endTitleOpacity: 0.8 };
+
+function output(event) {
+  const indentation = 19 + 2 + event.lox.module.slicedName.length;
+  const rendered =
+    event.kind === 'error'
+      ? ErrorLoxRenderer(event.lox, indentation, rendererOptions).colored
+      : OutputLoxRenderer(event.lox, indentation, rendererOptions).colored;
+  const errorContext = event.kind === 'error' ? rendered.stack + rendered.openLogs : '';
+  console.log(
+    `${rendered.timeStamp}: ${rendered.module}${rendered.box}${rendered.message}\t${rendered.timeConsumption}${rendered.props}${errorContext}`
+  );
+}
 
 Loxer.init({
   dev: true,
-  config: {
-    moduleTextSlice: 16,
-    endTitleOpacity: 0.8,
-  },
+  output,
   modules: {
     OUT: {
       color: '#f00',

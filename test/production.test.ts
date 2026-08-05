@@ -1,6 +1,8 @@
 import { Loxer, resetLoxer } from '../src';
+import { outputFromCallbacks } from './output-capture';
 import { ErrorLox, OutputLox } from '../src/loxes';
 import type { LoxerModules } from '../src/types';
+import { vi } from 'vitest';
 
 // Production mode (`dev: false`) is where the named-level scale has to prove that a threshold of
 // `'error'` means "errors only" and never "nothing at all". Every other suite runs `dev: true` and
@@ -46,7 +48,7 @@ afterEach(() => {
 });
 
 test("a module at prodLevel 'error' drops every normal log but still reports its errors", () => {
-  Loxer.init({ dev: false, callbacks, modules: apiModule('error') });
+  Loxer.init({ dev: false, output: outputFromCallbacks(callbacks), modules: apiModule('error') });
 
   // the 'Loxer initialized' log is an 'info' log on NONE, whose built-in prodLevel is 'error'
   expect(prodLogs.length).toBe(0);
@@ -80,7 +82,7 @@ test("a module at prodLevel 'error' drops every normal log but still reports its
 });
 
 test("a module at prodLevel 'info' emits its normal logs to prodLog", () => {
-  Loxer.init({ dev: false, callbacks, modules: apiModule('info') });
+  Loxer.init({ dev: false, output: outputFromCallbacks(callbacks), modules: apiModule('info') });
 
   Loxer.m('API').warn('warn log');
   Loxer.m('API').info('info log');
@@ -102,7 +104,7 @@ test("a module at prodLevel 'info' emits its normal logs to prodLog", () => {
 
 test('production output defaults to silence', () => {
   // no `modules`, no `defaultLevels`: everything runs on the built-in prodLevel 'error'
-  Loxer.init({ dev: false, callbacks });
+  Loxer.init({ dev: false, output: outputFromCallbacks(callbacks) });
 
   expect(prodLogs.length).toBe(0);
 
@@ -123,17 +125,36 @@ test('production output defaults to silence', () => {
   expect(prodErrors.map((l) => l.message)).toEqual(['production failure']);
 });
 
+test('production without an output stream remains silent for visible errors too', () => {
+  const log = vi.spyOn(console, 'log').mockImplementation(() => undefined);
+  const error = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+
+  Loxer.init({ dev: false, defaultLevels: { devLevel: 'debug', prodLevel: 'debug' } });
+  Loxer.log('visible normal log');
+  Loxer.error(new Error('visible production error'));
+
+  expect(Loxer.history.map((lox) => lox.message)).toEqual([
+    'visible production error',
+    'visible normal log',
+    'Loxer initialized',
+  ]);
+  expect(log).not.toHaveBeenCalled();
+  expect(error).not.toHaveBeenCalled();
+  log.mockRestore();
+  error.mockRestore();
+});
+
 test('getModuleLevel reports the threshold of the mode Loxer runs in', () => {
   const modules = apiModule('warn');
 
-  Loxer.init({ dev: false, callbacks, modules });
+  Loxer.init({ dev: false, output: outputFromCallbacks(callbacks), modules });
   expect(Loxer.getModuleLevel('API')).toBe('warn');
   // the built-in defaults in production
   expect(Loxer.getModuleLevel('NONE')).toBe('error');
   expect(Loxer.getModuleLevel('DEFAULT')).toBe('error');
 
   resetLoxer();
-  Loxer.init({ dev: true, callbacks, modules });
+  Loxer.init({ dev: true, output: outputFromCallbacks(callbacks), modules });
   expect(Loxer.getModuleLevel('API')).toBe('debug');
   // ... and in development
   expect(Loxer.getModuleLevel('NONE')).toBe('info');

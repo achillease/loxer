@@ -1,4 +1,3 @@
-import { BoxLayoutStyle } from './index.js';
 import { isHidden, LogLevel, resolveThreshold } from './Levels.js';
 import { is } from '../Helpers.js';
 import { Lox } from '../loxes/Lox.js';
@@ -9,10 +8,9 @@ interface ModulesProps {
   modules?: LoxerModules;
   moduleTextSlice?: number;
   defaultLevels?: LoxerOptions['defaultLevels'];
-  defaultBoxLayoutStyle?: BoxLayoutStyle;
 }
 
-export type ExtendedModule = Module & { slicedName: string; boxLayoutStyle: BoxLayoutStyle };
+export type ExtendedModule = Module & { slicedName: string };
 
 export class Modules {
   private readonly _isDev: boolean = false;
@@ -34,11 +32,6 @@ export class Modules {
       defaults.NONE.prodLevel = props.defaultLevels.prodLevel;
       defaults.DEFAULT.prodLevel = props.defaultLevels.prodLevel;
     }
-    // assign default box layout
-    const modules = props?.modules ?? {};
-    Object.entries(modules).forEach(([key]) => {
-      modules[key].boxLayoutStyle = modules[key].boxLayoutStyle ?? 'round';
-    });
     // merge modules
     this._modules = {
       ...defaults,
@@ -91,13 +84,10 @@ export class Modules {
       slicedName += ' ';
     }
     const hidden = this.isHiddenAt(lox.level, lox.moduleId);
-    const boxLayoutStyle = mod.boxLayoutStyle ?? 'round';
-
     return {
       loxModule: {
         ...mod,
         slicedName,
-        boxLayoutStyle,
       },
       hidden,
     };
@@ -141,21 +131,18 @@ export const DEFAULT_MODULES: LoxerModules = {
     color: '#fff',
     devLevel: 'info',
     prodLevel: 'error',
-    boxLayoutStyle: 'round',
   },
   DEFAULT: {
     fullName: '',
     color: '#fff',
     devLevel: 'info',
     prodLevel: 'error',
-    boxLayoutStyle: 'round',
   },
   INVALID: {
     fullName: 'INVALIDMODULE',
     color: '#f00',
     devLevel: 'info',
     prodLevel: 'error',
-    boxLayoutStyle: 'round',
   },
 };
 
@@ -165,5 +152,4 @@ export const DEFAULT_EXTENDED_MODULE: ExtendedModule = {
   devLevel: 'info',
   prodLevel: 'error',
   slicedName: '',
-  boxLayoutStyle: 'round',
 };

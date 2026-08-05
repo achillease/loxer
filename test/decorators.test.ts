@@ -1,3 +1,4 @@
+import { outputFromCallbacks } from './output-capture';
 import type { LogLevel, PropsPrinterOptions } from '../src';
 import { initLoxer, Loxer, resetLoxer, trace } from '../src';
 import { ErrorLox, OutputLox } from '../src/loxes';
@@ -114,7 +115,7 @@ class TypedCallbackService {
 }
 
 beforeEach(() => {
-  Loxer.init({ dev: true, callbacks: { devLog, devError, prodLog, prodError } });
+  Loxer.init({ dev: true, output: outputFromCallbacks({ devLog, devError, prodLog, prodError }) });
   devLogs = [];
   devErrors = [];
 });
@@ -136,7 +137,7 @@ afterAll(() => {
 test('initLoxer initializes Loxer', () => {
   resetLoxer();
   devLogs = [];
-  initLoxer({ dev: true, callbacks: { devLog } });
+  initLoxer({ dev: true, output: outputFromCallbacks({ devLog }) });
   expect(devLogs.length).toBe(1);
   expect(devLogs[0].message).toBe('Loxer initialized');
   expect(devLogs[0].highlighted).toBeTruthy();
@@ -494,7 +495,7 @@ test('@trace rejects non-method use under both protocols', () => {
 test('initLoxer returns no-op decorators for legacy and standard class protocols', () => {
   resetLoxer();
   devLogs = [];
-  const decorator = initLoxer({ dev: true, callbacks: { devLog } });
+  const decorator = initLoxer({ dev: true, output: outputFromCallbacks({ devLog }) });
   class LegacyTarget {}
   class StandardTarget {}
 
@@ -574,7 +575,7 @@ function resetAndInitialize(): void {
   resetLoxer();
   Loxer.init({
     dev: true,
-    callbacks: { devLog, devError, prodLog, prodError },
+    output: outputFromCallbacks({ devLog, devError, prodLog, prodError }),
     modules: {
       LEVEL: { color: '#fff', devLevel: 'debug', fullName: 'Level', prodLevel: 'error' },
     },

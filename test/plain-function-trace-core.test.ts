@@ -1,3 +1,4 @@
+import { outputFromCallbacks } from './output-capture';
 import { vi } from 'vitest';
 import {
   __startTrace,
@@ -1190,11 +1191,11 @@ test('disabled traces are silent and pre-init traces replay when Loxer initializ
 
   Loxer.init({
     dev: true,
-    callbacks: {
+    output: outputFromCallbacks({
       devLog(log) {
         devLogs.push(log);
       },
-    },
+    }),
     modules: {
       TRACE: { color: '#00ff99', devLevel: 'info', prodLevel: 'error', fullName: 'Trace' },
     },
@@ -1210,7 +1211,7 @@ test('disabled traces are silent and pre-init traces replay when Loxer initializ
   Loxer.init({
     dev: true,
     config: { disabled: true },
-    callbacks: { devLog: (log) => devLogs.push(log) },
+    output: outputFromCallbacks({ devLog: (log) => devLogs.push(log) }),
   });
   const disabled = __startTrace('disabled', [], { moduleId: 'TRACE' });
   disabled.success('ignored');
@@ -1392,7 +1393,7 @@ test('initialization does not require a global process object', () => {
 
   expect(() => Loxer.init()).not.toThrow();
   expect(() =>
-    Loxer.init({ dev: true, callbacks: { devLog: (log) => devLogs.push(log) } })
+    Loxer.init({ dev: true, output: outputFromCallbacks({ devLog: (log) => devLogs.push(log) }) })
   ).not.toThrow();
 
   vi.unstubAllGlobals();

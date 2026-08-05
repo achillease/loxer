@@ -62,7 +62,7 @@
 
 <h4 id="asks-the-built-in-output-to-render-the-values-a-log-carries" class="tsd-anchor-link">Asks the built-in output to render the values a log carries.<a href="#asks-the-built-in-output-to-render-the-values-a-log-carries" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h4>
 <p>Props are attached to every log that is called with them, and reach the
-<a href="Loxer.LoxerOptions.html#callbacks" class="tsd-kind-property">LoxerOptions.callbacks</a> and the history whether or not this is chained. What it decides
+<a href="Loxer.LoxerOptions.html#output" class="tsd-kind-property">output stream</a> and the history whether or not this is chained. What it decides
 is whether the built-in console output <em>renders</em> them below the message, connected to the log's
 box column.</p>
 <ul>
@@ -72,8 +72,8 @@ alike. The parameter carries formatting configuration, not the decision</li>
 <li>it is a one-shot modifier like <a href="#highlight" class="tsd-kind-method">Modifiers.highlight</a> and <a href="#module" class="tsd-kind-method">Modifiers.module</a>: the
 next log renders nothing unless it chains this itself</li>
 <li>a log without props renders no block</li>
-<li>an output callback receives the raw lox instead and reaches the same rendering through
-<code>PropsPrinter.of(lox).print()</code>, reading <code>lox.printProps</code> to honor the request</li>
+<li>an output stream receives the raw lox inside its event and can render it with
+<code>OutputLoxRenderer</code> or <code>PropsPrinter.of(lox).print()</code>, reading <code>lox.printProps</code> to honor the request</li>
 </ul>
 <hr>
 </div>
@@ -114,7 +114,7 @@ next log renders nothing unless it chains this itself</li>
 <h4 id="highlights-logs-to-make-them-more-visible" class="tsd-anchor-link">Highlights logs to make them more visible.<a href="#highlights-logs-to-make-them-more-visible" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h4>
 <ul>
 <li>by default the <code>foregroundColor</code> and <code>backgroundColor</code> of the log will be inverted.</li>
-<li>a different highlight color can be set at <a href="Loxer.LoxerConfig.html#highlightcolor" class="tsd-kind-property">LoxerConfig.highlightColor</a> in the <a href="Loxer.LoxerOptions.html#config" class="tsd-kind-property">LoxerOptions.config</a> declared in <code>Loxer.init(options)</code></li>
+<li>an output renderer can select a highlight color with <a href="Loxer.LoxerOutputRendererOptions.html#colors" class="tsd-kind-property">LoxerOutputRendererOptions.colors</a></li>
 <li>the parameter <code>doit?: boolean</code> can conditionally highlight the log with <code>true</code></li>
 <li>this function can be chained with any other chaining function like <code>.module(...)</code></li>
 <li>highlighting error logs does not color the message differently but append the stack to the default console output</li>

@@ -148,6 +148,10 @@ This scenario applies above all to the default output stream in the development 
 
 Given these numbers, it becomes clear how resource hungry the preparation of the message and printing to the console is. Even if you just lose 1 second of performance at around 3.691 logs, only around 5% of the performance can be attributed to Loxer's calculations and the remaining 95% to the console and message preparation! In this case it is only understandable not to want to use any console outputs in the production environment.
 
-But luckily you don't need to print and prepare all the logs in prod environment. The error callbacks receive a history of all logs with a predefined size, which can be utilized like the standard output, only when an error occurs. So you basically live with the 90-120K logs per second in production environment. 
+Without an output stream, production skips destination rendering and console I/O. Visible logs may
+still be constructed and retained in the logger history. When an output stream is configured, each
+`event.kind === 'error'` event carries a history snapshot, so a destination can inspect preceding
+logs when an error occurs. That keeps production on the 90–120K logs-per-second path measured above
+when no additional destination work is requested.
 
 > **Reminder**: All the test results relate to my used desktop system and may vary heavily depending on the device and its processing power. The purpose of this test is to show that Loxer can cause virtually no loss of performance if it is used correctly. Especially when compared to using the console output, it becomes clear how small its influence is.

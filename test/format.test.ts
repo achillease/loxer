@@ -46,7 +46,7 @@ test('lox coloring', () => {
   lox3.module.color = '#fff';
   lox3.module.slicedName = 'Module';
   lox3.setTime(123);
-  const log3 = ANSIFormat.colorLox(lox3, 0.6);
+  const log3 = ANSIFormat.colorLox(lox3, { moduleOpacity: 0.6 });
   expect(log3.message).toBe(
     '\x1b[48;2;255;0;0m\x1b[38;2;255;255;255mError\x1b[0m: \x1b[38;2;255;0;0mLox1!\x1b[0m'
   );
@@ -57,6 +57,24 @@ test('lox coloring', () => {
   expect(log4.message).toBe('\x1b[38;2;255;165;15mLox4!\x1b[0m');
   expect(log4.timeText).toBe('\x1b[38;2;70;70;70m[123ms]\x1b[0m');
   expect(log4.moduleText).toBe('\x1b[38;2;255;255;255mModule\x1b[0m');
+});
+
+test('lox coloring accepts per-destination highlight and severity colors', () => {
+  expect(ANSIFormat.colorLox(lox2, { colors: { highlightColor: '#123' } }).message).toBe(
+    '\x1b[48;2;17;34;51mLox2!\x1b[0m'
+  );
+  expect(ANSIFormat.colorLox(lox4, { colors: { warnColor: '#010203' } }).message).toBe(
+    '\x1b[38;2;1;2;3mLox4!\x1b[0m'
+  );
+  expect(
+    ANSIFormat.colorLox(lox3, {
+      colors: {
+        errorColor: '#040506',
+        errorNameBackgroundColor: '#070809',
+        errorNameColor: '#0a0b0c',
+      },
+    }).message
+  ).toBe('\x1b[48;2;7;8;9m\x1b[38;2;10;11;12mError\x1b[0m: \x1b[38;2;4;5;6mLox1!\x1b[0m');
 });
 
 test('BoxLayout', () => {
@@ -70,9 +88,9 @@ test('BoxLayout', () => {
   BoxFactory.getOpenLogBox(lox0, loxes);
   const boxx: Box = ['empty', { box: 'vertical', color: 'red', boxLayout: 'round' }];
 
-  const bs0 = BoxFactory.getBoxString(boxx, true);
-  const bs1 = BoxFactory.getBoxString(boxx, false);
-  const bs2 = BoxFactory.getBoxString(box1, false);
+  const bs0 = BoxFactory.getBoxString(boxx, { colored: true });
+  const bs1 = BoxFactory.getBoxString(boxx, { colored: false });
+  const bs2 = BoxFactory.getBoxString(box1, { colored: false });
   // colored variant wraps the same glyph as the plain one in ANSI color codes
   expect(bs0).toContain('│');
   expect(bs0).toContain('\x1b[');

@@ -33,7 +33,7 @@ export class Lox {
   /** the values the log was called with, after its message - like
    * `console.log(message,`**_`...props`_**`)`
    * - always an array: a log without props carries an empty one
-   * - every prop reaches the output callbacks and the history by reference, unchanged
+   * - every prop reaches the output stream and history by reference, unchanged
    */
   props: unknown[];
   /** the configuration for rendering {@link Lox.props} in the built-in output, as passed to

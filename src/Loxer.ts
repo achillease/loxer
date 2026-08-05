@@ -108,15 +108,9 @@ class LoxerInstance implements LoxerType {
       modules: props?.modules,
       moduleTextSlice: config?.moduleTextSlice ?? 8,
       defaultLevels: props?.defaultLevels,
-      defaultBoxLayoutStyle: config?.boxLayoutStyle ?? 'round',
     });
     this._history = new LoxHistory(config?.historyCacheSize);
-    this._output = new OutputStreams({
-      callbacks: props?.callbacks,
-      disableColors: config?.disableColors,
-      endTitleOpacity: config?.endTitleOpacity,
-      highlightColor: config?.highlightColor,
-    });
+    this._output = new OutputStreams({ output: props?.output });
 
     this.highlight().log('Loxer initialized');
     this._loxes.dequeue().forEach((queued) => this.switchOutput(queued.lox, queued.error));
@@ -262,7 +256,7 @@ class LoxerInstance implements LoxerType {
    * it, and that runs on every call, ahead of the gate that
    * decides whether the log is written at all: `Loxer.debug(largeDomainObject)` in a module that logs
    * up to `'error'` would otherwise pay for a rendering nothing reads. A hidden normal log reaches
-   * no output callback, no history and no open-box buffer, so the message it never shows is free to
+   * no output event, no history and no open-box buffer, so the message it never shows is free to
    * stay empty.
    *
    * Errors bypass this method because they are written whatever their module allows.
@@ -447,15 +441,23 @@ class LoxerInstance implements LoxerType {
     if (!this._isInitialized) {
       this._loxes.enqueue(lox, error);
     } else if (lox.type === 'error') {
-      const errorLox = this.toErrorLox(lox, error ?? new Error());
+      const errorLox = this.toErrorLox(lox, error ?? new Error(lox.message));
       this._history.add(errorLox);
-      this._output.errorOut(this._isDev, errorLox, this._history);
+      if (this._isDev) {
+        this._output.devErrorOut(errorLox, this._history);
+      } else {
+        this._output.prodErrorOut(errorLox, this._history);
+      }
     } else {
       // TODO compare levels first? [this._modules.getLevel(lox.moduleId)]
       const outputLox = this.toOutputLox(lox);
       if (!outputLox.hidden) {
         this._history.add(outputLox);
-        this._output.logOut(this._isDev, outputLox);
+        if (this._isDev) {
+          this._output.devLogOut(outputLox);
+        } else {
+          this._output.prodLogOut(outputLox);
+        }
       }
       this._loxes.proceedOpenLox(outputLox);
     }
@@ -511,7 +513,7 @@ const instance = realmSlot('instance', () => new LoxerInstance());
  */
 export const Loxer: LoxerType = instance;
 
-/** Returns `Loxer` to its pre-`init()` state: no modules, no callbacks, an empty history and an
+/** Returns `Loxer` to its pre-`init()` state: no modules, no output stream, an empty history and an
  * empty pre-init queue, ready to `init()` again.
  *
  * The one instance is reset in place rather than replaced, so a held reference

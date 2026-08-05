@@ -1,11 +1,11 @@
 /** @module Loxer */
-import { BoxLayoutStyle } from './core/BoxFormat.js';
+import type { BoxLayoutStyle } from './core/BoxFormat.js';
 import type { LogLevel } from './core/Levels.js';
-import { PropsPrinterOptions } from './core/PropsPrinter.js';
+import type { PropsPrinterOptions } from './core/PropsPrinter.js';
 // type-only, so it is erased on emit and no runtime import cycle exists
 import type { LoxerModuleRegistry } from './index.js';
-import { ErrorLox } from './loxes/ErrorLox.js';
-import { OutputLox } from './loxes/OutputLox.js';
+import type { ErrorLox } from './loxes/ErrorLox.js';
+import type { OutputLox } from './loxes/OutputLox.js';
 
 export type { BoxLevel, LogLevel } from './core/Levels.js';
 
@@ -47,7 +47,7 @@ export interface LoxerCore {
    * - is a reversed stack, so that the most recent element is at `history[0]`
    * - the size of the history can be set at the {@link LoxerConfig.historyCacheSize} in the
    *   {@link LoxerOptions.config} declared in `Loxer.init(options)`. It defaults to `50`.
-   * - if the history is enabled it will also be appended to the error logs in the `errorOut` callback
+   * - an error output event carries a snapshot of the history at the time of that error
    */
   history: (OutputLox | ErrorLox)[];
 }
@@ -125,14 +125,10 @@ export interface LoxerOptions<M extends LoxerModules = RegisteredModules> {
    * - defaults to `process.env.NODE_ENV === 'development'`
    */
   dev?: boolean;
-  /** Functions called as an output stream for Loxer..
-   * The output stream is divided into 4 different streams, depending on the environment and the type of log:
-   * - `devLog`: logs occurring in development environment
-   * - `prodLog`: logs occurring in production environment
-   * - `devError`: errors occurring in development environment
-   * - `prodError`: errors occurring in production environment
+  /** Receives every visible log and error as a typed output event. When it is absent, Loxer renders
+   * development events to the console and keeps production events silent.
    */
-  callbacks?: LoxerCallbacks;
+  output?: LoxerOutputStream;
   /** The {@link LoxerConfig Configuration} of Loxer. */
   config?: LoxerConfig;
   /** The levels the default modules `NONE` and `DEFAULT` log up to, in production or development. If
@@ -168,8 +164,8 @@ export interface Module {
    * - rgb-string: (eg: `'rgb(255, 0, 0)'` for red)
    */
   color: string;
-  /** a specific box layout for the boxes of this module.
-   * - this option overrides the `defaultBoxLayoutStyle` of the `LoxerConfig`
+  /** A specific box layout for the boxes of this module.
+   * - this option overrides the fallback selected by the output renderer
    */
   boxLayoutStyle?: BoxLayoutStyle;
 }
@@ -229,26 +225,78 @@ export type RegisteredModules<M = unknown> = [keyof LoxerModuleRegistry] extends
         [K in keyof M]: K extends ModuleId ? Module : never;
       };
 
-/** Output stream callbacks for the {@link LoxerOptions} */
-export interface LoxerCallbacks {
-  /** Function called when logging in development mode.
-   * This callback receives an {@link OutputLox} which provides several attributes.
-   */
-  devLog?(outputLog: OutputLox): void;
-  /** Function called when logging in production mode.
-   * This callback receives an {@link OutputLox} which provides several attributes.
-   */
-  prodLog?(outputLog: OutputLox): void;
-  /** Function called when errors are recorded in production mode.
-   * This callback provides an {@link ErrorLox} which provides the attributes of an `OutputLox` plus some error
-   * specific ones. The provided history is a list of all recent logs until the error was streamed out.
-   */
-  prodError?(errorLog: ErrorLox, history: (OutputLox | ErrorLox)[]): void;
-  /** Function called when errors are recorded in development mode.
-   * This callback provides an {@link ErrorLox} which provides the attributes of an `OutputLox` plus some error
-   * specific ones. The provided history is a list of all recent logs until the error was streamed out.
-   */
-  devError?(errorLog: ErrorLox, history: (OutputLox | ErrorLox)[]): void;
+/** One emitted Loxer event. `kind` narrows the lox and the error-only history together. */
+export type LoxerOutputEvent =
+  | {
+      environment: 'dev' | 'prod';
+      kind: 'log';
+      lox: OutputLox;
+    }
+  | {
+      environment: 'dev' | 'prod';
+      kind: 'error';
+      lox: ErrorLox;
+      history: (OutputLox | ErrorLox)[];
+    };
+
+/** Receives every visible log and error emitted by Loxer. */
+export type LoxerOutputStream = (event: LoxerOutputEvent) => void;
+
+/** Colors used by {@link ANSIFormat.colorLox} and the public output renderers. */
+export interface LoxerColorOptions {
+  /** Background color for highlighted ordinary log messages. Omit it to invert foreground/background. */
+  highlightColor?: string;
+  /** Foreground color for warning messages. */
+  warnColor?: string;
+  /** Foreground color for error messages. */
+  errorColor?: string;
+  /** Foreground color for error names. */
+  errorNameColor?: string;
+  /** Background color for error names. */
+  errorNameBackgroundColor?: string;
+}
+
+/** Presentation options accepted by `OutputLoxRenderer` and `ErrorLoxRenderer`. */
+export interface LoxerOutputRendererOptions {
+  /** Opacity for the module title on a close log. Defaults to `0`. */
+  endTitleOpacity?: number;
+  /** Default box glyph collection for segments without a module-specific override. Defaults to `'round'`. */
+  boxLayoutStyle?: BoxLayoutStyle;
+  /** Colors used while rendering this destination. */
+  colors?: LoxerColorOptions;
+}
+
+/** One plain or ANSI-colored field set returned by an output renderer. */
+export interface OutputLoxTemplateFields {
+  module: string;
+  message: string;
+  timeConsumption: string;
+  box: string;
+  props: string;
+  timeStamp: string;
+}
+
+/** Destination-independent plain and ANSI-colored rendering of an {@link OutputLox}. */
+export interface OutputLoxTemplate extends OutputLoxTemplateFields {
+  colored: OutputLoxTemplateFields;
+}
+
+/** Destination-independent plain and ANSI-colored rendering of an {@link ErrorLox}. */
+export interface ErrorLoxTemplate extends OutputLoxTemplate {
+  stack: string;
+  openLogs: string;
+  colored: OutputLoxTemplateFields & {
+    stack: string;
+    openLogs: string;
+  };
+}
+
+/** Options accepted by {@link ANSIFormat.colorLox}. */
+export interface LoxColorOptions {
+  /** Opacity for the module title. Defaults to `1`. */
+  moduleOpacity?: number;
+  /** Colors used for this lox. */
+  colors?: LoxerColorOptions;
 }
 
 /** Configuration for the {@link LoxerOptions} */
@@ -257,17 +305,6 @@ export interface LoxerConfig {
    * - defaults to `8`
    */
   moduleTextSlice?: number;
-  /** the opacity of the moduleText (`options.modules[...].fullName`) that appears on the `Loxer.of(...).close()` log
-   * - number between `[0,1]`
-   * - defaults to `0` which means "hidden"
-   */
-  endTitleOpacity?: number;
-  /** the style of the default Box-layout
-   * - possible values are "round" | "light" | "heavy" | "double" | "off"
-   * - 'off' does not print any Layout but saves the insets, that the box layout would need
-   * - defaults to `'round'`
-   */
-  boxLayoutStyle?: BoxLayoutStyle;
   /** disables Loxer in production mode.
    * - if Loxer is initialized with `options.config.disabledInProductionMode: true` then - in production environment - the
    *   cache is erased and upcoming logs will not be cached anymore
@@ -285,19 +322,6 @@ export interface LoxerConfig {
    * - defaults to `false`
    */
   disabled?: boolean;
-  /** the backgroundColor used for highlighting logs. Supported formats:
-   * - hex-string: (eg: `'#ff0000'` or `'#f00'` for red)
-   * - rgb-string: (eg: `'rgb(255, 0, 0)'` for red)
-   * - defaults to "inverted" colors
-   */
-  highlightColor?: string;
-  /** disables all colors for the output.
-   * - use this if the console can't handle `\x1b[38;2;R;G;Bm` colors.
-   * - this only takes effect, if the Callbacks are unset and the console.log is used internally.
-   * - the Callbacks receive colored and uncolored messages separately
-   * - defaults to `false`
-   */
-  disableColors?: boolean;
   /** determines how many output- / error logs shall be cached in the history.
    * - is accessible with `Loxer.history`
    * - will be additionally appended to error outputs
@@ -351,9 +375,8 @@ export interface LogMethods {
    *
    * - it is cached until the logger is initialized
    * - it won't proceed any output if Loxer is disabled
-   * - the output will be streamed out to the {@link LoxerOptions.callbacks} declared in `Loxer.init(options)`
-   * - if no callbacks are given at the initialization, all logs will be logged with `console.log(...)`,
-   *   but only in development mode
+   * - the visible log reaches {@link LoxerOptions.output} when the initialization supplied one
+   * - without an output stream, development renders the log to the console and production is silent
    * - it logs at level `'info'`, exactly like {@link LogMethods.info Loxer.info()}
    * - can be chained with `.highlight().log(...)` or `.h().log(...)` to highlight the log
    * - can be chained with `.module().log(...)` or `.m().log(...)` to assign a module to the log - otherwise it's `NONE`
@@ -367,7 +390,7 @@ export interface LogMethods {
    * ```
    *
    * - every value after the message is attached to the log as one of its
-   *   {@link OutputLox.props props}, in order, and reaches the callbacks and the history unchanged
+   *   {@link OutputLox.props props}, in order, and reaches the output stream and history unchanged
    * - attaching props renders nothing. Chain {@link Modifiers.printProps Loxer.printProps()} (or
    *   {@link Modifiers.pp Loxer.pp()}) to have the built-in output render them
    * - the message may be of any type. A primitive is stringified, a non-primitive renders as one
@@ -386,9 +409,8 @@ export interface LogMethods {
    *
    * #### Behaves like {@link LogMethods.log}, at level `'warn'`. See {@link LevelMethods}.
    *
-   * - it is an ordinary log, streamed to `devLog` / `prodLog`. Only {@link LogMethods.error} writes
-   *   to `devError` / `prodError`, and no `Error` is created for a warning
-   * - a callback that wants to react to the level reads `outputLox.level`
+   * - it is an ordinary log, emitted as an output event with `kind: 'log'`; no `Error` is created
+   * - an output stream that reacts to the level reads `event.lox.level`
    */
   warn: LevelMethods;
   /** ## Info Log
@@ -428,9 +450,8 @@ export interface LogMethods {
    *
    * - it is cached until the logger is initialized
    * - it won't proceed any output if Loxer is disabled
-   * - the errors will be streamed out to the {@link LoxerOptions.callbacks} declared in `Loxer.init(options)`
-   * - if no callbacks are given at the initialization, all errors will be logged with `console.log(error)`,
-   *   but only in development mode
+   * - the error reaches {@link LoxerOptions.output} as an event with `kind: 'error'` when one is supplied
+   * - without an output stream, development renders the error to the console and production is silent
    * - the given `Error` will be appended to the output error
    * - if the message is of type `string` | `number` | `boolean` | `object`, then a `new Error(message.toString())`
    *   will be created and appended
@@ -482,9 +503,8 @@ export interface LogMethods {
    * - it returns an id (`typeof number`) that can be used with `Loxer.of(id)` to assign other logs to it
    * - it is cached until the logger is initialized
    * - it won't proceed any output if Loxer is disabled
-   * - the output will be streamed out to the {@link LoxerOptions.callbacks} declared in `Loxer.init(options)`
-   * - if no callbacks are given at the initialization, all logs will be logged with `console.log(...)`,
-   *   but only in development mode
+   * - the visible opening log reaches {@link LoxerOptions.output} when the initialization supplied one
+   * - without an output stream, development renders the log to the console and production is silent
    * - can be chained with `.highlight().open(...)` or `.h().open(...)` to highlight the log
    * - it opens the box at level `'info'`. For another level use that level's `.open()`, e.g.
    *   `Loxer.debug.open(...)` — see {@link LevelMethods}
@@ -612,7 +632,7 @@ export interface Modifiers<Delete extends string> {
    * #### Asks the built-in output to render the values a log carries.
    *
    * Props are attached to every log that is called with them, and reach the
-   * {@link LoxerOptions.callbacks} and the history whether or not this is chained. What it decides
+   * {@link LoxerOptions.output output stream} and the history whether or not this is chained. What it decides
    * is whether the built-in console output *renders* them below the message, connected to the log's
    * box column.
    *
@@ -622,8 +642,8 @@ export interface Modifiers<Delete extends string> {
    * - it is a one-shot modifier like {@link Modifiers.highlight} and {@link Modifiers.module}: the
    *   next log renders nothing unless it chains this itself
    * - a log without props renders no block
-   * - an output callback receives the raw lox instead and reaches the same rendering through
-   *   `PropsPrinter.of(lox).print()`, reading `lox.printProps` to honor the request
+   * - an output stream receives the raw lox inside its event and can render it with
+   *   `OutputLoxRenderer` or `PropsPrinter.of(lox).print()`, reading `lox.printProps` to honor the request
    *
    * ---
    * @param options to configure the rendering
@@ -648,7 +668,7 @@ export interface Modifiers<Delete extends string> {
    * #### Highlights logs to make them more visible.
    *
    * - by default the `foregroundColor` and `backgroundColor` of the log will be inverted.
-   * - a different highlight color can be set at {@link LoxerConfig.highlightColor} in the {@link LoxerOptions.config} declared in `Loxer.init(options)`
+   * - an output renderer can select a highlight color with {@link LoxerOutputRendererOptions.colors}
    * - the parameter `doit?: boolean` can conditionally highlight the log with `true`
    * - this function can be chained with any other chaining function like `.module(...)`
    * - highlighting error logs does not color the message differently but append the stack to the default console output

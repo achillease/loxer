@@ -9,8 +9,8 @@ inspect as its **props** — the arguments after the message:
 Loxer.log('restoring order', payment, cart);
 ```
 
-Props are data. They travel with the log to the `devLog` / `prodLog` / `devError` / `prodError`
-callbacks and into `Loxer.history` exactly as they were passed — by reference, not cloned, not
+Props are data. They travel with the log to the `output` stream and into `Loxer.history` exactly as
+they were passed — by reference, not cloned, not
 stringified. They are rendered to the console only when the call asks for it, by chaining
 [`Loxer.printProps(...)`](https://pcprinz.github.io/loxer/interfaces/Loxer.Modifiers.html#printprops)
 (or its short alias `pp`):
@@ -82,7 +82,7 @@ Loxer.of(lox).error('failed to restore last payment: unable to parse payment!', 
 ```
 
 The output is unchanged — the same nine lines as above. `payment` is on the log all the same:
-a `devError` callback reads it at `errorLox.props[0]`, and it is in `Loxer.history`. Nothing is
+an `output` handler reads it at `event.lox.props[0]`, and it is in `Loxer.history`. Nothing is
 printed, because the call did not ask for printing.
 
 ### Rendering it
@@ -271,12 +271,12 @@ Payment:  ─ { dealerId: 'h59205433', name: 'Günther Wolfram', isPrivate: 'tru
 A message stays a message: a non-primitive is rendered as one compact line, never captured as props,
 and `PropsPrinterOptions` does not apply to it. Use props for the values worth inspecting.
 
-## Rendering props from an output callback
+## Rendering props from an output stream
 
-Registering a `devLog` / `devError` callback replaces the built-in console rendering: the callback
-receives the raw [`OutputLox`](https://pcprinz.github.io/loxer/classes/Logs.OutputLox.html) /
+Registering `output` replaces the built-in console rendering. It receives a discriminated event with
+the raw [`OutputLox`](https://pcprinz.github.io/loxer/classes/Logs.OutputLox.html) or
 [`ErrorLox`](https://pcprinz.github.io/loxer/classes/Logs.ErrorLox.html), never rendered text. Both
-carry the props themselves, along with the rendering the call asked for:
+lox types carry the props themselves, along with the rendering the call asked for:
 
 ```typescript
 props: unknown[];                               // the values, by reference
@@ -288,19 +288,14 @@ block the built-in output produces, use
 [`PropsPrinter`](https://pcprinz.github.io/loxer/classes/Formatting.PropsPrinter.html):
 
 ```typescript
-import { BoxFactory, Loxer, PropsPrinter } from 'loxer';
+import { Loxer, OutputLoxRenderer, type LoxerOutputEvent } from 'loxer';
 
 Loxer.init({
-  callbacks: {
-    devLog: (lox) => {
-      const rendered = lox.printProps
-        ? PropsPrinter.of(lox).print(true, {
-            depth: lox.module.slicedName.length + BoxFactory.getMarkerDepth(lox.box),
-            color: lox.module.color,
-          })
-        : '';
-      console.log(lox.message + rendered);
-    },
+  output(event: LoxerOutputEvent) {
+    if (event.kind === 'error') return;
+
+    const rendered = OutputLoxRenderer(event.lox, 21 + event.lox.module.slicedName.length);
+    console.log(rendered.message + rendered.props);
   },
 });
 ```
@@ -308,7 +303,8 @@ Loxer.init({
 `PropsPrinter` has three static entries and one chainable method:
 
 - `of(lox)` — a printer for any `OutputLox` / `ErrorLox`, configured from that log's own
-  `printProps`. Reading `lox.printProps` yourself is what honors the call's request; a callback is
+  `printProps`. Reading `lox.printProps` yourself is what honors the call's request; an output
+  handler is
   free to ignore it and render unconditionally instead.
 - `ofValues(values, options?)` — a printer for values that belong to no log.
 - `singleLine(value)` — one value on exactly one line, whatever its size. This is how a
@@ -322,11 +318,11 @@ Loxer.init({
 Processing large objects dynamically costs resources and time at runtime, so logging large objects in
 production mode is generally not advisable. Props themselves are cheap: they are collected into an
 array and handed on untouched. Rendering is what costs, and it happens in the output stream — for the
-built-in console output only where a call chained `printProps`, and in a callback only where the
-callback asks for it. Rendering remains proportional to the selected values' breadth; use `depth` or
+built-in console output only where a call chained `printProps`, and in an output handler only where
+the handler asks for it. Rendering remains proportional to the selected values' breadth; use `depth` or
 `keys` to bound a wide value before printing it.
 
 Props are never redacted automatically. Do not attach secrets, credentials, or personal data unless
-the receiving callback applies the handling policy required by its destination.
+the receiving output handler applies the handling policy required by its destination.
 
 Use `resultAsProps` with `printResult` when a trace result needs a multi-line block.

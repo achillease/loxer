@@ -9,6 +9,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/), and this
 
 ### Added
 
+- Add `OutputLoxRenderer` and `ErrorLoxRenderer` to build reusable plain and ANSI-colored output
+  templates from a log or error. Custom destinations can compose module, message, timing, box,
+  props, timestamp, stack, and open-log context for their own transport, while the development
+  console uses the same templates.
+- Add public typed output events so a destination can distinguish development from production and
+  normal logs from errors; error events include an independent history snapshot.
+
 - Add `Loxer.warn()`, `Loxer.info()` and `Loxer.debug()` — a log states its level in the call that
   emits it, and each one also opens a box (`Loxer.debug.open('query')`). `Loxer.log()` writes at
   `'info'`, and `warn()` goes to the `devLog` / `prodLog` stream, so only `error()` reaches
@@ -73,6 +80,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/), and this
   runtime but appeared in no type, so calling it was a compile error.
 
 ### Changed
+
+- **Breaking:** Replace the separate `devLog`, `prodLog`, `devError`, and `prodError` callbacks with
+  one `output(event)` stream. Narrow its `environment` and `kind` fields to handle an event, then
+  use `OutputLoxRenderer` or `ErrorLoxRenderer` when the destination needs Loxer's plain or colored
+  presentation.
+- **Breaking:** Move console color, close-title opacity, and default box-layout preferences from
+  `LoxerConfig` to renderer options. Output destinations now choose their own plain or ANSI
+  presentation and fallback box layout without changing event data.
 
 - **Breaking:** Replace the positional `item` / `itemOptions` parameters with **props**. Every
   logging entry point — `Loxer.log`, `warn`, `info`, `debug`, their `.open()` forms, `Loxer.open`,

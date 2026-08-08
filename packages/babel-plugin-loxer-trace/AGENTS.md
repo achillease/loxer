@@ -17,7 +17,8 @@ testing rules before changing it.
   result surface; explicit `any` is permitted only at this boundary when exporting Babel's
   upstream type would impose Babel typings on consumers.
 - Resolve a traced function's parent statically and pass it to `__startTrace` as the trailing
-  argument — the runtime renders `'parent.functionName'` from it and has no other source for it. The
+  argument — the runtime renders the `parent.` message templates from it and has no other source for
+  it. The
   parent is the class body member that holds the function, read with the same walk that reads the
   function's name (`enclosingClassName` beside `surroundingName` in `marker-collection.ts`), and
   otherwise the file being transformed (`fileParentName`, off Babel's filename), so a function a

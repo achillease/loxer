@@ -125,10 +125,10 @@ function calculateTotal(unitPrice: number, quantity: number): number {
 
 trace(calculateTotal, {
   argsAsProps: true,
-  closeMessage: (result) => `calculateTotal done. returns: ${result.toFixed(2)}`,
+  closeMessage: ({ result, fn }) => `${fn(result.toFixed(2))} done`,
   highlight: 'close',
   moduleId: 'CALC',
-  openMessage: 'args',
+  openMessage: 'fn(args)',
   // the arguments are attached and rendered; the result is attached without being rendered
   printArgs: { depth: 1 },
   resultAsProps: true,
@@ -144,7 +144,7 @@ async function reserveInventory(orderId: number, delay: number): Promise<number>
 
 trace(reserveInventory, {
   moduleId: 'INVENTORY',
-  openMessage: ([orderId]) => `reserveInventory(${orderId})`,
+  openMessage: ({ args: [orderId], fn }) => fn(String(orderId)),
 });
 
 async function chargePayment(orderId: number): Promise<number> {
@@ -162,7 +162,7 @@ async function chargePayment(orderId: number): Promise<number> {
 
 trace(chargePayment, {
   moduleId: 'PAYMENT',
-  openMessage: ([orderId]) => `chargePayment(${orderId})`,
+  openMessage: ({ args: [orderId], fn }) => fn(String(orderId)),
 });
 
 async function submitOrder(orderId: number, delay: number): Promise<{ orderId: number }> {
@@ -175,9 +175,9 @@ async function submitOrder(orderId: number, delay: number): Promise<{ orderId: n
 }
 
 trace(submitOrder, {
-  closeMessage: ({ orderId }) => `Order ${orderId} submitted`,
+  closeMessage: ({ result: { orderId } }) => `Order ${orderId} submitted`,
   moduleId: 'ORDER',
-  openMessage: ([orderId]) => `submitOrder(${orderId})`,
+  openMessage: ({ args: [orderId], parentFn }) => parentFn(String(orderId)),
   printResult: true,
   resultAsProps: true,
 });

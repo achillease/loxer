@@ -537,6 +537,31 @@ test('class instances', () => {
   expect(render([{ foo: new Foo() }], { shortenClasses: false })).toContain('foo: { x: 1, y: 2 }');
 });
 
+test.each([
+  {
+    name: 'a top-level instance prefix',
+    props: () => [new (class Foo {
+      x = 1;
+    })()],
+    expected: '[Class: Foo] = ',
+  },
+  {
+    name: 'a shortened nested instance',
+    props: () => [{ foo: new (class Foo {
+      x = 1;
+    })() }],
+    expected: '[Class: Foo]',
+  },
+])('colored output uses fgClass for $name', ({ props, expected }) => {
+  resetLoxer();
+  initProps(true);
+
+  // the rendered escape itself, not that a spy was called: `fgClass`'s own teal is the one the
+  // trace renderer gives a parent (`test/trace-message-console.test.ts` pins the same sequence),
+  // so a change to the entry, or to how the printer consumes it, has to fail here too
+  expect(render(props())).toContain(`\x1b[38;2;78;201;176m${expected}\x1b[0m`);
+});
+
 test('a class graph does not recurse indefinitely', () => {
   class Node {
     child: Node | undefined;

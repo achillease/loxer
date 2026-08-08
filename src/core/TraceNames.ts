@@ -1,5 +1,5 @@
 /**
- * Joins a traced function's parent to its name for the `'parent.functionName'` message styles.
+ * Joins a traced function's parent to its name for the `parent.` message templates.
  *
  * The parent is the class a traced method belongs to, or the file a traced function is written in.
  * A function neither of those reaches reports its own name alone.

@@ -22,8 +22,8 @@ test('a transformed function preserves sync result, modifier chains, and its box
     }
     trace(calculate, {
       moduleId: 'TRACE',
-      openMessage: 'args',
-      closeMessage: 'result',
+      openMessage: 'fn(args)',
+      closeMessage: 'fn(result)',
       highlight: 'all',
       argsAsProps: true,
       resultAsProps: true,
@@ -35,7 +35,7 @@ test('a transformed function preserves sync result, modifier chains, and its box
   expect(devLogs.map((log) => [log.type, log.message])).toEqual([
     ['open', 'calculate(4)'],
     ['single', 'calculating:4'],
-    ['close', 'calculate done. returns: 8'],
+    ['close', 'calculate(8) done'],
   ]);
   expect(new Set(devLogs.map((log) => log.id)).size).toBe(1);
   expect(devLogs.map((log) => log.moduleId)).toEqual(['TRACE', 'ORDER', 'TRACE']);
@@ -92,7 +92,9 @@ test('a transformed async function preserves its rejection and links errors and 
 
   await expect(traced.submit()).rejects.toThrow('original failure');
   expect(devLogs.map((log) => [log.type, log.message])).toEqual([
-    ['open', 'submit()'],
+    // the default openMessage is 'parent.fn', and a marked plain function's parent is the file the
+    // transform built it from - `src/orders/orderService.ts` in this fixture
+    ['open', 'orderService.submit()'],
     ['close', 'submit failed'],
   ]);
   expect(devErrors.map((error) => error.message)).toEqual([
@@ -120,7 +122,7 @@ test('a non-async trace keeps the original promise identity while its lifecycle 
   const returned = traced.load();
   expect(returned).toBe(traced.pending);
   expect(devLogs.map((log) => [log.type, log.message, log.moduleId])).toEqual([
-    ['open', 'load()', 'TRACE'],
+    ['open', 'orderService.load()', 'TRACE'],
     ['single', 'loading', 'ORDER'],
   ]);
 
@@ -150,7 +152,7 @@ test('a non-async trace keeps a hostile thenable object and closes successfully'
   expect(traced.readHostile()).toBe(traced.hostile);
   expect(devErrors).toEqual([]);
   expect(devLogs.map((log) => [log.type, log.message])).toEqual([
-    ['open', 'readHostile()'],
+    ['open', 'orderService.readHostile()'],
     ['close', 'readHostile done'],
   ]);
 });
@@ -161,13 +163,13 @@ test('a hoisted declaration can run before its marker without an options TDZ', a
       return 'Hello ' + name;
     }
     const beforeMarker = greet('Ada');
-    trace(greet, { moduleId: 'TRACE', openMessage: 'args' });
+    trace(greet, { moduleId: 'TRACE', openMessage: 'fn(args)' });
     export { beforeMarker, greet };
   `);
 
   expect(traced.beforeMarker).toBe('Hello Ada');
   expect(devLogs.map((log) => [log.type, log.message])).toEqual([
-    ['open', 'greet()'],
+    ['open', 'orderService.greet()'],
     ['close', 'greet done'],
   ]);
   expect(traced.greet('Grace')).toBe('Hello Grace');
@@ -180,13 +182,13 @@ test('a hoisted declaration can run before its declaration and marker with defau
     function greet(name) {
       return 'Hello ' + name;
     }
-    trace(greet, { moduleId: 'TRACE', openMessage: 'args' });
+    trace(greet, { moduleId: 'TRACE', openMessage: 'fn(args)' });
     export { beforeDeclaration, greet };
   `);
 
   expect(traced.beforeDeclaration).toBe('Hello Ada');
   expect(devLogs.map((log) => [log.type, log.message])).toEqual([
-    ['open', 'greet()'],
+    ['open', 'orderService.greet()'],
     ['close', 'greet done'],
   ]);
   expect(traced.greet('Grace')).toBe('Hello Grace');
@@ -195,11 +197,11 @@ test('a hoisted declaration can run before its declaration and marker with defau
 
 test('a marker placed above its target declarations still applies its options', async () => {
   const traced = await loadTracedModule(`
-    trace(hoisted, { moduleId: 'TRACE', openMessage: 'args' });
+    trace(hoisted, { moduleId: 'TRACE', openMessage: 'fn(args)' });
     function hoisted(name) {
       return 'Hello ' + name;
     }
-    trace(later, { moduleId: 'ORDER', openMessage: 'args' });
+    trace(later, { moduleId: 'ORDER', openMessage: 'fn(args)' });
     const later = (name) => 'Bye ' + name;
     export { hoisted, later };
   `);
@@ -272,7 +274,7 @@ test('custom thenables are returned and are never invoked by tracing', async () 
   expect(traced.readThenable()).toBe(traced.customThenable);
   expect(traced.thenCalls).toBe(0);
   expect(devLogs.map((log) => [log.type, log.message])).toEqual([
-    ['open', 'readThenable()'],
+    ['open', 'orderService.readThenable()'],
     ['close', 'readThenable done'],
   ]);
 });
@@ -319,9 +321,9 @@ test('native promises with throwing own or subclass then accessors return unchan
 test('simple and rest arrows capture actual arguments', async () => {
   const traced = await loadTracedModule(`
     const simple = (first, second) => first + second;
-    trace(simple, { moduleId: 'TRACE', openMessage: 'args' });
+    trace(simple, { moduleId: 'TRACE', openMessage: 'fn(args)' });
     const rest = (first, ...tail) => [first, tail];
-    trace(rest, { moduleId: 'ORDER', openMessage: 'args' });
+    trace(rest, { moduleId: 'ORDER', openMessage: 'fn(args)' });
     export { rest, simple };
   `);
 
@@ -460,7 +462,7 @@ test('nested and overlapping transformed invocations link each direct log to its
       Loxer.log('child:end:' + value);
       return value;
     }
-    trace(child, { moduleId: 'TRACE', openMessage: 'args' });
+    trace(child, { moduleId: 'TRACE', openMessage: 'fn(args)' });
 
     async function parent(value) {
       Loxer.log('parent:start:' + value);
@@ -468,7 +470,7 @@ test('nested and overlapping transformed invocations link each direct log to its
       Loxer.log('parent:end:' + value);
       return result;
     }
-    trace(parent, { moduleId: 'ORDER', openMessage: 'args' });
+    trace(parent, { moduleId: 'ORDER', openMessage: 'fn(args)' });
     export { child, parent };
   `);
 
@@ -518,7 +520,7 @@ test('a target list traces every listed binding with one shared options expressi
     let optionsCalls = 0;
     function makeOptions() {
       optionsCalls += 1;
-      return { moduleId: 'TRACE', openMessage: 'args', closeMessage: 'result' };
+      return { moduleId: 'TRACE', openMessage: 'fn(args)', closeMessage: 'fn(result)' };
     }
     function double(value) {
       Loxer.m('ORDER').log('doubling:' + value);
@@ -541,11 +543,11 @@ test('a target list traces every listed binding with one shared options expressi
   expect(devLogs.map((log) => [log.type, log.message, log.moduleId])).toEqual([
     ['open', 'double(2)', 'TRACE'],
     ['single', 'doubling:2', 'ORDER'],
-    ['close', 'double done. returns: 4', 'TRACE'],
+    ['close', 'double(4) done', 'TRACE'],
     ['open', 'triple(2)', 'TRACE'],
-    ['close', 'triple done. returns: 6', 'TRACE'],
+    ['close', 'triple(6) done', 'TRACE'],
     ['open', 'quadruple(2)', 'TRACE'],
-    ['close', 'quadruple done. returns: 8', 'TRACE'],
+    ['close', 'quadruple(8) done', 'TRACE'],
   ]);
   const boxIds = devLogs.filter((log) => log.type === 'open').map((log) => log.id);
   expect(new Set(boxIds).size).toBe(3);
@@ -554,7 +556,7 @@ test('a target list traces every listed binding with one shared options expressi
 
 test('a target-list marker above its declarations still applies the shared options', async () => {
   const traced = await loadTracedModule(`
-    trace([first, second], { moduleId: 'ORDER', openMessage: 'args' });
+    trace([first, second], { moduleId: 'ORDER', openMessage: 'fn(args)' });
     function first(value) {
       return 'first:' + value;
     }
@@ -582,11 +584,11 @@ test('list and single markers coexist and keep separate options per marker', asy
     const alsoShared = function (value) {
       return value;
     };
-    trace([shared, alsoShared], { moduleId: 'TRACE', openMessage: 'args' });
+    trace([shared, alsoShared], { moduleId: 'TRACE', openMessage: 'fn(args)' });
     function separate(value) {
       return value;
     }
-    trace(separate, { moduleId: 'ORDER', openMessage: 'types' });
+    trace(separate, { moduleId: 'ORDER', openMessage: 'fn(types)' });
     export { alsoShared, separate, shared };
   `);
 
@@ -628,7 +630,7 @@ test('a named self-recursive list member re-enters its own trace box on every re
       return value === 0 ? total : recurse(value - 1, total + 1);
     };
     const double = (value) => value * 2;
-    trace([expression, double], { moduleId: 'TRACE', openMessage: 'args' });
+    trace([expression, double], { moduleId: 'TRACE', openMessage: 'fn(args)' });
     export { double, expression };
   `);
 
@@ -662,7 +664,7 @@ test('a runtime failure in one list member does not affect its siblings box life
     function third(value) {
       return 'third:' + value;
     }
-    trace([first, second, third], { moduleId: 'TRACE', openMessage: 'args' });
+    trace([first, second, third], { moduleId: 'TRACE', openMessage: 'fn(args)' });
     export { first, second, third };
   `);
 
@@ -701,8 +703,8 @@ test('a non-async list member keeps native promise identity while its siblings t
   expect(returned).toBe(traced.pending);
   expect(traced.saveSync(1)).toBe(2);
   expect(devLogs.map((log) => [log.type, log.message])).toEqual([
-    ['open', 'loadPending()'],
-    ['open', 'saveSync()'],
+    ['open', 'orderService.loadPending()'],
+    ['open', 'orderService.saveSync()'],
     ['close', 'saveSync done'],
   ]);
 
@@ -729,7 +731,7 @@ test('concurrent list members link direct Loxer calls to their own trace box wit
       Loxer.log('save:end:' + value);
       return value;
     }
-    trace([loadOrder, saveOrder], { moduleId: 'TRACE', openMessage: 'args' });
+    trace([loadOrder, saveOrder], { moduleId: 'TRACE', openMessage: 'fn(args)' });
     export { loadOrder, saveOrder };
   `);
 
@@ -775,7 +777,11 @@ test('argsAsProps, resultAsProps, level, and highlight apply uniformly across a 
 
   const opens = devLogs.filter((log) => log.type === 'open');
   const closes = devLogs.filter((log) => log.type === 'close');
-  expect(opens.map((log) => log.message)).toEqual(['first()', 'second()', 'third()']);
+  expect(opens.map((log) => log.message)).toEqual([
+    'orderService.first()',
+    'orderService.second()',
+    'orderService.third()',
+  ]);
   expect(closes.map((log) => log.message)).toEqual(['first done', 'second done', 'third done']);
   // asserted at array level so a single differing log is named by the diff rather than throwing out
   // of a loop before the rest is checked
@@ -843,7 +849,7 @@ test('a list marker in a nested scope re-evaluates its shared options on every c
       function second(value) {
         return label + ':second:' + value;
       }
-      trace([first, second], { moduleId: 'TRACE', openMessage: 'args', closeMessage: 'result' });
+      trace([first, second], { moduleId: 'TRACE', openMessage: 'fn(args)', closeMessage: 'fn(result)' });
       return { first, second };
     }
     export { makeTraced };
@@ -864,10 +870,10 @@ test('a list marker in a nested scope re-evaluates its shared options on every c
     'second(d)',
   ]);
   expect(devLogs.filter((log) => log.type === 'close').map((log) => log.message)).toEqual([
-    'first done. returns: "alpha:first:a"',
-    'second done. returns: "alpha:second:b"',
-    'first done. returns: "beta:first:c"',
-    'second done. returns: "beta:second:d"',
+    'first("alpha:first:a") done',
+    'second("alpha:second:b") done',
+    'first("beta:first:c") done',
+    'second("beta:second:d") done',
   ]);
 });
 
@@ -877,14 +883,14 @@ test('markers in a nested scope keep per-invocation options instead of sharing o
       function single(value) {
         return moduleId + ':' + value;
       }
-      trace(single, { moduleId, openMessage: 'args' });
+      trace(single, { moduleId, openMessage: 'fn(args)' });
       function listFirst(value) {
         return moduleId + ':first:' + value;
       }
       function listSecond(value) {
         return moduleId + ':second:' + value;
       }
-      trace([listFirst, listSecond], { moduleId, openMessage: 'args' });
+      trace([listFirst, listSecond], { moduleId, openMessage: 'fn(args)' });
       return { listFirst, listSecond, single };
     }
     export { makeTraced };
@@ -918,7 +924,7 @@ test('a list marker shares one options slot across targets declared in two neste
         function innerTarget(value) {
           return moduleId + ':inner:' + value;
         }
-        trace([outerTarget, innerTarget], { moduleId, openMessage: 'args' });
+        trace([outerTarget, innerTarget], { moduleId, openMessage: 'fn(args)' });
         return innerTarget;
       }
       return { build, outerTarget };
@@ -955,14 +961,14 @@ test('two list markers in one nested scope get separate per-invocation options s
       function firstB(value) {
         return 'firstB:' + value;
       }
-      trace([firstA, firstB], { moduleId: firstId, openMessage: 'args' });
+      trace([firstA, firstB], { moduleId: firstId, openMessage: 'fn(args)' });
       function secondA(value) {
         return 'secondA:' + value;
       }
       function secondB(value) {
         return 'secondB:' + value;
       }
-      trace([secondA, secondB], { moduleId: secondId, openMessage: 'args' });
+      trace([secondA, secondB], { moduleId: secondId, openMessage: 'fn(args)' });
       return { firstA, firstB, secondA, secondB };
     }
     export { makeGroups };
@@ -1001,7 +1007,7 @@ test('a marker on a block-scoped target keeps per-invocation options', async () 
         function blockScoped(value) {
           return moduleId + ':' + value;
         }
-        trace(blockScoped, { moduleId, openMessage: 'args' });
+        trace(blockScoped, { moduleId, openMessage: 'fn(args)' });
         handler = blockScoped;
       }
       return handler;
@@ -1057,7 +1063,7 @@ test('formatter and cyclic-result failures fall back without changing results', 
     openMessage: () => {
       throw new Error('formatter failed');
     },
-    closeMessage: 'result',
+    closeMessage: 'fn(result)',
   });
 
   trace.success(cyclic);
@@ -1068,32 +1074,32 @@ test('formatter and cyclic-result failures fall back without changing results', 
 
 test('trace options format types, results, and successful formatter messages', () => {
   const typed = __startTrace('typed', [1, 'text', null], {
-    closeMessage: 'result',
+    closeMessage: 'fn(result)',
     moduleId: 'TRACE',
-    openMessage: 'types',
+    openMessage: 'fn(types)',
   });
   typed.success({ nested: true });
 
   const formatted = __startTrace('formatted', ['Ada'], {
-    closeMessage: (result: any) => `close:${result.name}`,
+    closeMessage: ({ result }: any) => `close:${result.name}`,
     moduleId: 'ORDER',
-    openMessage: (args) => `open:${args[0]}`,
+    openMessage: ({ args }) => `open:${args[0]}`,
   });
   formatted.success({ name: 'Grace' });
 
   expect(devLogs.map((log) => log.message)).toEqual([
     'typed(number, string, object)',
-    'typed done. returns: {"nested":true}',
+    'typed({"nested":true}) done',
     'open:Ada',
     'close:Grace',
   ]);
 });
 
-test('parent.functionName trace messages fall back to the function name', () => {
+test('parent.fn trace messages fall back to the function name', () => {
   const trace = __startTrace('standalone', [], {
-    closeMessage: 'parent.functionName',
+    closeMessage: 'parent.fn',
     moduleId: 'TRACE',
-    openMessage: 'parent.functionName',
+    openMessage: 'parent.fn',
     resultAsProps: true,
   });
   trace.success(undefined);
@@ -1111,9 +1117,9 @@ test('a parent name is sanitized before it reaches the open and close messages',
     'load',
     [],
     {
-      closeMessage: 'parent.functionName',
+      closeMessage: 'parent.fn',
       moduleId: 'TRACE',
-      openMessage: 'parent.functionName',
+      openMessage: 'parent.fn',
     },
     'we\u001b[31m\nird'
   );
@@ -1172,7 +1178,7 @@ test('non-string formatters and control characters fall back to safe trace messa
 
   const escaped = __startTrace('escaped', ['line\nbreak', '\u001b[31mred\u001b[0m'], {
     moduleId: 'ORDER',
-    openMessage: 'args',
+    openMessage: 'fn(args)',
   });
   escaped.success(undefined);
 
@@ -1237,11 +1243,11 @@ test('an omitted trace level remains visible while a hidden trace leaves no visi
 test('default and destructured traced arrows retain caller arguments for message and props output', async () => {
   const traced = await loadTracedModule(`
     const zero = () => 'zero';
-    trace(zero, { moduleId: 'TRACE', openMessage: 'args', argsAsProps: true });
+    trace(zero, { moduleId: 'TRACE', openMessage: 'fn(args)', argsAsProps: true });
     const defaulted = (first = 'fallback', second = 'two') => first + ':' + second;
-    trace(defaulted, { moduleId: 'ORDER', openMessage: 'args', argsAsProps: true });
+    trace(defaulted, { moduleId: 'ORDER', openMessage: 'fn(args)', argsAsProps: true });
     const destructured = ({ value } = { value: 'fallback' }, [tail] = ['tail']) => value + ':' + tail;
-    trace(destructured, { moduleId: 'TRACE', openMessage: 'args', argsAsProps: true });
+    trace(destructured, { moduleId: 'TRACE', openMessage: 'fn(args)', argsAsProps: true });
     export { defaulted, destructured, zero };
   `);
 
@@ -1262,7 +1268,9 @@ test('default and destructured traced arrows retain caller arguments for message
     'defaulted(undefined, given)',
     'destructured()',
     'destructured(undefined, undefined)',
-    'destructured([object Object], array)',
+    // an object argument renders its contents, the way a logged value does, rather than as
+    // `[object Object]`
+    "destructured({ value: 'actual' }, [ 'array' ])",
   ]);
   expect(openings.map((log) => log.props)).toEqual([
     [],
@@ -1315,7 +1323,7 @@ test('a hidden direct modifier log does not enter history and leaves a visible t
 
   expect(traced.hiddenDetail()).toBe('ok');
   expect(devLogs.map((log) => [log.type, log.message, log.moduleId])).toEqual([
-    ['open', 'hiddenDetail()', 'TRACE'],
+    ['open', 'orderService.hiddenDetail()', 'TRACE'],
     ['close', 'hiddenDetail done', 'TRACE'],
   ]);
   expect(Loxer.history).toHaveLength(historyLength + 2);
@@ -1338,7 +1346,7 @@ test('direct level calls link to the trace box while a level .open() starts its 
   expect(traced.checkout()).toBe('ok');
 
   const byMessage = (message: string) => devLogs.find((log) => log.message === message);
-  const traceId = byMessage('checkout()')?.id;
+  const traceId = byMessage('orderService.checkout()')?.id;
   expect(traceId).toBeDefined();
 
   // `.warn(...)` was rewritten onto the trace box and still reports 'warn': linking a log to a box
@@ -1382,7 +1390,7 @@ test('a shadowed Loxer binding is never linked, not even through a level method'
   expect(traced.shadowed()).toEqual(['debug:local', 'warn:local', 'open']);
   // the local object handled every call; only the trace's own box reached the real Loxer
   expect(devLogs.map((log) => [log.type, log.message])).toEqual([
-    ['open', 'shadowed()'],
+    ['open', 'orderService.shadowed()'],
     ['close', 'shadowed done'],
   ]);
 });

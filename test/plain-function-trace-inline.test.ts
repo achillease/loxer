@@ -41,11 +41,11 @@ test('an inline literal is accepted as a call argument, an immediately invoked e
   expect(traced.handlers.onClick('click-event')).toBe('clicked:click-event');
 
   expect(devLogs.filter((log) => log.type === 'open').map((log) => log.message)).toEqual([
-    'syncOrders()',
-    'memoValue()',
-    'doubled()',
-    'load()',
-    'onClick()',
+    'orderService.syncOrders()',
+    'orderService.memoValue()',
+    'orderService.doubled()',
+    'orderService.load()',
+    'orderService.onClick()',
   ]);
 });
 
@@ -54,7 +54,7 @@ test('a named FunctionExpression literal reports its own name instead of the sur
     function useCallback(fn) { return fn; }
     const load = useCallback(trace(function fetchOrder(id) {
       return 'order:' + id;
-    }, { moduleId: 'ORDER', openMessage: 'args' }));
+    }, { moduleId: 'ORDER', openMessage: 'fn(args)' }));
     export { load };
   `);
 
@@ -73,7 +73,7 @@ test('an explicit name option overrides the surrounding declarator for an inline
 
   expect(traced.load()).toBe('value');
   expect(devLogs.filter((log) => log.type === 'open').map((log) => log.message)).toEqual([
-    'explicitName()',
+    'orderService.explicitName()',
   ]);
 });
 
@@ -81,7 +81,7 @@ test('an inline literal takes its name from a member-expression assignment targe
   const traced = await loadTracedModule(`
     function identity(fn) { return fn; }
     const target = {};
-    target.handler = identity(trace((value) => value + 1, { moduleId: 'TRACE', openMessage: 'args' }));
+    target.handler = identity(trace((value) => value + 1, { moduleId: 'TRACE', openMessage: 'fn(args)' }));
     export { target };
   `);
 
@@ -91,19 +91,19 @@ test('an inline literal takes its name from a member-expression assignment targe
   ]);
 });
 
-test('parent.functionName names the class an inline literal is a field of, through a call and all', async () => {
+test('parent.fn names the class an inline literal is a field of, through a call and all', async () => {
   const traced = await loadTracedModule(`
     function useCallback(fn, deps) { return fn; }
     class Checkout {
       #discount = trace((price) => price - 1, {
         moduleId: 'ORDER',
-        openMessage: 'parent.functionName',
-        closeMessage: 'parent.functionName',
+        openMessage: 'parent.fn',
+        closeMessage: 'parent.fn',
       });
       load = useCallback(trace((id) => 'order:' + id, {
         moduleId: 'ORDER',
-        openMessage: 'parent.functionName',
-        closeMessage: 'parent.functionName',
+        openMessage: 'parent.fn',
+        closeMessage: 'parent.fn',
       }), []);
       invokeDiscount(price) {
         return this.#discount(price);
@@ -204,7 +204,7 @@ test('name-boundary shapes all raise the naming error instead of borrowing a nam
   `);
   expect(traced.f('x')).toBe('x');
   expect(devLogs.filter((log) => log.type === 'open').map((log) => log.message)).toEqual([
-    'loadOrder()',
+    'orderService.loadOrder()',
   ]);
 });
 
@@ -265,7 +265,7 @@ test('an inline literal marker inside a factory function re-evaluates its option
     let optionsCalls = 0;
     function makeOptions(label) {
       optionsCalls += 1;
-      return { moduleId: 'TRACE', openMessage: 'args' };
+      return { moduleId: 'TRACE', openMessage: 'fn(args)' };
     }
     function makeTraced(label) {
       const handler = identity(trace((value) => label + ':' + value, makeOptions(label)));
@@ -294,8 +294,8 @@ test('two inline markers in one nested scope get separate hoisted option slots',
   const source = `
     function identity(fn) { return fn; }
     function makeHandlers(labelA, labelB) {
-      const handlerA = identity(trace((value) => labelA + ':' + value, { moduleId: 'TRACE', openMessage: 'args' }));
-      const handlerB = identity(trace((value) => labelB + ':' + value, { moduleId: 'ORDER', openMessage: 'args' }));
+      const handlerA = identity(trace((value) => labelA + ':' + value, { moduleId: 'TRACE', openMessage: 'fn(args)' }));
+      const handlerB = identity(trace((value) => labelB + ':' + value, { moduleId: 'ORDER', openMessage: 'fn(args)' }));
       return { handlerA, handlerB };
     }
     export { makeHandlers };
@@ -370,8 +370,8 @@ test("an inline literal nested inside another inline literal opens its own box i
 
   expect(traced.outer(3)).toBe(8);
   expect(devLogs.map((log) => [log.type, log.message, log.moduleId])).toEqual([
-    ['open', 'outer()', 'TRACE'],
-    ['open', 'inner()', 'ORDER'],
+    ['open', 'orderService.outer()', 'TRACE'],
+    ['open', 'orderService.inner()', 'ORDER'],
     ['close', 'inner done', 'ORDER'],
     ['close', 'outer done', 'TRACE'],
   ]);
@@ -392,8 +392,8 @@ test("an inline literal nested inside a statement-form target's body opens its o
 
   expect(traced.outer(3)).toBe(8);
   expect(devLogs.map((log) => [log.type, log.message, log.moduleId])).toEqual([
-    ['open', 'outer()', 'TRACE'],
-    ['open', 'inner()', 'ORDER'],
+    ['open', 'orderService.outer()', 'TRACE'],
+    ['open', 'orderService.inner()', 'ORDER'],
     ['close', 'inner done', 'ORDER'],
     ['close', 'outer done', 'TRACE'],
   ]);
@@ -405,7 +405,7 @@ test("a direct Loxer call inside an inline literal links to that invocation's bo
     const load = identity(trace((id) => {
       Loxer.log('loading:' + id);
       return 'order:' + id;
-    }, { moduleId: 'TRACE', openMessage: 'args' }));
+    }, { moduleId: 'TRACE', openMessage: 'fn(args)' }));
     export { load };
   `);
 
@@ -482,7 +482,7 @@ test('a named function-expression literal re-enters its own box on recursive sel
     function identity(fn) { return fn; }
     const expression = identity(trace(function recurse(value, total) {
       return value === 0 ? total : recurse(value - 1, total + 1);
-    }, { moduleId: 'TRACE', openMessage: 'args' }));
+    }, { moduleId: 'TRACE', openMessage: 'fn(args)' }));
     export { expression };
   `);
 

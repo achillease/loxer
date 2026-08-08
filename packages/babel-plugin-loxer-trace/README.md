@@ -40,8 +40,8 @@ async function submitOrder(orderId: string) {
 
 trace(submitOrder, {
   moduleId: 'ORDER',
-  openMessage: 'args',
-  closeMessage: 'result',
+  openMessage: 'parent.fn(args)',
+  closeMessage: 'parent.fn(result)',
 });
 ```
 
@@ -60,7 +60,7 @@ function loadOrder(orderId: string) {
 }
 const cancelOrder = (orderId: string) => repository.cancel(orderId);
 
-trace([loadOrder, cancelOrder], { moduleId: 'ORDER', openMessage: 'args' });
+trace([loadOrder, cancelOrder], { moduleId: 'ORDER', openMessage: 'parent.fn(args)' });
 ```
 
 Every listed binding is transformed exactly as its own marker would transform it, and each invocation
@@ -118,6 +118,12 @@ result. This preserves the observable sync/async result and native Promise ident
 `TraceOptions` infers formatter callback types from the marked function: an open
 formatter receives its actual argument tuple, while a close formatter receives its returned or
 awaited result.
+
+`openMessage` defaults to `parent.fn` and accepts `fn`, `parent.fn`, `fn(types)`, `fn(args)`,
+`parent.fn(types)`, `parent.fn(args)`, or a formatter. `closeMessage` defaults to `fn` and accepts
+`fn`, `parent.fn`, `fn(result)`, `parent.fn(result)`, or a formatter. Formatters receive an object:
+`({ args, fn, parentFn })` for an opening message and `({ result, fn, parentFn })` for a closing
+message. The printers produce the same qualified, colored call form as the templates.
 
 ## API and source layout
 

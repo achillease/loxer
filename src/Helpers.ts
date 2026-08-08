@@ -43,7 +43,7 @@ const CONTROL_CHARACTERS = /[\u0000-\u001F\u007F-\u009F]/g;
  */
 const TERMINAL_CONTROL_CHARACTERS = /[\u0000-\u0008\u000B-\u001F\u007F-\u009F]/g;
 
-/** @internal */
+/** @internal Escapes one control character as its `\uXXXX` form. */
 function escapeControlCharacter(character: string): string {
   return String.raw`\u${character.charCodeAt(0).toString(16).padStart(4, '0')}`;
 }

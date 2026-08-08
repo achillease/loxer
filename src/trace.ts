@@ -1,16 +1,22 @@
 import { resolveBoxLevel } from './core/Levels.js';
 import { resolveTracePrintProps } from './core/PropsPrinter.js';
-import { qualifiedFunctionName } from './core/TraceNames.js';
+import {
+  parentNameResolver,
+  renderCloseMessage,
+  renderFailureMessage,
+  renderOpenMessage,
+  TraceCall,
+} from './core/TraceMessage.js';
 import { sanitizeControlCharacters } from './Helpers.js';
 import { Loxer } from './Loxer.js';
-import {
-  FunctionCloseMessage,
-  FunctionOpenMessage,
-  TraceOptions,
-  TraceHighlight,
-} from './tracing-types.js';
+import { TraceOptions, TraceHighlight } from './tracing-types.js';
 
-export type { TraceOptions } from './tracing-types.js';
+export type {
+  TraceCallPrinter,
+  TraceCloseMessageContext,
+  TraceOpenMessageContext,
+  TraceOptions,
+} from './tracing-types.js';
 
 type PlainFunctionTraceTarget = (...args: any[]) => unknown;
 
@@ -86,7 +92,7 @@ export function __observeTraceResult(traceState: FunctionTrace, result: any): bo
  *
  * function load(id: string) { ... }
  *
- * trace(load, { moduleId: 'ORDER', openMessage: 'args' });
+ * trace(load, { moduleId: 'ORDER', openMessage: 'fn(args)' });
  * ```
  */
 export function trace<T extends PlainFunctionTraceTarget>(
@@ -110,7 +116,7 @@ export function trace<T extends PlainFunctionTraceTarget>(
  * function load(id: string) { ... }
  * function save(id: string) { ... }
  *
- * trace([load, save], { moduleId: 'ORDER', openMessage: 'args' });
+ * trace([load, save], { moduleId: 'ORDER', openMessage: 'fn(args)' });
  * ```
  */
 export function trace<T extends PlainFunctionTraceTarget>(
@@ -126,7 +132,7 @@ export function trace<T extends PlainFunctionTraceTarget>(
  *
  * ```ts
  * const load = useCallback(async (id: string) => {
- *   trace({ moduleId: 'ORDER', openMessage: 'args' });
+ *   trace({ moduleId: 'ORDER', openMessage: 'fn(args)' });
  *
  *   return (await fetch(`/orders/${id}`)).json();
  * }, []);
@@ -146,7 +152,7 @@ export function trace<T extends PlainFunctionTraceTarget>(
  * import { trace } from 'loxer/trace';
  *
  * function load(id: string) {
- *   trace<[string], Order>({ moduleId: 'ORDER', closeMessage: (order) => order.state });
+ *   trace<[string], Order>({ moduleId: 'ORDER', closeMessage: ({ result }) => result.state });
  *   ...
  * }
  * ```
@@ -169,7 +175,7 @@ export function trace(
  * Starts the runtime lifecycle emitted by `babel-plugin-loxer-trace`.
  *
  * The transform passes `parentName` — the class a traced method belongs to, or the file a traced
- * function is written in — which is what the `'parent.functionName'` message styles render against.
+ * function is written in — which is what the `parent.` message templates render against.
  *
  * @internal
  */
@@ -184,16 +190,14 @@ export function __startTrace(
   // a name reaches this from the `name` option or a string-literal property key as well as from an
   // identifier, so it carries no more guarantee about control characters than an argument does
   const safeName = sanitizeMessage(functionName);
-  // only the `'parent.functionName'` styles read the parent, so a trace that names neither pays
-  // nothing for it — this runs on every traced call, ahead of the level that decides whether the
-  // log is written at all
-  const needsParentName =
-    options.openMessage === 'parent.functionName' || options.closeMessage === 'parent.functionName';
-  const parentQualifiedName =
-    needsParentName && parentName !== undefined
-      ? qualifiedFunctionName(sanitizeMessage(parentName), safeName)
-      : safeName;
-  const openMessage = getOpenMessage(safeName, parentQualifiedName, args, options.openMessage);
+  // the parent is discovered at the moment a `parent.` template or a callback's `parentFn` prints
+  // it — a trace that names neither pays nothing for it, and this runs on every traced call, ahead
+  // of the level that decides whether the log is written at all
+  const call: TraceCall = {
+    name: safeName,
+    resolveParentName: parentNameResolver(() => parentName ?? ''),
+  };
+  const openMessage = renderOpenMessage(options.openMessage, { ...call, args });
   // the gate lives in one place for both trace runtimes, so neither can drop a side the other reads
   const { printArgs, printResult } = resolveTracePrintProps(options);
   // one prop per argument, so a callback reads them the way the call passed them
@@ -211,12 +215,7 @@ export function __startTrace(
   return {
     id,
     success(result: any): void {
-      const closeMessage = getCloseMessage(
-        safeName,
-        parentQualifiedName,
-        result,
-        options.closeMessage
-      );
+      const closeMessage = renderCloseMessage(options.closeMessage, { ...call, result });
       // the result is one prop, and a conditional spread is what keeps a `void` function from
       // attaching a literal `undefined`
       const closeProps = options.resultAsProps && result !== undefined ? [result] : [];
@@ -229,7 +228,9 @@ export function __startTrace(
     },
     failure(error: any): void {
       Loxer.of(id).error(error);
-      Loxer.h(isHighlighted(highlight, 'close')).of(id).close(`${safeName} failed`);
+      Loxer.h(isHighlighted(highlight, 'close'))
+        .of(id)
+        .close(renderFailureMessage(options.closeMessage, call));
     },
   };
 }
@@ -238,65 +239,6 @@ function isHighlighted(highlight: TraceHighlight | undefined, phase: 'open' | 'c
   return highlight === 'all' || highlight === phase;
 }
 
-function getOpenMessage(
-  functionName: string,
-  parentQualifiedName: string,
-  args: any[],
-  style: FunctionOpenMessage | undefined
-): string {
-  const fallback = `${functionName}()`;
-
-  try {
-    if (typeof style === 'function') {
-      return ensureMessage(style(args), fallback);
-    }
-    if (style === 'args') {
-      return `${functionName}(${args.map((arg) => sanitizeMessage(arg)).join(', ')})`;
-    }
-    if (style === 'types') {
-      return `${functionName}(${args.map((arg) => typeof arg).join(', ')})`;
-    }
-    if (style === 'parent.functionName') {
-      return `${parentQualifiedName}()`;
-    }
-  } catch {
-    return fallback;
-  }
-
-  return fallback;
-}
-
 function sanitizeMessage(value: unknown): string {
   return sanitizeControlCharacters(String(value));
-}
-
-function getCloseMessage(
-  functionName: string,
-  parentQualifiedName: string,
-  result: any,
-  style: FunctionCloseMessage | undefined
-): string {
-  const fallback = `${functionName} done`;
-
-  try {
-    if (typeof style === 'function') {
-      return ensureMessage(style(result), fallback);
-    }
-    if (style === 'result') {
-      const serialized = JSON.stringify(result);
-
-      return serialized === undefined ? fallback : `${functionName} done. returns: ${serialized}`;
-    }
-    if (style === 'parent.functionName') {
-      return `${parentQualifiedName} done`;
-    }
-  } catch {
-    return fallback;
-  }
-
-  return fallback;
-}
-
-function ensureMessage(message: string, fallback: string): string {
-  return typeof message === 'string' ? sanitizeMessage(message) : fallback;
 }

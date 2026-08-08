@@ -85,8 +85,8 @@ export function resolveTracePrintProps(options?: {
   printResult?: boolean | PropsPrinterOptions;
 }): TracePrintProps {
   // only a trace that asked for rendering resolves a configuration for it, the way only the
-  // `'parent.functionName'` styles resolve a parent name — this runs on every traced call, ahead of
-  // the level that decides whether the log is written at all
+  // `parent.` templates resolve a parent name — this runs on every traced call, ahead of the level
+  // that decides whether the log is written at all
   if (options?.printArgs === undefined && options?.printResult === undefined) {
     return NO_TRACE_PRINT_PROPS;
   }
@@ -413,7 +413,7 @@ export class PropsPrinter {
               this.printObject(value as Record<string, any>, depth, save)
             );
 
-            return [this.colorize(prefix, ANSIFormat.fgFunction) + content[0], prefix + content[1]];
+            return [this.colorize(prefix, ANSIFormat.fgClass) + content[0], prefix + content[1]];
           }
         }
         if (this.isBeyondDepth(depth)) {
@@ -676,7 +676,7 @@ export class PropsPrinter {
   private printClass(value: string): [colored: string, plain: string] {
     const text = `[Class: ${value}]`;
 
-    return [this.colorize(text, ANSIFormat.fgFunction), text];
+    return [this.colorize(text, ANSIFormat.fgClass), text];
   }
 
   /** @internal returns a specified string of spaces (and vertical indent indicators) */
@@ -688,4 +688,33 @@ export class PropsPrinter {
       ? spaces.map((_, index) => (index % this._indent === 0 ? line : ' ')).join('')
       : spaces.join('');
   }
+}
+
+/** @internal Turns an arbitrary value into the one-line, escape-free `string` a message is.
+ *
+ * A primitive takes `String()`, while an object or a function renders as one compact line through
+ * {@link PropsPrinter.singleLine}, so `Loxer.log(payment)` reads as its contents rather than as
+ * `[object Object]` and a function reports `[Function: name]` rather than its whole body.
+ *
+ * An omitted value and an explicit `undefined` both produce an empty string: a default parameter
+ * cannot tell them apart, and the `(message?, ...props)` shape is worth more than the distinction.
+ *
+ * The result carries control-character escaping, which is what makes the single line unconditional:
+ * a `\n` in a message would leave the box column open from the second line on.
+ *
+ * Shared by `Loxer`'s own message funnel and by the `fn` / `parentFn` printers a trace callback
+ * receives, so a value reads the same whichever of the two rendered it.
+ */
+export function stringifyMessage(value: unknown): string {
+  if (value === undefined) {
+    return '';
+  }
+  if (value === null) {
+    return 'null';
+  }
+  if (typeof value === 'object' || typeof value === 'function') {
+    return sanitizeControlCharacters(PropsPrinter.singleLine(value));
+  }
+
+  return sanitizeControlCharacters(String(value));
 }

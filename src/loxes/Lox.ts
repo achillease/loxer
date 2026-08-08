@@ -1,6 +1,7 @@
 import type { LogLevel } from '../core/Levels.js';
 // type-only, so the specifier is erased on emit and no runtime cycle is closed
 import type { PropsPrinterOptions } from '../core/PropsPrinter.js';
+import type { MessageSpan } from '../core/TraceMessage.js';
 import { is } from '../Helpers.js';
 /** @module Lox */
 
@@ -17,6 +18,7 @@ export interface LoxInit {
   type: LoxType;
   moduleId: string;
   level: LogLevel;
+  messageSpans?: MessageSpan[];
 }
 
 /** The basic log that every {@link OutputLox} and {@link ErrorLox} extends */
@@ -60,6 +62,13 @@ export class Lox {
   level: LogLevel;
   /** the {@link Date} the log was declared */
   timestamp: Date;
+  /** @internal the regions of {@link Lox.message} the built-in output colors — the name, the parent,
+   * and the arguments, types, or result a traced call renders into its box message.
+   *
+   * Empty for every other log. The message itself stays free of escape sequences, which is what
+   * keeps a destination, the history, and an error's open-log context plain by construction.
+   */
+  messageSpans: MessageSpan[];
 
   /** @internal */
   constructor(init: LoxInit) {
@@ -71,6 +80,7 @@ export class Lox {
     this.type = init.type;
     this.moduleId = init.moduleId;
     this.level = init.level;
+    this.messageSpans = init.messageSpans ?? [];
     this.timestamp = new Date();
   }
 

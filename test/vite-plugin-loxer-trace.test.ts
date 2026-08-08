@@ -48,7 +48,7 @@ test('passes the module id on as the filename, so a traced function reports that
   const plugin = loxerTrace();
   const source =
     "import { trace } from 'loxer/trace'; " +
-    "function value() { trace({ openMessage: 'parent.functionName' }); return 1; }";
+    "function value() { trace({ openMessage: 'parent.fn' }); return 1; }";
 
   const result = await runTransform(plugin, source, '/repo/orders/orderService.ts?import');
 

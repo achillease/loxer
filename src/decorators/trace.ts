@@ -1,12 +1,25 @@
 import { resolveBoxLevel } from '../core/Levels.js';
 import { resolveTracePrintProps } from '../core/PropsPrinter.js';
-import { classParentName, qualifiedFunctionName } from '../core/TraceNames.js';
-import { is } from '../Helpers.js';
+import {
+  parentNameResolver,
+  renderCloseMessage,
+  renderFailureMessage,
+  renderOpenMessage,
+  TraceCall,
+  TraceMessage,
+} from '../core/TraceMessage.js';
+import { classParentName } from '../core/TraceNames.js';
+import { is, sanitizeControlCharacters } from '../Helpers.js';
 import { Loxer } from '../Loxer.js';
 import { TraceOptions } from '../tracing-types.js';
 import { ErrorType, ModuleId } from '../types.js';
 
-export type { TraceOptions } from '../tracing-types.js';
+export type {
+  TraceCallPrinter,
+  TraceCloseMessageContext,
+  TraceOpenMessageContext,
+  TraceOptions,
+} from '../tracing-types.js';
 
 type TracedMethod = (this: any, ...args: any[]) => any;
 
@@ -85,15 +98,18 @@ function createTracedMethod<Args extends readonly unknown[] = readonly unknown[]
 
     const level = resolveBoxLevel(o?.level);
     const h = o?.highlight;
-    const needsParentName =
-      o?.openMessage === 'parent.functionName' || o?.closeMessage === 'parent.functionName';
-    // a decorated method's parent is always its class, which the running instance carries
-    const fixedName = needsParentName ? resolveClassName(this) : '';
+    // a decorated method's parent is always its class, which the running instance carries. Reading
+    // it is deferred to the moment a `parent.` template or a callback's `parentFn` prints it, and
+    // memoized so a callback printing it twice reads the instance once
+    const call: TraceCall = {
+      name: propertyName,
+      resolveParentName: parentNameResolver(() => resolveClassName(this)),
+    };
     // the gate lives in one place for both trace runtimes, so neither can drop a side the other reads
     const { printArgs, printResult } = resolveTracePrintProps(o);
 
     // open message
-    const openMessage = getOpenMessage(o, propertyName, args, fixedName);
+    const openMessage = renderOpenMessage(o?.openMessage, { ...call, args });
 
     // open the lox - one prop per argument
     const openProps = o?.argsAsProps ? args : [];
@@ -111,7 +127,7 @@ function createTracedMethod<Args extends readonly unknown[] = readonly unknown[]
     // the result is one prop, and a conditional spread is what keeps a `void` method from attaching
     // a literal `undefined`. The open's chain has been reset by its own log, so the close asks for
     // rendering itself
-    const closeWith = (message: string, payload: unknown) => {
+    const closeWith = (message: TraceMessage, payload: unknown) => {
       const closeProps = o?.resultAsProps && payload !== undefined ? [payload] : [];
       (printResult !== undefined
         ? Loxer.pp(printResult)
@@ -127,7 +143,7 @@ function createTracedMethod<Args extends readonly unknown[] = readonly unknown[]
       Loxer.of(loxId).error(error as ErrorType);
       Loxer.h(h === 'all' || h === 'close')
         .of(loxId)
-        .close(`${propertyName} failed`);
+        .close(renderFailureMessage(o?.closeMessage, call));
     };
 
     let result: any;
@@ -144,7 +160,7 @@ function createTracedMethod<Args extends readonly unknown[] = readonly unknown[]
         return result.then(
           (payload: any) => {
             // close the lox with the resolved payload (not the still-pending promise)
-            closeWith(getCloseMessage(o, propertyName, payload, fixedName), payload);
+            closeWith(renderCloseMessage(o?.closeMessage, { ...call, result: payload }), payload);
 
             return payload;
           },
@@ -160,7 +176,7 @@ function createTracedMethod<Args extends readonly unknown[] = readonly unknown[]
     }
 
     // close message
-    closeWith(getCloseMessage(o, propertyName, result, fixedName), result);
+    closeWith(renderCloseMessage(o?.closeMessage, { ...call, result }), result);
 
     return result;
   };
@@ -170,10 +186,14 @@ function isStandardDecoratorContext(value: unknown): value is TraceMethodContext
   return typeof value === 'object' && value !== null && 'kind' in value;
 }
 
+/** A property key carries no more guarantee about control characters than an argument does — a
+ * computed string key and a symbol's description both come from wherever the program built them. */
 function methodName(propertyKey: string | symbol): string {
-  return typeof propertyKey === 'symbol'
-    ? (propertyKey.description ?? propertyKey.toString())
-    : propertyKey;
+  return sanitizeControlCharacters(
+    typeof propertyKey === 'symbol'
+      ? (propertyKey.description ?? propertyKey.toString())
+      : propertyKey
+  );
 }
 
 function resolveClassName(instance: any): string {
@@ -184,48 +204,4 @@ function resolveClassName(instance: any): string {
   } catch {
     return '';
   }
-}
-
-function getOpenMessage<Args extends readonly unknown[], Result>(
-  o: TraceOptions<Args, Result> | undefined,
-  propertyKey: string,
-  args: Args,
-  fixedName: string
-): string {
-  const om = o?.openMessage;
-  let openMessage = propertyKey + '()';
-  if (is(om)) {
-    if (typeof om === 'function') {
-      openMessage = om(args);
-    } else if (om === 'args') {
-      openMessage = propertyKey + '(' + args.join(', ') + ')';
-    } else if (om === 'types') {
-      openMessage = propertyKey + '(' + args.map((a) => typeof a).join(', ') + ')';
-    } else if (om === 'parent.functionName') {
-      openMessage = qualifiedFunctionName(fixedName, propertyKey) + '()';
-    }
-  }
-
-  return openMessage;
-}
-
-function getCloseMessage<Args extends readonly unknown[], Result>(
-  o: TraceOptions<Args, Result> | undefined,
-  propertyKey: string,
-  result: Result,
-  fixedName: string
-): string {
-  const cm = o?.closeMessage;
-  let closeMessage = propertyKey + ' done';
-  if (is(cm)) {
-    if (typeof cm === 'function') {
-      closeMessage = cm(result);
-    } else if (cm === 'result') {
-      closeMessage = propertyKey + ' done. returns: ' + JSON.stringify(result);
-    } else if (cm === 'parent.functionName') {
-      closeMessage = qualifiedFunctionName(fixedName, propertyKey) + ' done';
-    }
-  }
-
-  return closeMessage;
 }

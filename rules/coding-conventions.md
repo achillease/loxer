@@ -25,6 +25,17 @@
 - A change under `src/**/*.ts` is done only when `pnpm lint` and `pnpm test` both exit 0. A
   change touching `tsconfig.json` or type declarations is done only when `pnpm build` also
   exits 0.
+- When a function's result is spread into a typed object literal, type that function's return as
+  a `Pick<>` of the target type, not as a structurally similar shape of its own — TypeScript's
+  excess-property checking does not apply to a `...spread`, only to a literal written directly
+  against the type, so a field the spread carries but the target lacks is silently dropped instead
+  of rejected. `outputMessage` in `src/Loxer.ts` feeds three `new Lox({ ... })` sites by spread;
+  when `Lox`'s `valueSpans` field was renamed to `messageSpans`, its old return type let the
+  producer go on returning `spans` and every trace message silently lost its coloring, while
+  `pnpm lint`, `pnpm build`, and `pnpm test` all stayed green. Declaring the return as
+  `Pick<LoxInit, 'message' | 'messageSpans'>` makes the field names the initializer's own, so a
+  later rename cannot compile past it — an *optional* target field makes this worse, not better,
+  since omitting it is legal on both sides.
 
 ## Never
 

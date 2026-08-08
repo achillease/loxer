@@ -33,14 +33,14 @@ function traceFormatterTypeFixture(): void {
   }
 
   trace(calculateTotal, {
-    openMessage(args) {
+    openMessage({ args }) {
       type ArgumentsAreExact = AssertTrue<
         Equals<typeof args, [quantity: number, currency: string]>
       >;
       const pinned: ArgumentsAreExact = true;
       return `${args[0]} ${args[1]} ${pinned}`;
     },
-    closeMessage(result) {
+    closeMessage({ result }) {
       type ResultIsExact = AssertTrue<Equals<typeof result, { amount: number }>>;
       const pinned: ResultIsExact = true;
       return `${result.amount} ${pinned}`;
@@ -57,12 +57,12 @@ function traceListFormatterTypeFixture(): void {
   }
 
   trace([loadOrder, saveOrder], {
-    openMessage(args) {
+    openMessage({ args }) {
       type ArgumentsAreExact = AssertTrue<Equals<typeof args, [id: string]>>;
       const pinned: ArgumentsAreExact = true;
       return `${args[0]} ${pinned}`;
     },
-    closeMessage(result) {
+    closeMessage({ result }) {
       type ResultIsExact = AssertTrue<Equals<typeof result, { amount: number }>>;
       const pinned: ResultIsExact = true;
       return `${result.amount} ${pinned}`;
@@ -80,12 +80,12 @@ function traceReadonlyListFormatterTypeFixture(): void {
   const targets = [loadOrder, saveOrder] as const;
 
   trace(targets, {
-    openMessage(args) {
+    openMessage({ args }) {
       type ArgumentsAreExact = AssertTrue<Equals<typeof args, [id: string]>>;
       const pinned: ArgumentsAreExact = true;
       return `${args[0]} ${pinned}`;
     },
-    closeMessage(result) {
+    closeMessage({ result }) {
       type ResultIsExact = AssertTrue<Equals<typeof result, { amount: number }>>;
       const pinned: ResultIsExact = true;
       return `${result.amount} ${pinned}`;
@@ -102,14 +102,14 @@ function traceMixedSignatureListFormatterTypeFixture(): void {
   }
 
   trace([loadOrder, countOrders], {
-    openMessage(args) {
+    openMessage({ args }) {
       type ArgumentsAreExactUnion = AssertTrue<
         Equals<typeof args, [id: string] | [active: boolean]>
       >;
       const pinned: ArgumentsAreExactUnion = true;
       return `${String(args[0])} ${pinned}`;
     },
-    closeMessage(result) {
+    closeMessage({ result }) {
       type ResultIsExactUnion = AssertTrue<Equals<typeof result, { amount: number } | number>>;
       const pinned: ResultIsExactUnion = true;
       return `${String(result)} ${pinned}`;

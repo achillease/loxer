@@ -365,7 +365,7 @@ test('public structured renderers reproduce the default development console outp
   const errorTemplate = ErrorLoxRenderer(errorLox, 8 + 1 + errorLox.module.slicedName.length);
   expect(errorTemplate.stack).not.toBe('');
   expect((console.log as Mock).mock.calls[1][0]).toBe(
-    `${errorTemplate.colored.time}: ${errorTemplate.colored.module}${errorTemplate.colored.box}${errorTemplate.colored.message}\t${errorTemplate.colored.timeConsumption}${errorTemplate.colored.props}${errorTemplate.colored.stack}${errorTemplate.colored.openLogs}`
+    `${errorTemplate.colored.time} ${errorTemplate.colored.module}${errorTemplate.colored.box}${errorTemplate.colored.message}\t${errorTemplate.colored.timeConsumption}${errorTemplate.colored.props}${errorTemplate.colored.stack}${errorTemplate.colored.openLogs}`
   );
 });
 

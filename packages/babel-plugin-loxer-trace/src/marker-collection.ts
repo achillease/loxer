@@ -345,8 +345,8 @@ function isNameBoundary(path: NodePath<any>, t: typeof BabelTypes): boolean {
 }
 
 /**
- * Returns the name of the class a traced function is a member of, which the `'parent.functionName'`
- * message styles render against ahead of the file the function is written in.
+ * Returns the name of the class a traced function is a member of, which the `parent.` message
+ * templates render against ahead of the file the function is written in.
  *
  * The walk that reads a function's name is the walk that reads its class, because a function reaches
  * a class through the member that holds it: a method, a getter or setter, an ordinary, private, or

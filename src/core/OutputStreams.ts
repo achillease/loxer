@@ -33,7 +33,7 @@ export class OutputStreams {
     } else {
       const lox = ColoredErrorLoxRenderer(errorLox, this.getPropsIndentation(errorLox));
       console.log(
-        `${lox.time}: ${lox.module}${lox.box}${lox.message}\t${lox.timeConsumption}${lox.props}${lox.stack}${lox.openLogs}`
+        `${lox.time} ${lox.module}${lox.box}${lox.message}\t${lox.timeConsumption}${lox.props}${lox.stack}${lox.openLogs}`
       );
     }
   }

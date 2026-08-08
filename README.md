@@ -104,13 +104,17 @@ function submitOrder(orderId: string) {
   return orderId;
 }
 
-trace(submitOrder, { moduleId: 'ORDER', openMessage: 'args' });
+trace(submitOrder, { moduleId: 'ORDER', openMessage: 'parent.fn(args)' });
 ```
+
+`openMessage` defaults to `parent.fn`; `closeMessage` defaults to `fn`. The payload templates are
+`fn(args)`, `parent.fn(args)`, `fn(types)`, `parent.fn(types)`, `fn(result)`, and
+`parent.fn(result)`.
 
 To trace several functions the same way, pass an array literal of them and the options they share:
 
 ```ts
-trace([submitOrder, cancelOrder], { moduleId: 'ORDER', openMessage: 'args' });
+trace([submitOrder, cancelOrder], { moduleId: 'ORDER', openMessage: 'parent.fn(args)' });
 ```
 
 `trace()` is a build-time marker, not a runtime wrapper. Every module that executes a marker must

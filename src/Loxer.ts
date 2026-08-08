@@ -11,11 +11,12 @@ import { Loxes } from './core/Loxes.js';
 import { LoxHistory } from './core/LoxHistory.js';
 import { Modules } from './core/Modules.js';
 import { OutputStreams } from './core/OutputStreams.js';
-import { PropsPrinter, PropsPrinterOptions } from './core/PropsPrinter.js';
+import { PropsPrinterOptions, stringifyMessage } from './core/PropsPrinter.js';
 import { realmSlot } from './core/Realm.js';
+import { isTraceMessage, MessageSpan } from './core/TraceMessage.js';
 import { is, isNES, sanitizeControlCharacters } from './Helpers.js';
 import { ErrorLox } from './loxes/ErrorLox.js';
-import { Lox, LoxType } from './loxes/Lox.js';
+import { Lox, LoxInit, LoxType } from './loxes/Lox.js';
 import { OutputLox } from './loxes/OutputLox.js';
 import {
   ErrorType,
@@ -27,32 +28,53 @@ import {
   OpenedLox,
 } from './types.js';
 
-/** Turns a log's first argument into the `string` that `lox.message` is.
+/** Reads a rendered {@link TraceMessage} carrier: its plain text, and the regions of that text the
+ * built-in output colors.
  *
- * A primitive takes `String()`, while an object or a function renders as one compact line through
- * {@link PropsPrinter.singleLine}, so
- * `Loxer.log(payment)` reads as its contents rather than as `[object Object]` and a function reports
- * `[Function: name]` rather than its whole body.
- *
- * An omitted first argument and an explicit `undefined` both produce an empty message: a default
- * parameter cannot tell them apart, and the `(message?, ...props)` shape is worth more than the
- * distinction.
- *
- * The result carries control-character escaping, which is what makes the single line unconditional:
- * a `\n` in a message would leave the box column open from the second line on.
+ * The brand is `Symbol.for`, so a caller can forge one. Nothing here trusts it: the text is
+ * re-sanitized whatever it claims to be, and a span is kept only where it is a pair of in-bounds
+ * integers that starts at or after the last one ended and names a real kind — one violation drops
+ * every span rather than half of them. A forged carrier therefore reaches the same place a plain
+ * string message does, which is what lets the one field the trace runtimes need travel beside
+ * `lox.message` rather than inside it, leaving the value a destination and the history receive
+ * exactly the plain string it has always been.
  */
-function stringifyMessage(message: unknown): string {
-  if (message === undefined) {
-    return '';
-  }
-  if (message === null) {
-    return 'null';
-  }
-  if (typeof message === 'object' || typeof message === 'function') {
-    return sanitizeControlCharacters(PropsPrinter.singleLine(message));
-  }
+function traceMessageData(message: unknown): { text: string; spans: MessageSpan[] } | undefined {
+  try {
+    if (!isTraceMessage(message) || typeof message.text !== 'string') {
+      return undefined;
+    }
+    const text = sanitizeControlCharacters(message.text);
+    if (text !== message.text || !Array.isArray(message.spans)) {
+      return { text, spans: [] };
+    }
 
-  return sanitizeControlCharacters(String(message));
+    let previousEnd = 0;
+    const spans: MessageSpan[] = [];
+    for (const span of message.spans) {
+      const { start, end, kind } = span;
+      if (
+        !Number.isInteger(start) ||
+        !Number.isInteger(end) ||
+        start < previousEnd ||
+        end <= start ||
+        end > text.length ||
+        (kind !== 'value' && kind !== 'fn' && kind !== 'parent')
+      ) {
+        return { text, spans: [] };
+      }
+      spans.push({ start, end, kind });
+      previousEnd = end;
+    }
+
+    return { text, spans };
+  } catch {
+    return undefined;
+  }
+}
+
+function messageText(message: unknown): string {
+  return traceMessageData(message)?.text ?? stringifyMessage(message);
 }
 
 /** The inert box handle handed out while Loxer is disabled: every member is a no-op. */
@@ -243,7 +265,8 @@ class LoxerInstance implements LoxerType {
         props,
         printProps: this._printProps,
         level,
-        message: this.outputMessage(message, level, moduleId),
+        // contributes `message` and the `messageSpans` that belong to it
+        ...this.outputMessage(message, level, moduleId),
         moduleId,
         type: 'single',
       })
@@ -251,6 +274,9 @@ class LoxerInstance implements LoxerType {
   }
 
   /** The message a `'single'` log carries — left empty for one the level gate is about to drop.
+   *
+   * Both halves travel together because the gate has to drop both: a hidden log's empty message must
+   * not keep spans pointing past the end of it.
    *
    * This is shared by direct, open, close, and added logs. Turning an object into a message walks
    * it, and that runs on every call, ahead of the gate that
@@ -261,12 +287,27 @@ class LoxerInstance implements LoxerType {
    *
    * Errors bypass this method because they are written whatever their module allows.
    */
-  private outputMessage(message: unknown, level: LogLevel, moduleId: string): string {
+  private outputMessage(
+    message: unknown,
+    level: LogLevel,
+    moduleId: string
+    // the return type is the two `LoxInit` fields themselves rather than a shape that happens to
+    // match them: each construction site spreads this, and a spread carrying a key the initializer
+    // does not have is silently dropped instead of rejected
+  ): Pick<LoxInit, 'message' | 'messageSpans'> {
     // before `init()` the modules carry defaults and the log is queued for replay, so the gate it
     // will meet is not knowable yet and the message has to be built now
-    return this._isInitialized && this._modules.isHiddenAt(level, moduleId)
-      ? ''
-      : stringifyMessage(message);
+    if (this._isInitialized && this._modules.isHiddenAt(level, moduleId)) {
+      return { message: '', messageSpans: [] };
+    }
+    // one read of the carrier for both fields: the text and the spans that belong to it are
+    // sanitized and validated in the same pass, so reading them apart would do that work twice
+    const trace = traceMessageData(message);
+
+    return {
+      message: trace?.text ?? stringifyMessage(message),
+      messageSpans: trace?.spans ?? [],
+    };
   }
 
   namedError(name: string, message: string, ...props: unknown[]) {
@@ -317,7 +358,8 @@ class LoxerInstance implements LoxerType {
       props,
       printProps: this._printProps,
       level,
-      message: this.outputMessage(message, level, moduleId),
+      // contributes `message` and the `messageSpans` that belong to it
+      ...this.outputMessage(message, level, moduleId),
       moduleId,
       type: 'open',
     });
@@ -341,7 +383,7 @@ class LoxerInstance implements LoxerType {
         (method: string) =>
         (message?: unknown, ...props: unknown[]) => {
           this.internalError(
-            new LoxerError(stringifyMessage(message)),
+            new LoxerError(messageText(message)),
             id,
             undefined,
             `${method}() on a not (anymore) existing Lox. MESSAGE: `,
@@ -425,7 +467,8 @@ class LoxerInstance implements LoxerType {
         props,
         printProps: this._printProps,
         level,
-        message: this.outputMessage(message, level, moduleId),
+        // contributes `message` and the `messageSpans` that belong to it
+        ...this.outputMessage(message, level, moduleId),
         moduleId,
         type,
       })

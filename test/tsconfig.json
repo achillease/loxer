@@ -9,5 +9,10 @@
     "types": ["node", "vitest/globals"],
     "tsBuildInfoFile": "../node_modules/.cache/loxer/test-tsbuildinfo"
   },
-  "include": ["**/*.test.ts", "**/*.test.only.ts", "../vitest.config.ts"]
+  "include": [
+    "**/*.test.ts",
+    "**/*.test.only.ts",
+    "../vitest.config.ts",
+    "plain-function-trace-types.ts"
+  ]
 }

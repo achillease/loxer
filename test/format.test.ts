@@ -1,5 +1,6 @@
-import { ANSIFormat, Box, BoxFactory } from '../src';
+import { ANSIFormat, Box, BoxFactory, ErrorLoxRenderer, OutputLoxRenderer } from '../src';
 import { Loxes } from '../src/core/Loxes';
+import { renderOpenMessage } from '../src/core/TraceMessage';
 import { ErrorLox } from '../src/loxes/ErrorLox';
 import { OutputLox } from '../src/loxes/OutputLox';
 
@@ -157,3 +158,170 @@ const lox4 = new OutputLox({
 lox4.module.color = '#fff';
 lox4.module.slicedName = 'Module';
 lox4.setTime(123);
+
+// --- trace-message spans: colored payload, escape-free plain form ------------------------------
+
+// `Checkout.calculate(19.95, 3)` - a `parent.fn(args)` open message, spans and all. Fixed offsets
+// (rather than a call into `renderOpenMessage`) so the expected colored string below is not derived
+// from the very code under test.
+const spanMessage = 'Checkout.calculate(19.95, 3) done';
+const spanSpans = [
+  { start: 0, end: 8, kind: 'parent' as const },
+  { start: 9, end: 18, kind: 'fn' as const },
+  { start: 19, end: 24, kind: 'value' as const },
+  { start: 26, end: 27, kind: 'value' as const },
+];
+
+test.each([
+  { name: 'a plain single log', configure: () => {}, prefix: '' },
+  {
+    name: 'a close message',
+    configure: (lox: OutputLox) => {
+      lox.type = 'close';
+    },
+    prefix: '\x1b[38;2;180;255;180m',
+  },
+  {
+    name: 'a warning message',
+    configure: (lox: OutputLox) => {
+      lox.level = 'warn';
+    },
+    prefix: '\x1b[38;2;255;165;15m',
+  },
+  {
+    name: 'a highlighted message',
+    configure: (lox: OutputLox) => {
+      lox.highlighted = true;
+    },
+    prefix: '\x1b[7m',
+  },
+])(
+  '$name colors each span by its kind (parent -> fgClass, fn -> fgFunction, value -> fgString) and re-emits its own enclosing color after every span',
+  ({ configure, prefix }) => {
+    const lox = new OutputLox({
+      id: 0,
+      level: 'info',
+      message: spanMessage,
+      messageSpans: spanSpans,
+      moduleId: 'Module',
+      type: 'single',
+      props: [],
+      printProps: undefined,
+      highlighted: false,
+    });
+    lox.module.color = '#fff';
+    lox.module.slicedName = 'Module';
+    configure(lox);
+
+    const spans =
+      '\x1b[38;2;78;201;176mCheckout\x1b[0m' +
+      prefix +
+      '.\x1b[38;2;144;237;32mcalculate\x1b[0m' +
+      prefix +
+      '(\x1b[38;2;18;129;14m19.95\x1b[0m' +
+      prefix +
+      ', \x1b[38;2;18;129;14m3\x1b[0m' +
+      prefix +
+      ') done';
+    // no span - no wrap at all: with no enclosing color, nothing reverts to the terminal default
+    // because there was never anything to revert from
+    const expected = prefix.length > 0 ? prefix + spans + '\x1b[0m' : spans;
+
+    expect(ANSIFormat.colorLox(lox).message).toBe(expected);
+  }
+);
+
+test('a span reaching past the end of the message colors nothing, rather than throwing or corrupting the rest', () => {
+  const lox = new OutputLox({
+    id: 0,
+    level: 'info',
+    message: 'short',
+    messageSpans: [{ start: 0, end: 999, kind: 'value' }],
+    moduleId: 'Module',
+    type: 'single',
+    props: [],
+    printProps: undefined,
+    highlighted: false,
+  });
+  lox.module.color = '#fff';
+  lox.module.slicedName = 'Module';
+
+  expect(ANSIFormat.colorLox(lox).message).toBe('short');
+});
+
+test('a log with no spans at all is colored exactly as before spans existed', () => {
+  expect(ANSIFormat.colorLox(lox2).message).toBe('\x1b[7mLox2!\x1b[0m');
+});
+
+test("OutputLoxRenderer keeps the plain message field escape-free while colored.message carries the payload's colors", () => {
+  const traceMessage = renderOpenMessage('parent.fn(args)', {
+    name: 'calculate',
+    resolveParentName: () => 'Checkout',
+    args: [19.95, 3],
+  });
+  const lox = new OutputLox({
+    id: 0,
+    level: 'info',
+    message: traceMessage.text,
+    messageSpans: traceMessage.spans,
+    moduleId: 'Module',
+    type: 'open',
+    props: [],
+    printProps: undefined,
+    highlighted: false,
+  });
+  lox.module.color = '#fff';
+  lox.module.slicedName = 'Module';
+
+  const template = OutputLoxRenderer(lox);
+
+  expect(template.message).toBe('Checkout.calculate(19.95, 3)');
+  expect(template.message).not.toMatch(/\x1b/);
+  expect(template.colored.message).toContain('\x1b[38;2;78;201;176mCheckout\x1b[0m');
+  expect(template.colored.message).toContain('\x1b[38;2;144;237;32mcalculate\x1b[0m');
+  expect(template.colored.message).toContain('\x1b[38;2;18;129;14m19.95\x1b[0m');
+  expect(template.colored.message).toContain('\x1b[38;2;18;129;14m3\x1b[0m');
+});
+
+test("an error's OPEN_LOGS context stays escape-free even where an open box's own message carries colored spans", () => {
+  const traceMessage = renderOpenMessage('parent.fn(args)', {
+    name: 'calculate',
+    resolveParentName: () => 'Checkout',
+    args: [19.95, 3],
+  });
+  const openLox = new OutputLox({
+    id: 1,
+    level: 'info',
+    message: traceMessage.text,
+    messageSpans: traceMessage.spans,
+    moduleId: 'Module',
+    type: 'open',
+    props: [],
+    printProps: undefined,
+    highlighted: false,
+  });
+
+  const errorLox = new ErrorLox(
+    new OutputLox({
+      id: 2,
+      level: 'error',
+      message: 'boom',
+      moduleId: 'Module',
+      type: 'error',
+      props: [],
+      printProps: undefined,
+      highlighted: true,
+    }),
+    new Error('boom')
+  );
+  errorLox.module.color = '#fff';
+  errorLox.module.slicedName = 'Module';
+  errorLox.openLoxes = [openLox];
+
+  const template = ErrorLoxRenderer(errorLox);
+
+  expect(template.openLogs).toBe('\nOPEN_LOGS: [Checkout.calculate(19.95, 3)]');
+  expect(template.openLogs).not.toMatch(/\x1b/);
+  // `ErrorLoxRenderer` never colors `openLogs` at all - the same string reaches both fields
+  expect(template.colored.openLogs).toBe(template.openLogs);
+});

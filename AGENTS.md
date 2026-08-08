@@ -95,14 +95,20 @@ pre-commit hook (`.husky/pre-commit`) runs `pnpm lint`.
   already is. `add` and `close` need no rule of their own: they take the opening log's level, so
   they are gated identically to their box and pair with it automatically.
 - A message style, formatter, or option that only some callers select must not make every caller
-  pay for computing it. `__startTrace` (`src/trace.ts`) and `@trace`'s decorator runtime
-  (`src/decorators/trace.ts`) each gate resolving the `'parent.functionName'` parent name behind a
-  `needsParentName` check (`openMessage === 'parent.functionName' || closeMessage === '…'`) before
-  doing the work, because the default style never reads it and this runs on every traced call —
-  ahead of the level check above that decides whether the log is written at all, so an ungated
-  cost here is paid even by logs that get discarded. A gate reading two options like this needs
-  both sides covered by a test, or the ungated one silently drops the feature for callers who
-  named only it.
+  pay for computing it. Both trace runtimes — `__startTrace` (`src/trace.ts`) and `@trace`'s
+  decorator runtime (`src/decorators/trace.ts`) — hand a shared renderer
+  (`src/core/TraceMessage.ts`) a lazy, memoized parent resolver (`parentNameResolver`) instead of
+  gating on the options up front: every message callback's context object carries `fn` and
+  `parentFn` printers, so `parentFn` reaches every callback regardless of whether the open/close
+  message names a `parent.` template, and the options alone no longer say whether the parent is
+  needed. Laziness moves that decision from the option literal to the moment of use — the only
+  place that still knows — and this still runs on every traced call, ahead of the level check
+  above that decides whether the log is written at all, so an ungated cost here is paid even by
+  logs that get discarded. Memoization matters because a callback may print the parent more than
+  once while discovering it — the decorator reads the class off the running instance — must
+  happen at most once per call. An option read on both the open and the close side needs both
+  covered by a test, or the untested side silently drops the feature for callers who named only
+  it.
 - Props and messages are caller-supplied data with **no automatic redaction**. Keep rendering opt-in,
   and leave masking, filtering, retention, and destination-specific security policy to callbacks.
   `PropsPrinter` bounds recursive traversal at 100 levels, public box-layout depth at 200, and

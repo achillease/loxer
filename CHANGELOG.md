@@ -1,5 +1,7 @@
 # Changelog
 
+> Model/effort: GPT-5/unknown
+
 All notable changes to this project are documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/), and this project adheres to
@@ -80,6 +82,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/), and this
   accepts `true` or a `PropsPrinterOptions` object.
 - Add `Loxer.namedError(name, message, ...props)` to the exported `LogMethods` surface. It existed at
   runtime but appeared in no type, so calling it was a compile error.
+- Add colored function names, parents, and captured values to trace messages in the built-in console
+  while keeping the message received by output callbacks and stored in history free of ANSI escapes.
 
 ### Changed
 
@@ -147,14 +151,15 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/), and this
 - Drop the runtime dependency on `color` — Loxer installs with zero runtime dependencies. The same
   color formats are accepted: hex, `rgb()`, `rgba()`, `hsl()`, `hwb()`, named colors and
   `transparent`.
-- **Breaking:** Name the qualifying message style `'parent.functionName'` (`openMessage` /
-  `closeMessage`), replacing `'className.functionName'`, and give every traced function a parent:
-  the class of a method — a decorated one, or a method, getter, setter or field a `trace()` marker
-  reaches inside a class body — and otherwise the file the marked function is written in, so a
-  function in `src/orders/orderService.ts` opens as `orderService.load()`. A decorated method reads
-  its class from the running instance and the file name comes from the build, so a function neither
-  reaches still reports its bare name. A class name ending in `Class` reports without that suffix,
-  so a method of `OrderServiceClass` reads as `OrderService.load`.
+- **Breaking:** Replace trace message styles with `fn`, `parent.fn`, and parent-plus-payload forms.
+  Migrate `functionName` to `fn`, `parent.functionName` to `parent.fn`, `types` to `fn(types)`,
+  `args` to `fn(args)`, and `result` to `fn(result)`; use the matching `parent.fn(...)` form to
+  include a parent with arguments, types, or a result. A parent remains the owning class or source
+  file, with a bare function name when none is known.
+- **Breaking:** Change trace message callbacks to receive a context object. Migrate open callbacks
+  from `(args) => ...` to `({ args, fn, parentFn }) => ...` and close callbacks from `(result) => ...`
+  to `({ result, fn, parentFn }) => ...`; the printers render the same colored call form as the
+  built-in templates.
 
 ### Removed
 
@@ -170,6 +175,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/), and this
   accessor, proxy, or invalid date cannot interrupt logging or inject terminal controls.
 - Fix `@trace` methods that throw or reject to record the original error and close their trace box
   while preserving the caller's original failure.
+- Fix custom trace-message callbacks so literal dollar signs and private-use characters in their
+  returned text are preserved.
 - Fix logs from duplicate same-major Loxer module copies becoming stuck before initialization, so
   configuration, history and open boxes remain shared within one JavaScript realm.
 - Warn when logs remain queued before `Loxer.init()` or exceed the startup queue limit, instead of

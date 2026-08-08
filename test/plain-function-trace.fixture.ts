@@ -90,7 +90,7 @@ export function imports(): string {
 }
 
 // traced modules are transformed under a filename, the way a real build transforms them, so the
-// file half of `parent.functionName` is exercised; a suite that needs the no-filename case
+// file half of the `parent.` templates is exercised; a suite that needs the no-filename case
 // overrides it with `filename: undefined`
 export function transformOptions(): TransformLoxerTraceOptions {
   return {

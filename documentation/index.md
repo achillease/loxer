@@ -37,8 +37,8 @@ async function submitOrder(orderId: number) {
 
 trace(submitOrder, {
   moduleId: 'ORDER',
-  openMessage: 'args',
-  closeMessage: 'result',
+  openMessage: 'parent.fn(args)',
+  closeMessage: 'parent.fn(result)',
   highlight: 'all',
 });
 ```
@@ -74,7 +74,7 @@ const cancelOrder = (orderId: number) => repository.cancel(orderId);
 
 trace([loadOrder, saveOrder, cancelOrder], {
   moduleId: 'ORDER',
-  openMessage: 'args',
+  openMessage: 'parent.fn(args)',
 });
 ```
 
@@ -132,9 +132,11 @@ The adapter also contributes the Vite settings that keep the page on one copy of
 it injects cannot force a mid-session re-optimization. `loxerTrace({ dedupe: false })` leaves both to
 you.
 
-`openMessage` accepts `functionName`, `parent.functionName`, `args`, `types`, or a formatter;
-`closeMessage` accepts `functionName`, `parent.functionName`, `result`, or a formatter. `moduleId`,
-`level`, `highlight`,
+`openMessage` accepts `fn`, `parent.fn`, `fn(types)`, `fn(args)`, `parent.fn(types)`,
+`parent.fn(args)`, or a formatter. It defaults to `parent.fn`, so its opening box names the class
+or source file that contains the traced function when that parent is known. `closeMessage` accepts
+`fn`, `parent.fn`, `fn(result)`, `parent.fn(result)`, or a formatter; it defaults to `fn`.
+`moduleId`, `level`, `highlight`,
 `argsAsProps`, `resultAsProps`, `printArgs`, and `printResult` follow the same behavior as
 function-relevant `@trace` options.
 `TraceOptions` is shared by the plain-function marker and the class-method decorator. The marker
@@ -148,8 +150,9 @@ import { trace } from 'loxer';
 
 class CheckoutService {
   @trace<[subtotal: number, taxRate: number], number>({
-    openMessage: ([subtotal, taxRate]) => `Calculating ${subtotal} at ${taxRate}`,
-    closeMessage: (total) => `Total: ${total.toFixed(2)}`,
+    openMessage: ({ args: [subtotal, taxRate], parentFn }) =>
+      parentFn(`Calculating ${subtotal} at ${taxRate}`),
+    closeMessage: ({ result: total, fn }) => fn(`Total: ${total.toFixed(2)}`),
   })
   calculate(subtotal: number, taxRate: number): number {
     return subtotal * (1 + taxRate);
@@ -157,7 +160,31 @@ class CheckoutService {
 }
 ```
 
-`parent.functionName` prefixes the traced function's parent, so a box opens as
+A formatter receives one object: `{ args, fn, parentFn }` when the box opens, and
+`{ result, fn, parentFn }` when it closes. `fn` and `parentFn` are of the exported type
+`TraceCallPrinter`, `(content?: unknown) => string`, and they render the call the way the presets do:
+`fn(content)` produces `calculate(content)`, and `parentFn(content)` produces
+`Checkout.calculate(content)`. Called with nothing — or with content that renders empty — each prints
+its name with empty parentheses. `content` is any value at all, rendered by the rule a log's own
+message takes, so `fn(basket)` reads as the basket's contents rather than as `[object Object]`. A
+formatter that throws, or returns something other than a string, leaves the box with the default
+message for its phase.
+
+The built-in development console colors a trace message in the palette the props printer uses for
+values: the payload between the parentheses takes `ANSIFormat.fgString`, the function's own name takes
+`fgFunction`, and its parent takes `fgClass` — the same entry that renders a logged `[Class: Basket]`,
+so a traced call and a printed value read alike. The parentheses, the argument separators, the `.`
+joining a parent to a name and the trailing ` done` are not colored, and neither is text a formatter
+writes around a printer: in `` ({ parentFn }) => `retrying ${parentFn(3)}` `` the `retrying ` is plain
+while `Checkout`, `calculate` and `3` carry their colors. A message's own color survives an embedded
+payload, so a close message keeps its green and a warning its yellow after one.
+
+`lox.message` — the value an output handler receives, and the value stored in the history — carries no
+escape sequence, whichever preset or formatter produced it. The colors reach only the `colored.message`
+of [`OutputLoxRenderer`][outputLoxRenderer] and [`ErrorLoxRenderer`][errorLoxRenderer], which is also
+why an error's `OPEN_LOGS:` context is plain text.
+
+`parent.fn` prefixes the traced function's parent, so a box opens as
 `Checkout.calculate()` and closes as `Checkout.calculate done`. The parent of a method is its class,
 read off a decorated method and off the class body a marker sits in: a method, a private method, a
 getter or setter, and an ordinary, private, or accessor field all report their class. A class name
@@ -169,11 +196,11 @@ directories or extension: a plain function, one declared inside a method's body,
 literal holds all report `orderService.load` in `src/orders/orderService.ts`. The file comes from the
 build, so a function reports one only where Babel is given a filename — as `babel-plugin-loxer-trace`
 and `vite-plugin-loxer-trace` are in an ordinary build. A function neither a class nor a file reaches
-reports its own name, the same as `functionName` does, which is also what a decorated method reports
+reports its own name, the same as `fn` does, which is also what a decorated method reports
 when a call reaches it detached from its class. Formatters and result serialization fall back to the
 default message when they fail, without changing the application result.
 
-`openMessage: 'args'` and result message modes create formatted message strings for output handlers; built-in
+`openMessage: 'fn(args)'` and result message modes create formatted message strings for output handlers; built-in
 argument formatting escapes control characters. `argsAsProps` and `resultAsProps` are the modes that
 send the original values on to the output stream as the log's [props][propsDocs]: `argsAsProps` attaches
 one prop per argument to the opening log, `resultAsProps` attaches a defined resolved result as a
@@ -954,10 +981,11 @@ errors it used to mean. Translate the literal rather than relying on the fallbac
 | `LevelType`, `LogLevelType`         | [`LogLevel`][loxer.loglevel] for both  |
 | `Loxer.getModuleLevel(...)` → `-1`  | → `undefined` for an unknown module id |
 | `TraceOptions.level: 1 \| 2 \| 3`   | [`BoxLevel`][loxer.boxlevel]           |
-| `'className.functionName'`          | `'parent.functionName'`                |
+| `'className.functionName'`          | `'parent.fn'`                          |
 
-The last row applies to `openMessage` and `closeMessage` alike. A decorated method reports the same
-message it did, since its parent is its class.
+The last row maps to the parent-qualified name template. Use `parent.fn(args)` or
+`parent.fn(result)` when the message should include call data. A decorated method reports the same
+qualified name it did, since its parent is its class.
 
 ### Output integration
 

@@ -22,32 +22,32 @@ function prodError(log: ErrorLox) {
   prodErrors.push(log);
 }
 
-// class name does not end in 'Class', so `parent.functionName` renders as `Service.<fn>`
+// class name does not end in 'Class', so a `parent.` template renders as `Service.<fn>`
 class Service {
   @trace('NONE')
   simple(n: number) {
     return n;
   }
-  @trace({ moduleId: 'NONE', openMessage: 'args', closeMessage: 'result' })
+  @trace({ moduleId: 'NONE', openMessage: 'fn(args)', closeMessage: 'fn(result)' })
   withArgs(n: number, s: string) {
     return { n, s };
   }
-  @trace({ moduleId: 'NONE', openMessage: 'types', closeMessage: 'result' })
+  @trace({ moduleId: 'NONE', openMessage: 'fn(types)', closeMessage: 'fn(result)' })
   withTypes(n: number) {
     return n;
   }
   @trace({
     moduleId: 'NONE',
-    openMessage: 'parent.functionName',
-    closeMessage: 'parent.functionName',
+    openMessage: 'parent.fn',
+    closeMessage: 'parent.fn',
   })
   named(n: number) {
     return n;
   }
   @trace({
     moduleId: 'NONE',
-    openMessage: (args) => `open:${args.join('|')}`,
-    closeMessage: (result) => `close:${result}`,
+    openMessage: ({ args }) => `open:${args.join('|')}`,
+    closeMessage: ({ result }) => `close:${result}`,
   })
   custom(n: number) {
     return n * 2;
@@ -82,7 +82,7 @@ class Service {
   syncFail(value: number) {
     throw new Error(`sync:${value}`);
   }
-  @trace({ moduleId: 'NONE', closeMessage: 'result' })
+  @trace({ moduleId: 'NONE', closeMessage: 'fn(result)' })
   async asyncResult(n: number) {
     return { doubled: n * 2 };
   }
@@ -91,7 +91,7 @@ class Service {
 class TypedCallbackService {
   @trace<[amount: number, label: string], { total: number }>({
     moduleId: 'NONE',
-    openMessage: ([amount, label]) => {
+    openMessage: ({ args: [amount, label] }) => {
       const displayAmount = amount.toFixed(2);
       const displayLabel = label.toUpperCase();
 
@@ -100,7 +100,7 @@ class TypedCallbackService {
 
       return `open:${displayLabel}:${displayAmount}`;
     },
-    closeMessage: (result) => {
+    closeMessage: ({ result }) => {
       const displayTotal = result.total.toFixed(2);
 
       // @ts-expect-error `result` has the explicitly supplied result shape.
@@ -143,12 +143,12 @@ test('initLoxer initializes Loxer', () => {
   expect(devLogs[0].highlighted).toBeTruthy();
 });
 
-test('@trace default messages use the function name and preserve the return value', () => {
+test('@trace default messages name the class and the method, and preserve the return value', () => {
   const s = new Service();
   expect(s.simple(1)).toBe(1);
   expect(devLogs.length).toBe(2);
   expect(devLogs[0].type).toBe('open');
-  expect(devLogs[0].message).toBe('simple()');
+  expect(devLogs[0].message).toBe('Service.simple()');
   expect(devLogs[1].type).toBe('close');
   expect(devLogs[1].message).toBe('simple done');
 });
@@ -157,17 +157,17 @@ test('@trace args / result message formatting', () => {
   const s = new Service();
   expect(s.withArgs(3, 'x')).toEqual({ n: 3, s: 'x' });
   expect(devLogs[0].message).toBe('withArgs(3, x)');
-  expect(devLogs[1].message).toBe('withArgs done. returns: {"n":3,"s":"x"}');
+  expect(devLogs[1].message).toBe('withArgs({"n":3,"s":"x"}) done');
 });
 
 test('@trace types / result message formatting', () => {
   const s = new Service();
   s.withTypes(5);
   expect(devLogs[0].message).toBe('withTypes(number)');
-  expect(devLogs[1].message).toBe('withTypes done. returns: 5');
+  expect(devLogs[1].message).toBe('withTypes(5) done');
 });
 
-test('@trace parent.functionName message formatting', () => {
+test('@trace parent.fn message formatting', () => {
   const s = new Service();
   s.named(7);
   expect(devLogs[0].message).toBe('Service.named()');
@@ -230,7 +230,7 @@ test('@trace highlight: all highlights both open and close', () => {
 test('@trace async method closes the box after resolution and returns the payload', async () => {
   const s = new Service();
   await expect(s.asyncOk(1)).resolves.toBe(2);
-  expect(devLogs[0].message).toBe('asyncOk()');
+  expect(devLogs[0].message).toBe('Service.asyncOk()');
   expect(devLogs[0].type).toBe('open');
   expect(devLogs[1].message).toBe('asyncOk done');
   expect(devLogs[1].type).toBe('close');
@@ -242,7 +242,7 @@ test('@trace async rejection records the original error, closes the box, and pro
   expect(devErrors).toHaveLength(1);
   expect(devErrors[0].error.message).toBe('boom');
   expect(devLogs.map((log) => [log.type, log.message, log.props])).toEqual([
-    ['open', 'asyncFail()', []],
+    ['open', 'Service.asyncFail()', []],
     ['close', 'asyncFail failed', []],
   ]);
 });
@@ -253,18 +253,18 @@ test('@trace synchronous throw records the original error, closes the box, and p
   expect(devErrors).toHaveLength(1);
   expect(devErrors[0].error.message).toBe('sync:3');
   expect(devLogs.map((log) => [log.type, log.message, log.props])).toEqual([
-    ['open', 'syncFail()', [3]],
+    ['open', 'Service.syncFail()', [3]],
     ['close', 'syncFail failed', []],
   ]);
 });
 
 test('@trace async close message reflects the resolved value, not the pending promise', async () => {
   // for an async method, getCloseMessage runs inside the `.then` on the resolved payload, so
-  // `closeMessage: 'result'` serializes the actual return value rather than the Promise ('{}').
+  // `closeMessage: 'fn(result)'` serializes the actual return value rather than the Promise ('{}').
   const s = new Service();
   await expect(s.asyncResult(3)).resolves.toEqual({ doubled: 6 });
   const close = devLogs.find((l) => l.type === 'close');
-  expect(close?.message).toBe('asyncResult done. returns: {"doubled":6}');
+  expect(close?.message).toBe('asyncResult({"doubled":6}) done');
 });
 
 test.each(traceCases)(
@@ -316,8 +316,8 @@ describe.each<DecoratorMode>(['legacy', 'standard'])(
         },
         options: {
           moduleId: 'NONE',
-          openMessage: 'parent.functionName',
-          closeMessage: 'parent.functionName',
+          openMessage: 'parent.fn',
+          closeMessage: 'parent.fn',
         },
         isStatic: true,
       });
@@ -337,8 +337,8 @@ describe.each<DecoratorMode>(['legacy', 'standard'])(
         },
         options: {
           moduleId: 'NONE',
-          openMessage: 'parent.functionName',
-          closeMessage: 'parent.functionName',
+          openMessage: 'parent.fn',
+          closeMessage: 'parent.fn',
         },
       });
 
@@ -355,8 +355,8 @@ describe.each<DecoratorMode>(['legacy', 'standard'])(
         },
         options: {
           moduleId: 'NONE',
-          openMessage: 'parent.functionName',
-          closeMessage: 'parent.functionName',
+          openMessage: 'parent.fn',
+          closeMessage: 'parent.fn',
         },
       });
 
@@ -378,8 +378,8 @@ describe.each<DecoratorMode>(['legacy', 'standard'])(
         },
         options: {
           moduleId: 'NONE',
-          openMessage: 'parent.functionName',
-          closeMessage: 'parent.functionName',
+          openMessage: 'parent.fn',
+          closeMessage: 'parent.fn',
         },
       });
       expect(detached()).toBeUndefined();
@@ -407,8 +407,8 @@ describe.each<DecoratorMode>(['legacy', 'standard'])(
           },
           options: {
             moduleId: 'NONE',
-            openMessage: 'parent.functionName',
-            closeMessage: 'parent.functionName',
+            openMessage: 'parent.fn',
+            closeMessage: 'parent.fn',
           },
         });
 
@@ -431,7 +431,7 @@ describe.each<DecoratorMode>(['legacy', 'standard'])(
       });
 
       expect(method.call(host)).toBe(1);
-      expect(devLogs.map((log) => log.message)).toEqual(['symbolic()', 'symbolic done']);
+      expect(devLogs.map((log) => log.message)).toEqual(['Object.symbolic()', 'symbolic done']);
     });
 
     test('preserves close highlighting when an async formatter logs', async () => {
@@ -445,7 +445,7 @@ describe.each<DecoratorMode>(['legacy', 'standard'])(
         options: {
           moduleId: 'NONE',
           highlight: 'all',
-          closeMessage(result) {
+          closeMessage({ result }) {
             Loxer.log('formatter');
             return `formatted:${result}`;
           },
@@ -454,7 +454,7 @@ describe.each<DecoratorMode>(['legacy', 'standard'])(
 
       await expect(method.call(host)).resolves.toBe(2);
       expect(devLogs.map((log) => [log.message, log.highlighted])).toEqual([
-        ['formatted()', true],
+        ['Object.formatted()', true],
         ['formatter', false],
         ['formatted:2', true],
       ]);

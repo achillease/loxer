@@ -60,14 +60,38 @@ small and behavior-preserving; most public contracts are asserted from `test/box
 - `LoxHistory` is newest-first. A configured size of `1` currently disables stored history.
 - `PropsPrinter` handles arbitrary runtime values; it must tolerate hostile property access, avoid
   loops on class graphs or cyclic structures, and bound pathological recursion before it overflows.
-- `TraceNames.ts` owns the rendering of `'parent.functionName'` for the `@trace` decorator
+- `TraceNames.ts` owns the rendering of the `parent.` templates (`FunctionOpenMessage` /
+  `FunctionCloseMessage` in `src/tracing-types.ts`) for the `@trace` decorator
   (`src/decorators/trace.ts`, class read off `this` at call time) and for the marker runtime
-  (`src/trace.ts`, parent passed in by the transform, a class or a file). The runtime only joins a
-  parent to a name: deciding *which* parent belongs to a function is the caller's job, and the
+  (`src/trace.ts`, parent passed in by the transform, a class or a file). `qualifiedFunctionName`
+  owns the joining rule: deciding *which* parent belongs to a function is the caller's job, and the
   trailing-`Class` rule (`classParentName`) applies to a class only, never to a file.
   `babel-plugin-loxer-trace` keeps its own copy of that rule because it is a separate package that
   cannot import this one; `test/decorators.test.ts` and `test/plain-function-trace-enclosing.test.ts`
   pin the two against each other.
+- `stringifyMessage(value: unknown): string` (`PropsPrinter.ts`, `@internal`) is the single rule for
+  turning a caller-supplied value into the one-line, escape-free text a message is: `undefined` ->
+  `''`, `null` -> `'null'`, an object or function -> `PropsPrinter.singleLine(value)`, anything else
+  -> `String(value)`, every branch through `sanitizeControlCharacters`. Any entry point rendering a
+  caller-supplied value into text takes `unknown` and goes through it — never a local
+  `String(value)`. It has two runtime consumers, which is why it lives here rather than in
+  `src/Loxer.ts`: `Loxer`'s `messageText` (which checks the trace-message carrier first) and the
+  `fn` / `parentFn` printers a trace callback receives (`TraceMessage.ts`); `PropsPrinter` is its
+  home because it already owns turning a value into text, and because `TraceMessage` importing it
+  from anywhere `TraceMessage` could import back would close a cycle. An *absent* value and a value
+  that is *present but `undefined`* need different helpers: `stringifyMessage(undefined)` is `''`,
+  right for an omitted log message and for `fn()` printing empty parentheses, but an argument the
+  call actually passed is a value that is there, so `TraceMessage.ts` keeps a sibling `renderValue`
+  that renders `undefined` as the text `undefined`. Using the message rule for argument payloads
+  made `'fn(args)'` print `defaulted(, given)`, hiding an argument the caller did pass.
+- `ANSIFormat.colorLox` -> `colorMessageSpans` -> `colorSpan` is the single place a
+  `MessageSpanKind` maps to a color: caller data (`'value'`) takes `fgString`, the traced function's
+  name (`'fn'`) takes `fgFunction`, its parent class or file (`'parent'`) takes `fgClass`. A newly
+  colored region reuses an existing palette entry, and where genuinely none fits, add the entry to
+  `ANSIFormat` and share it rather than owning it in one renderer — `fgClass` (teal, `78, 201, 176`)
+  was added this way so `PropsPrinter`'s `[Class: X]` rendering and a traced `Checkout.calculate`
+  parent read alike; before it existed `PropsPrinter` rendered a class in `fgFunction`, making a
+  class and a function indistinguishable.
 - `src/core/color/` is vendored, not an npm dependency: it ports `color-string@1.6.0` (parsing),
   `color-name@1.1.4` (the named-color table), and `color-convert@1.9.3` (`hsl`/`hwb` -> rgb), and
   keeps their MIT copyright headers. Loxer ships zero runtime dependencies — never reintroduce

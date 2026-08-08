@@ -34,8 +34,35 @@ import {
   type OutputLoxTemplateFields,
   type PropsPrinterOptions,
   type OutputLox,
+  type TraceCallPrinter,
+  type TraceCloseMessageContext,
+  type TraceOpenMessageContext,
 } from 'loxer';
-import { trace as traceMarker } from 'loxer/trace';
+import {
+  trace as traceMarker,
+  type TraceCallPrinter as TraceCallPrinterFromTrace,
+  type TraceCloseMessageContext as TraceCloseMessageContextFromTrace,
+  type TraceOpenMessageContext as TraceOpenMessageContextFromTrace,
+} from 'loxer/trace';
+
+// Both public entry points expose the callback contracts consumers name in formatter helpers.
+const rootCallPrinter: TraceCallPrinter = (content) => String(content);
+const traceCallPrinter: TraceCallPrinterFromTrace = rootCallPrinter;
+const rootOpenContext: TraceOpenMessageContext<[string]> = {
+  args: ['order'],
+  fn: rootCallPrinter,
+  parentFn: rootCallPrinter,
+};
+const traceOpenContext: TraceOpenMessageContextFromTrace<[string]> = rootOpenContext;
+const rootCloseContext: TraceCloseMessageContext<number> = {
+  result: 1,
+  fn: rootCallPrinter,
+  parentFn: rootCallPrinter,
+};
+const traceCloseContext: TraceCloseMessageContextFromTrace<number> = rootCloseContext;
+void traceCallPrinter;
+void traceOpenContext;
+void traceCloseContext;
 
 // `satisfies`, NOT `: LoxerModules` - an annotation widens the keys to `string` and silently
 // disables every assertion below.
@@ -151,7 +178,7 @@ traceMarker(load, { moduleId: 'PRES' });
 
 // --- the `@trace('MOD')` decorator shorthand --------------------------------------------------
 traceDecorator('PERS');
-traceDecorator({ moduleId: 'DB', openMessage: 'args' });
+traceDecorator({ moduleId: 'DB', openMessage: 'fn(args)' });
 // @ts-expect-error 'PRES' is not a registered module id
 traceDecorator('PRES');
 // @ts-expect-error 'PRES' is not a registered module id
@@ -293,3 +320,14 @@ traceMarker(load, { resultAsProps: true, printResult: true });
 traceDecorator({ argsAsProps: true, printArgs: true, resultAsProps: true, printResult: { keys: [] } });
 // @ts-expect-error `prettyResult` was removed; use `resultAsProps` with `printResult` instead
 traceMarker(load, { closeMessage: 'prettyResult' });
+// @ts-expect-error 'functionName' / 'parent.functionName' were replaced by 'fn' / 'parent.fn'
+traceMarker(load, { openMessage: 'functionName' });
+// @ts-expect-error 'types' was replaced by 'fn(types)' / 'parent.fn(types)'
+traceMarker(load, { openMessage: 'types' });
+// @ts-expect-error 'args' was replaced by 'fn(args)' / 'parent.fn(args)'
+traceMarker(load, { openMessage: 'args' });
+// @ts-expect-error 'result' was replaced by 'fn(result)' / 'parent.fn(result)'
+traceDecorator({ closeMessage: 'result' });
+// the full new template set stays accepted, on both entry points
+traceMarker(load, { openMessage: 'parent.fn(args)', closeMessage: 'parent.fn(result)' });
+traceDecorator({ openMessage: 'fn(types)', closeMessage: 'parent.fn' });

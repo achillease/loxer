@@ -2,7 +2,13 @@ import { Color } from './color/index.js';
 import { safeNumber } from '../Helpers.js';
 import { ErrorLox } from '../loxes/ErrorLox.js';
 import { OutputLox } from '../loxes/OutputLox.js';
+import type { MessageSpanKind } from './TraceMessage.js';
 import type { LoxColorOptions } from '../types.js';
+
+/** the yellow a `'warn'` log is rendered in where the configuration names no other */
+const DEFAULT_WARN_COLOR = '#ffa50f';
+/** the red an error's message is rendered in where the configuration names no other */
+const DEFAULT_ERROR_COLOR = '#f00';
 
 export class ANSIFormat {
   /** @internal */
@@ -51,21 +57,22 @@ export class ANSIFormat {
 
   /** returns a string with the highlighted text */
   static colorHighlight(text: string, color?: string): string {
+    return this.highlightPrefix(color) + text + this.CODE.Reset;
+  }
+
+  /** @internal the codes {@link colorHighlight} opens with */
+  private static highlightPrefix(color?: string): string {
     if (color) {
       const rgb = Color(color);
 
-      return (
-        this.colorBackground(
-          Math.round(rgb.red()),
-          Math.round(rgb.green()),
-          Math.round(rgb.blue())
-        ) +
-        text +
-        this.CODE.Reset
+      return this.colorBackground(
+        Math.round(rgb.red()),
+        Math.round(rgb.green()),
+        Math.round(rgb.blue())
       );
     }
 
-    return this.CODE.Reverse + text + this.CODE.Reset;
+    return this.CODE.Reverse;
   }
 
   /** returns a string to color the following text's background red */
@@ -94,12 +101,12 @@ export class ANSIFormat {
   }
 
   /** returns a string to color the following text red */
-  static fgError(text: string, color: string = '#f00'): string {
+  static fgError(text: string, color: string = DEFAULT_ERROR_COLOR): string {
     return this.colorize(text, color);
   }
 
   /** returns a string to color the following text yellow */
-  static fgWarn(text: string, color: string = '#ffa50f'): string {
+  static fgWarn(text: string, color: string = DEFAULT_WARN_COLOR): string {
     return this.colorize(text, color);
   }
 
@@ -115,23 +122,74 @@ export class ANSIFormat {
 
   /** returns a string to color the following text light green */
   static fgCloseLog(text: string): string {
-    return this.colorForeground(180, 255, 180) + text + this.CODE.Reset;
+    return this.closeLogPrefix() + text + this.CODE.Reset;
+  }
+
+  /** @internal the codes {@link fgCloseLog} opens with */
+  private static closeLogPrefix(): string {
+    return this.colorForeground(180, 255, 180);
   }
 
   /** receives text color and alpha and returns the colored string */
   static colorize(text: string, color: string, alpha: number = 1): string {
+    return this.colorizePrefix(color, alpha) + text + this.CODE.Reset;
+  }
+
+  /** @internal the codes {@link colorize} opens with */
+  private static colorizePrefix(color: string, alpha: number = 1): string {
     const rgb = Color(color && color.length > 0 ? color : '#fff');
     const safeAlpha = safeNumber(alpha, [0, 1]);
 
-    return (
-      this.colorForeground(
-        Math.round(rgb.red() * safeAlpha),
-        Math.round(rgb.green() * safeAlpha),
-        Math.round(rgb.blue() * safeAlpha)
-      ) +
-      text +
-      this.CODE.Reset
+    return this.colorForeground(
+      Math.round(rgb.red() * safeAlpha),
+      Math.round(rgb.green() * safeAlpha),
+      Math.round(rgb.blue() * safeAlpha)
     );
+  }
+
+  /** @internal one marked region, in the palette entry its kind names */
+  private static colorSpan(kind: MessageSpanKind, text: string): string {
+    if (kind === 'value') {
+      return this.fgString(text);
+    }
+
+    return kind === 'fn' ? this.fgFunction(text) : this.fgClass(text);
+  }
+
+  /** @internal Colors the marked regions of a log's message — a traced call's name, its parent, and
+   * the arguments, types or result it renders.
+   *
+   * Caller data takes the color the props printer gives a string, the function name the one it
+   * gives a function, and the parent the one it gives a class, so a trace message reads in the same
+   * palette as the values printed under it.
+   *
+   * The color the message as a whole is rendered in is re-emitted after every span, because the
+   * reset that ends the span's color ends the enclosing one too: without it a close message would
+   * lose its green, a warning its yellow, and a highlight its background from the first span onward.
+   *
+   * A span reaching past the message it names colors nothing. Spans come from the same scan that
+   * produces the text and are never recomputed, so that guards a later rewrite rather than a case
+   * the renderer can reach today.
+   */
+  private static colorMessageSpans(lox: OutputLox, prefix: string): string {
+    const { message, messageSpans } = lox;
+    if (messageSpans.length === 0) {
+      return message;
+    }
+    let colored = '';
+    let position = 0;
+    for (const span of messageSpans) {
+      if (span.start < position || span.end > message.length) {
+        continue;
+      }
+      colored +=
+        message.slice(position, span.start) +
+        this.colorSpan(span.kind, message.slice(span.start, span.end)) +
+        prefix;
+      position = span.end;
+    }
+
+    return colored + message.slice(position);
   }
 
   /**
@@ -150,21 +208,28 @@ export class ANSIFormat {
     timestamp: string;
     time: string;
   } {
-    let message = lox.highlighted
-      ? this.colorHighlight(lox.message, options.colors?.highlightColor)
-      : lox.message;
-    if (!lox.highlighted && lox.type === 'close') {
-      message = this.fgCloseLog(lox.message);
+    // what the message as a whole is colored in, kept as its opening codes rather than as a
+    // finished string, because a value span inside it has to re-emit them after its own reset
+    let prefix = '';
+    if (lox.highlighted) {
+      prefix = this.highlightPrefix(options.colors?.highlightColor);
+    } else if (lox.type === 'close') {
+      prefix = this.closeLogPrefix();
     }
     if (lox.level === 'warn') {
-      message = this.fgWarn(lox.message, options.colors?.warnColor);
+      prefix = this.colorizePrefix(options.colors?.warnColor ?? DEFAULT_WARN_COLOR);
+    }
+    let message = this.colorMessageSpans(lox, prefix);
+    if (prefix.length > 0) {
+      message = prefix + message + this.CODE.Reset;
     }
     if (lox instanceof ErrorLox) {
+      const errorPrefix = this.colorizePrefix(options.colors?.errorColor ?? DEFAULT_ERROR_COLOR);
       message = `${this.bgError(
         lox.error.name,
         options.colors?.errorNameBackgroundColor,
         options.colors?.errorNameColor
-      )}: ${this.fgError(lox.message, options.colors?.errorColor)}`;
+      )}: ${errorPrefix}${this.colorMessageSpans(lox, errorPrefix)}${this.CODE.Reset}`;
     }
 
     return {
@@ -195,6 +260,11 @@ export class ANSIFormat {
   /** used to color items of type `function` */
   static fgFunction(text: string): string {
     return this.colorForeground(144, 237, 32) + text + this.CODE.Reset;
+  }
+  /** used to color the class an item is an instance of, and the class or file a traced function
+   * belongs to */
+  static fgClass(text: string): string {
+    return this.colorForeground(78, 201, 176) + text + this.CODE.Reset;
   }
   /** used to color items instance of `Date` */
   static fgDate(text: string): string {

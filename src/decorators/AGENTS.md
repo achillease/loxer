@@ -14,10 +14,14 @@ Decorators are optional public helpers layered on top of the singleton `Loxer` A
 highlight mode, message formatting, and props capture/rendering. `level` is a `BoxLevel` (every `LogLevel`
   except `'error'`, defaulting to `'info'`) and is applied by indexing the matching level's
   `LevelMethods`: `Loxer.h(...).m(moduleId)[level].open(...)`.
-- `'parent.functionName'` renders through `qualifiedFunctionName()` in `src/core/TraceNames.ts`,
+- The `parent.` templates render through `qualifiedFunctionName()` in `src/core/TraceNames.ts`,
   which the marker runtime uses too. A decorated method's parent is always its class, read off `this`
   through `classParentName()` — the decorator never reports a file, which only the build-time
-  transform knows.
+  transform knows. The class is resolved lazily and memoized, only where a `parent.` template or a
+  callback's `parentFn` actually prints it; a trace naming neither performs no class lookup at all.
+  `openMessage`/`closeMessage` callbacks receive a single context object (`{ args, fn, parentFn }` on
+  open, `{ result, fn, parentFn }` on close), not a bare tuple or bare result — `fn`/`parentFn` are
+  `TraceCallPrinter`s (`(content?: unknown) => string`).
 
 ## Tests
 

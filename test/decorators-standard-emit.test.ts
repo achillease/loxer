@@ -30,8 +30,8 @@ test('TypeScript standard decorator emit invokes the real @trace protocol', asyn
     class Service {
       @trace({
         moduleId: 'NONE',
-        openMessage: 'parent.functionName',
-        closeMessage: 'result',
+        openMessage: 'parent.fn',
+        closeMessage: 'fn(result)',
       })
       calculate(value: number) {
         return value * 2;
@@ -55,7 +55,7 @@ test('TypeScript standard decorator emit invokes the real @trace protocol', asyn
   expect((globalThis as Record<string, unknown>).__loxerStandardResult).toBe(8);
   expect(logs.map((log) => [log.type, log.message])).toEqual([
     ['open', 'Service.calculate()'],
-    ['close', 'calculate done. returns: 8'],
+    ['close', 'calculate(8) done'],
   ]);
 });
 
@@ -76,8 +76,8 @@ test.each([
       class Service {
         @trace<[value: number], number>({
           moduleId: 'NONE',
-          openMessage: ([value]) => String(value),
-          closeMessage: (result) => String(result),
+          openMessage: ({ args: [value] }) => String(value),
+          closeMessage: ({ result }) => String(result),
         })
         calculate(value: number): number {
           return value * 2;

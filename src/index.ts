@@ -6,7 +6,7 @@ export { BoxLayouts } from './core/BoxFormat.js';
 export type { BoxSymbols } from './core/BoxFormat.js';
 export * from './decorators/initLoxer.js';
 export * from './decorators/trace.js';
-export * from './Loxer.js';
+export { Loxer, resetLoxer } from './Loxer.js';
 export { NamedError } from './core/Error.js';
 export type { ErrorLox } from './loxes/ErrorLox.js';
 export type { OutputLox } from './loxes/OutputLox.js';

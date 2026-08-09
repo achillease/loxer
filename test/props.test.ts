@@ -634,8 +634,8 @@ test('the console props renderer cannot turn an async traced result into a rejec
   );
   const lifecycle = __startTrace('asyncHostile', [], {
     moduleId: 'IT',
-    resultAsProps: true,
-    printResult: true,
+    printProps: 'result',
+    propsTarget: 'result',
   });
 
   await expect(

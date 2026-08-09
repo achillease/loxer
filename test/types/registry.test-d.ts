@@ -42,7 +42,10 @@ import {
   trace as traceMarker,
   type TraceCallPrinter as TraceCallPrinterFromTrace,
   type TraceCloseMessageContext as TraceCloseMessageContextFromTrace,
+  type ExtendedPropsPrinterOptions,
+  type TraceMarkerOptions,
   type TraceOpenMessageContext as TraceOpenMessageContextFromTrace,
+  type TracePropsTarget,
 } from 'loxer/trace';
 
 // Both public entry points expose the callback contracts consumers name in formatter helpers.
@@ -167,14 +170,69 @@ Loxer.init({ modules: numericLevels });
 Loxer.init({ defaultLevels: { devLevel: 'off', prodLevel: 'off' } });
 // @ts-expect-error an error is not a box, so there is no `Loxer.error.open()`
 Loxer.error.open('gone');
-// @ts-expect-error a trace opens a box, so `'error'` is not a `BoxLevel`
-traceMarker(load, { level: 'error' });
+// A marker error terminal is an ordinary trace box; decorator options still use BoxLevel.
+traceMarker.error(load);
+// @ts-expect-error a decorator trace opens a public BoxLevel box, so `'error'` is not accepted
+traceDecorator({ level: 'error' });
 
 // --- trace options (`loxer/trace` inherits the narrowing from one `loxer` augmentation) -------
 declare function load(id: string): Promise<string>;
-traceMarker(load, { moduleId: 'PERS' });
+traceMarker.m('PERS').h().props('argsResult').pp({ target: 'result', depth: 1 }).debug(load);
+traceMarker.module('DB').highlight(false).pp('args').props('result').log(load);
 // @ts-expect-error 'PRES' is not a registered module id
-traceMarker(load, { moduleId: 'PRES' });
+traceMarker.m('PRES').info(load);
+// Each modifier family is one-shot and levels are terminal.
+// @ts-expect-error `m` and `module` are the same modifier family
+traceMarker.m('PERS').module('DB').info(load);
+// @ts-expect-error `props` cannot be repeated
+traceMarker.props('args').props('result').info(load);
+// @ts-expect-error terminal levels accept marker arguments, not more modifiers
+traceMarker.warn.m('PERS')(load);
+
+const tracePropsTarget: TracePropsTarget = 'argsResult';
+const extendedPrinter: ExtendedPropsPrinterOptions = { target: tracePropsTarget, depth: 1 };
+void extendedPrinter;
+// @ts-expect-error a configured trace printer must route to a lifecycle side
+const missingPrintTarget: ExtendedPropsPrinterOptions = { depth: 1 };
+void missingPrintTarget;
+
+type MarkerKeysAreExact = Equals<
+  keyof TraceMarkerOptions,
+  'name' | 'openMessage' | 'closeMessage'
+>;
+const markerKeysAreExact: MarkerKeysAreExact = true;
+type DecoratorKeysAreExact = Equals<
+  keyof import('loxer').TraceOptions,
+  | 'name'
+  | 'openMessage'
+  | 'closeMessage'
+  | 'moduleId'
+  | 'level'
+  | 'highlight'
+  | 'argsAsProps'
+  | 'resultAsProps'
+  | 'printArgs'
+  | 'printResult'
+>;
+const decoratorKeysAreExact: DecoratorKeysAreExact = true;
+void markerKeysAreExact;
+void decoratorKeysAreExact;
+
+// The seven operational settings are a clean cut from marker options.
+// @ts-expect-error module routing is fluent on the marker
+traceMarker(load, { moduleId: 'PERS' });
+// @ts-expect-error levels are terminal marker calls
+traceMarker(load, { level: 'warn' });
+// @ts-expect-error highlighting is fluent on the marker
+traceMarker(load, { highlight: 'all' });
+// @ts-expect-error argument capture is fluent on the marker
+traceMarker(load, { argsAsProps: true });
+// @ts-expect-error result capture is fluent on the marker
+traceMarker(load, { resultAsProps: true });
+// @ts-expect-error argument rendering is fluent on the marker
+traceMarker(load, { printArgs: true });
+// @ts-expect-error result rendering is fluent on the marker
+traceMarker(load, { printResult: true });
 
 // --- the `@trace('MOD')` decorator shorthand --------------------------------------------------
 traceDecorator('PERS');
@@ -311,12 +369,12 @@ void oneLine;
 type GoneItemType = import('loxer').ItemType;
 // @ts-expect-error `ItemOptions` was replaced by `PropsPrinterOptions`
 type GoneItemOptions = import('loxer').ItemOptions;
-// @ts-expect-error the capture options are named after props
+// @ts-expect-error the deleted item capture option is not a marker option
 traceMarker(load, { argsAsItem: true });
-// @ts-expect-error the capture options are named after props
+// @ts-expect-error the deleted item capture option is not a marker option
 traceMarker(load, { resultAsItem: true });
-traceMarker(load, { argsAsProps: true, printArgs: { depth: 1 } });
-traceMarker(load, { resultAsProps: true, printResult: true });
+traceMarker.props('args').pp({ target: 'args', depth: 1 }).info(load);
+traceMarker.props('result').pp('result').info(load);
 traceDecorator({ argsAsProps: true, printArgs: true, resultAsProps: true, printResult: { keys: [] } });
 // @ts-expect-error `prettyResult` was removed; use `resultAsProps` with `printResult` instead
 traceMarker(load, { closeMessage: 'prettyResult' });

@@ -27,7 +27,10 @@ test("the built-in development console shows a traced call's payload colored", (
   const trace = __startTrace(
     'calculate',
     [19.95, 3],
-    { moduleId: 'TRACE', openMessage: 'parent.fn(args)', closeMessage: 'fn(result)' },
+    {
+      markerOptions: { openMessage: 'parent.fn(args)', closeMessage: 'fn(result)' },
+      moduleId: 'TRACE',
+    },
     'Checkout'
   );
   trace.success({ total: 59.85 });

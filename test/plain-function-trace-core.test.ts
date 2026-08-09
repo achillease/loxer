@@ -20,13 +20,9 @@ test('a transformed function preserves sync result, modifier chains, and its box
       Loxer.m('ORDER').h(true).warn('calculating:' + value);
       return value * 2;
     }
-    trace(calculate, {
-      moduleId: 'TRACE',
+    trace.m('TRACE').h().props('argsResult').info(calculate, {
       openMessage: 'fn(args)',
       closeMessage: 'fn(result)',
-      highlight: 'all',
-      argsAsProps: true,
-      resultAsProps: true,
     });
     export { calculate };
   `);
@@ -55,11 +51,11 @@ test('a transformed declaration preserves this and rethrows the original synchro
     function multiply(value) {
       return this.factor * value;
     }
-    trace(multiply, { moduleId: 'TRACE' });
+    trace.m('TRACE').info(multiply);
     function rejectSync() {
       throw original;
     }
-    trace(rejectSync, { moduleId: 'TRACE' });
+    trace.m('TRACE').info(rejectSync);
     export { multiply, original, rejectSync };
   `);
 
@@ -86,7 +82,7 @@ test('a transformed async function preserves its rejection and links errors and 
       Loxer.h().namedError('PaymentError', 'card declined');
       throw new Error('original failure');
     }
-    trace(submit, { moduleId: 'TRACE' });
+    trace.m('TRACE').info(submit);
     export { submit };
   `);
 
@@ -115,7 +111,7 @@ test('a non-async trace keeps the original promise identity while its lifecycle 
       Loxer.m('ORDER').log('loading');
       return pending;
     }
-    trace(load, { moduleId: 'TRACE' });
+    trace.m('TRACE').info(load);
     export { complete, load, pending };
   `);
 
@@ -145,7 +141,7 @@ test('a non-async trace keeps a hostile thenable object and closes successfully'
     function readHostile() {
       return hostile;
     }
-    trace(readHostile, { moduleId: 'TRACE' });
+    trace.m('TRACE').info(readHostile);
     export { hostile, readHostile };
   `);
 
@@ -163,7 +159,7 @@ test('a hoisted declaration can run before its marker without an options TDZ', a
       return 'Hello ' + name;
     }
     const beforeMarker = greet('Ada');
-    trace(greet, { moduleId: 'TRACE', openMessage: 'fn(args)' });
+    trace.m('TRACE').info(greet, { openMessage: 'fn(args)' });
     export { beforeMarker, greet };
   `);
 
@@ -182,7 +178,7 @@ test('a hoisted declaration can run before its declaration and marker with defau
     function greet(name) {
       return 'Hello ' + name;
     }
-    trace(greet, { moduleId: 'TRACE', openMessage: 'fn(args)' });
+    trace.m('TRACE').info(greet, { openMessage: 'fn(args)' });
     export { beforeDeclaration, greet };
   `);
 
@@ -197,11 +193,11 @@ test('a hoisted declaration can run before its declaration and marker with defau
 
 test('a marker placed above its target declarations still applies its options', async () => {
   const traced = await loadTracedModule(`
-    trace(hoisted, { moduleId: 'TRACE', openMessage: 'fn(args)' });
+    trace.m('TRACE').info(hoisted, { openMessage: 'fn(args)' });
     function hoisted(name) {
       return 'Hello ' + name;
     }
-    trace(later, { moduleId: 'ORDER', openMessage: 'fn(args)' });
+    trace.m('ORDER').info(later, { openMessage: 'fn(args)' });
     const later = (name) => 'Bye ' + name;
     export { hoisted, later };
   `);
@@ -221,11 +217,11 @@ test('named function expressions and arrows retain their original this semantics
     const functionExpression = function (value) {
       return this.factor * value;
     };
-    trace(functionExpression, { moduleId: 'TRACE' });
+    trace.m('TRACE').info(functionExpression);
 
     function createArrow() {
       const arrow = (value) => this.factor * value;
-      trace(arrow, { moduleId: 'ORDER' });
+      trace.m('ORDER').info(arrow);
       return arrow;
     }
     export { createArrow, functionExpression };
@@ -242,10 +238,10 @@ test('variable-bound function forms retain arity and named expression self refer
     const expression = function recurse(value, total) {
       return value === 0 ? total : recurse(value - 1, total + 1);
     };
-    trace(expression, { moduleId: 'TRACE' });
+    trace.m('TRACE').info(expression);
 
     const arrow = (left, right) => left + right;
-    trace(arrow, { moduleId: 'ORDER' });
+    trace.m('ORDER').info(arrow);
     export { arrow, expression };
   `);
 
@@ -267,7 +263,7 @@ test('custom thenables are returned and are never invoked by tracing', async () 
     function readThenable() {
       return customThenable;
     }
-    trace(readThenable, { moduleId: 'TRACE' });
+    trace.m('TRACE').info(readThenable);
     export { customThenable, readThenable, thenCalls };
   `);
 
@@ -296,11 +292,11 @@ test('native promises with throwing own or subclass then accessors return unchan
     function readOwn() {
       return ownThen;
     }
-    trace(readOwn, { moduleId: 'TRACE' });
+    trace.m('TRACE').info(readOwn);
     function readSubclass() {
       return subclassThen;
     }
-    trace(readSubclass, { moduleId: 'ORDER' });
+    trace.m('ORDER').info(readSubclass);
     export { ownThen, readOwn, readSubclass, subclassThen };
   `);
 
@@ -321,9 +317,9 @@ test('native promises with throwing own or subclass then accessors return unchan
 test('simple and rest arrows capture actual arguments', async () => {
   const traced = await loadTracedModule(`
     const simple = (first, second) => first + second;
-    trace(simple, { moduleId: 'TRACE', openMessage: 'fn(args)' });
+    trace.m('TRACE').info(simple, { openMessage: 'fn(args)' });
     const rest = (first, ...tail) => [first, tail];
-    trace(rest, { moduleId: 'ORDER', openMessage: 'fn(args)' });
+    trace.m('ORDER').info(rest, { openMessage: 'fn(args)' });
     export { rest, simple };
   `);
 
@@ -342,11 +338,11 @@ test('undefined and circular thrown values remain the caller-visible failures', 
     function throwUndefined() {
       throw undefined;
     }
-    trace(throwUndefined, { moduleId: 'TRACE' });
+    trace.m('TRACE').info(throwUndefined);
     function throwCircular() {
       throw circular;
     }
-    trace(throwCircular, { moduleId: 'ORDER' });
+    trace.m('ORDER').info(throwCircular);
     export { circular, throwCircular, throwUndefined };
   `);
 
@@ -379,7 +375,7 @@ test('failure output escapes control characters without replacing the original E
     function fail() {
       throw original;
     }
-    trace(fail, { moduleId: 'TRACE' });
+    trace.m('TRACE').info(fail);
     export { fail, original };
   `);
 
@@ -407,7 +403,7 @@ test('an unreadable native Error message does not mask the original failure or b
     function failUnreadable() {
       throw original;
     }
-    trace(failUnreadable, { moduleId: 'TRACE' });
+    trace.m('TRACE').info(failUnreadable);
     export { failUnreadable, original };
   `);
 
@@ -436,7 +432,7 @@ test('a proxy with an unreadable prototype remains the caller-visible failure an
     function failProxy() {
       throw original;
     }
-    trace(failProxy, { moduleId: 'TRACE' });
+    trace.m('TRACE').info(failProxy);
     export { failProxy, original };
   `);
 
@@ -462,7 +458,7 @@ test('nested and overlapping transformed invocations link each direct log to its
       Loxer.log('child:end:' + value);
       return value;
     }
-    trace(child, { moduleId: 'TRACE', openMessage: 'fn(args)' });
+    trace.m('TRACE').info(child, { openMessage: 'fn(args)' });
 
     async function parent(value) {
       Loxer.log('parent:start:' + value);
@@ -470,7 +466,7 @@ test('nested and overlapping transformed invocations link each direct log to its
       Loxer.log('parent:end:' + value);
       return result;
     }
-    trace(parent, { moduleId: 'ORDER', openMessage: 'fn(args)' });
+    trace.m('ORDER').info(parent, { openMessage: 'fn(args)' });
     export { child, parent };
   `);
 
@@ -515,12 +511,209 @@ test('the runtime marker fails loudly without a transform', () => {
   );
 });
 
+test.each([
+  ['modifier', () => trace.m('TRACE').info(() => 'untransformed')],
+  ['terminal', () => trace.error(() => 'untransformed')],
+] as const)('an untransformed fluent %s fails with the marker diagnostic', (_name, call) => {
+  expect(call).toThrow(
+    'trace() is a build-time marker. Configure babel-plugin-loxer-trace or ' +
+      'vite-plugin-loxer-trace before executing this module.'
+  );
+});
+
+test('bare, log, and info terminals are equivalent while error uses ordinary lifecycle logs', async () => {
+  const traced = await loadTracedModule(`
+    function bare() { return 'bare'; }
+    trace(bare);
+    function logged() { return 'logged'; }
+    trace.m('TRACE').log(logged);
+    function informed() { return 'informed'; }
+    trace.m('TRACE').info(informed);
+    function failedLevel() { return 'error-level'; }
+    trace.m('TRACE').error(failedLevel);
+    export { bare, failedLevel, informed, logged };
+  `);
+
+  expect(traced.bare()).toBe('bare');
+  expect(traced.logged()).toBe('logged');
+  expect(traced.informed()).toBe('informed');
+  expect(traced.failedLevel()).toBe('error-level');
+
+  const lifecycle = devLogs.map((log) => [log.type, log.level, log.moduleId]);
+  expect(lifecycle).toEqual([
+    ['open', 'info', 'DEFAULT'],
+    ['close', 'info', 'DEFAULT'],
+    ['open', 'info', 'TRACE'],
+    ['close', 'info', 'TRACE'],
+    ['open', 'info', 'TRACE'],
+    ['close', 'info', 'TRACE'],
+    ['open', 'error', 'TRACE'],
+    ['close', 'error', 'TRACE'],
+  ]);
+  expect(devErrors).toEqual([]);
+});
+
+test('all marker terminals preserve their selected level and an error-level failure stays linked', async () => {
+  const traced = await loadTracedModule(`
+    const original = new Error('failed');
+    function atError() { return 'error'; }
+    trace.error(atError);
+    function atWarn() { return 'warn'; }
+    trace.warn(atWarn);
+    function atInfo() { return 'info'; }
+    trace.info(atInfo);
+    function atDebug() { return 'debug'; }
+    trace.debug(atDebug);
+    function fail() { throw original; }
+    trace.error(fail);
+    export { atDebug, atError, atInfo, atWarn, fail, original };
+  `);
+  resetLoxer();
+  Loxer.init({
+    dev: true,
+    defaultLevels: { devLevel: 'debug', prodLevel: 'error' },
+    output: outputFromCallbacks({
+      devError: (error) => devErrors.push(error),
+      devLog: (log) => devLogs.push(log),
+    }),
+  });
+  resetTraceLogs();
+
+  expect(traced.atError()).toBe('error');
+  expect(traced.atWarn()).toBe('warn');
+  expect(traced.atInfo()).toBe('info');
+  expect(traced.atDebug()).toBe('debug');
+  try {
+    traced.fail();
+    throw new Error('Expected fail() to throw.');
+  } catch (error) {
+    expect(error).toBe(traced.original);
+  }
+
+  expect(devLogs.map((log) => log.level)).toEqual([
+    'error',
+    'error',
+    'warn',
+    'warn',
+    'info',
+    'info',
+    'debug',
+    'debug',
+    'error',
+    'error',
+  ]);
+  expect(devErrors).toHaveLength(1);
+  expect(devErrors[0]).toMatchObject({ error: traced.original, level: 'error' });
+  expect(new Set([...devLogs.slice(-2), devErrors[0]].map((record) => record.id)).size).toBe(1);
+});
+
+test('both highlight aliases apply their boolean decision to open and close', async () => {
+  const traced = await loadTracedModule(`
+    function enabled() { return true; }
+    trace.module('TRACE').highlight().info(enabled);
+    function disabled() { return false; }
+    trace.m('ORDER').h(false).info(disabled);
+    export { disabled, enabled };
+  `);
+
+  expect(traced.enabled()).toBe(true);
+  expect(traced.disabled()).toBe(false);
+  expect(devLogs.map((log) => log.highlighted)).toEqual([true, true, false, false]);
+  expect(devLogs.map((log) => log.moduleId)).toEqual(['TRACE', 'TRACE', 'ORDER', 'ORDER']);
+});
+
+test('fluent marker arguments evaluate once in source order and the whole chain is removed', async () => {
+  const source = `
+    const order = [];
+    function mark(name, value) { order.push(name); return value; }
+    function calculate(value) { return value * 2; }
+    trace
+      .pp(mark('pp', { target: 'result', depth: 1 }))
+      .m(mark('module', 'TRACE'))
+      .props(mark('props', 'argsResult'))
+      .h(mark('highlight', true))
+      .warn(calculate, mark('options', { openMessage: 'fn(args)' }));
+    export { calculate, order };
+  `;
+  const result = await transformLoxerTrace(`${imports()}${source}`, transformOptions());
+  expect(result?.code).not.toContain('.pp(');
+  expect(result?.code).not.toContain('.warn(calculate');
+
+  const traced = await loadTracedModule(source);
+  expect(traced.order).toEqual(['pp', 'module', 'props', 'highlight', 'options']);
+  expect(traced.calculate(4)).toBe(8);
+  expect(traced.order).toEqual(['pp', 'module', 'props', 'highlight', 'options']);
+  expect(devLogs.map((log) => log.level)).toEqual(['warn', 'warn']);
+});
+
+test('a target-list marker evaluates fluent arguments once in source order', async () => {
+  const traced = await loadTracedModule(`
+    const order = [];
+    function mark(name, value) { order.push(name); return value; }
+    function first(value) { return value + 1; }
+    function second(value) { return value + 2; }
+    trace.m(mark('module', 'TRACE')).props(mark('props', 'args'))
+      .info([first, second], mark('options', { openMessage: 'fn(args)' }));
+    export { first, order, second };
+  `);
+
+  expect(traced.order).toEqual(['module', 'props', 'options']);
+  expect(traced.first(1)).toBe(2);
+  expect(traced.second(1)).toBe(3);
+  expect(traced.order).toEqual(['module', 'props', 'options']);
+});
+
+test('props capture and printing route independently and printer routing metadata is stripped', async () => {
+  const traced = await loadTracedModule(`
+    function mismatched(value) { return { value }; }
+    trace
+      .pp({ target: 'args', depth: 1 })
+      .props('result')
+      .info(mismatched);
+    function printingOnly(value) { return value + 1; }
+    trace.pp('argsResult').info(printingOnly);
+    export { mismatched, printingOnly };
+  `);
+
+  expect(traced.mismatched('value')).toEqual({ value: 'value' });
+  expect(traced.printingOnly(1)).toBe(2);
+  const [mismatchedOpen, mismatchedClose, printingOpen, printingClose] = devLogs;
+  expect([mismatchedOpen.props, mismatchedOpen.printProps]).toEqual([[], { depth: 1 }]);
+  expect([mismatchedClose.props, mismatchedClose.printProps]).toEqual([
+    [{ value: 'value' }],
+    undefined,
+  ]);
+  expect([printingOpen.props, printingOpen.printProps]).toEqual([[], {}]);
+  expect([printingClose.props, printingClose.printProps]).toEqual([[], {}]);
+  expect(mismatchedOpen.printProps).not.toHaveProperty('target');
+});
+
+test('dynamic invalid props and printer targets select neither lifecycle side', async () => {
+  const traced = await loadTracedModule(`
+    const target = 'invalid';
+    function captured(value) { return value + 1; }
+    trace.props(target).info(captured);
+    function printed(value) { return value + 2; }
+    trace.pp(target).info(printed);
+    export { captured, printed };
+  `);
+
+  expect(traced.captured(1)).toBe(2);
+  expect(traced.printed(1)).toBe(3);
+  expect(devLogs.map((log) => [log.props, log.printProps])).toEqual([
+    [[], undefined],
+    [[], undefined],
+    [[], undefined],
+    [[], undefined],
+  ]);
+});
+
 test('a target list traces every listed binding with one shared options expression', async () => {
   const traced = await loadTracedModule(`
     let optionsCalls = 0;
     function makeOptions() {
       optionsCalls += 1;
-      return { moduleId: 'TRACE', openMessage: 'fn(args)', closeMessage: 'fn(result)' };
+      return { openMessage: 'fn(args)', closeMessage: 'fn(result)' };
     }
     function double(value) {
       Loxer.m('ORDER').log('doubling:' + value);
@@ -530,7 +723,7 @@ test('a target list traces every listed binding with one shared options expressi
       return value * 3;
     }
     const quadruple = (value) => value * 4;
-    trace([double, triple, quadruple], makeOptions());
+    trace.m('TRACE').info([double, triple, quadruple], makeOptions());
     export { double, optionsCalls, quadruple, triple };
   `);
 
@@ -556,7 +749,7 @@ test('a target list traces every listed binding with one shared options expressi
 
 test('a target-list marker above its declarations still applies the shared options', async () => {
   const traced = await loadTracedModule(`
-    trace([first, second], { moduleId: 'ORDER', openMessage: 'fn(args)' });
+    trace.m('ORDER').info([first, second], { openMessage: 'fn(args)' });
     function first(value) {
       return 'first:' + value;
     }
@@ -584,11 +777,11 @@ test('list and single markers coexist and keep separate options per marker', asy
     const alsoShared = function (value) {
       return value;
     };
-    trace([shared, alsoShared], { moduleId: 'TRACE', openMessage: 'fn(args)' });
+    trace.m('TRACE').info([shared, alsoShared], { openMessage: 'fn(args)' });
     function separate(value) {
       return value;
     }
-    trace(separate, { moduleId: 'ORDER', openMessage: 'fn(types)' });
+    trace.m('ORDER').info(separate, { openMessage: 'fn(types)' });
     export { alsoShared, separate, shared };
   `);
 
@@ -613,7 +806,7 @@ test('a target list preserves this on a function expression, real arguments, and
       return 'hi ' + name;
     }
     const double = (value) => value * 2;
-    trace([scale, greet, double], { moduleId: 'TRACE' });
+    trace.m('TRACE').info([scale, greet, double]);
     export { double, greet, scale };
   `);
 
@@ -630,7 +823,7 @@ test('a named self-recursive list member re-enters its own trace box on every re
       return value === 0 ? total : recurse(value - 1, total + 1);
     };
     const double = (value) => value * 2;
-    trace([expression, double], { moduleId: 'TRACE', openMessage: 'fn(args)' });
+    trace.m('TRACE').info([expression, double], { openMessage: 'fn(args)' });
     export { double, expression };
   `);
 
@@ -664,7 +857,7 @@ test('a runtime failure in one list member does not affect its siblings box life
     function third(value) {
       return 'third:' + value;
     }
-    trace([first, second, third], { moduleId: 'TRACE', openMessage: 'fn(args)' });
+    trace.m('TRACE').info([first, second, third], { openMessage: 'fn(args)' });
     export { first, second, third };
   `);
 
@@ -695,7 +888,7 @@ test('a non-async list member keeps native promise identity while its siblings t
     function saveSync(value) {
       return value + 1;
     }
-    trace([loadPending, saveSync], { moduleId: 'TRACE' });
+    trace.m('TRACE').info([loadPending, saveSync]);
     export { complete, loadPending, pending, saveSync };
   `);
 
@@ -731,7 +924,7 @@ test('concurrent list members link direct Loxer calls to their own trace box wit
       Loxer.log('save:end:' + value);
       return value;
     }
-    trace([loadOrder, saveOrder], { moduleId: 'TRACE', openMessage: 'fn(args)' });
+    trace.m('TRACE').info([loadOrder, saveOrder], { openMessage: 'fn(args)' });
     export { loadOrder, saveOrder };
   `);
 
@@ -752,7 +945,7 @@ test('concurrent list members link direct Loxer calls to their own trace box wit
   expect(idFor('save:end:two')).toBe(saveId);
 });
 
-test('argsAsProps, resultAsProps, level, and highlight apply uniformly across a shared-options list', async () => {
+test('props, level, and highlight modifiers apply uniformly across a shared-options list', async () => {
   const traced = await loadTracedModule(`
     function first(value) {
       return value + 1;
@@ -761,13 +954,7 @@ test('argsAsProps, resultAsProps, level, and highlight apply uniformly across a 
       return value + 2;
     }
     const third = (value) => value + 3;
-    trace([first, second, third], {
-      moduleId: 'TRACE',
-      level: 'warn',
-      highlight: 'all',
-      argsAsProps: true,
-      resultAsProps: true,
-    });
+    trace.m('TRACE').h().props('argsResult').warn([first, second, third]);
     export { first, second, third };
   `);
 
@@ -796,12 +983,12 @@ test('plain-function markers apply printArgs and printResult independently for d
     function argsOnly(first, second) {
       return first + second;
     }
-    trace(argsOnly, { moduleId: 'TRACE', argsAsProps: true, printArgs: { depth: 1 } });
+    trace.m('TRACE').props('args').pp({ target: 'args', depth: 1 }).info(argsOnly);
 
     function resultOnly(value) {
       return { value };
     }
-    trace(resultOnly, { moduleId: 'ORDER', resultAsProps: true, printResult: true });
+    trace.m('ORDER').props('result').pp('result').info(resultOnly);
 
     function first(value) {
       return value + 1;
@@ -809,13 +996,7 @@ test('plain-function markers apply printArgs and printResult independently for d
     async function second(value) {
       return value + 2;
     }
-    trace([first, second], {
-      moduleId: 'TRACE',
-      argsAsProps: true,
-      resultAsProps: true,
-      printArgs: true,
-      printResult: { keys: [] },
-    });
+    trace.m('TRACE').props('argsResult').pp({ target: 'argsResult', keys: [] }).info([first, second]);
     export { argsOnly, first, resultOnly, second };
   `);
 
@@ -829,8 +1010,8 @@ test('plain-function markers apply printArgs and printResult independently for d
   expect(opens.map((log) => [log.props, log.printProps])).toEqual([
     [[2, 3], { depth: 1 }],
     [[], undefined],
-    [[4], {}],
-    [[4], {}],
+    [[4], { keys: [] }],
+    [[4], { keys: [] }],
   ]);
   expect(closes.map((log) => [log.props, log.printProps])).toEqual([
     [[], undefined],
@@ -849,7 +1030,7 @@ test('a list marker in a nested scope re-evaluates its shared options on every c
       function second(value) {
         return label + ':second:' + value;
       }
-      trace([first, second], { moduleId: 'TRACE', openMessage: 'fn(args)', closeMessage: 'fn(result)' });
+      trace.m('TRACE').info([first, second], { openMessage: 'fn(args)', closeMessage: 'fn(result)' });
       return { first, second };
     }
     export { makeTraced };
@@ -883,14 +1064,14 @@ test('markers in a nested scope keep per-invocation options instead of sharing o
       function single(value) {
         return moduleId + ':' + value;
       }
-      trace(single, { moduleId, openMessage: 'fn(args)' });
+      trace.m(moduleId).info(single, { openMessage: 'fn(args)' });
       function listFirst(value) {
         return moduleId + ':first:' + value;
       }
       function listSecond(value) {
         return moduleId + ':second:' + value;
       }
-      trace([listFirst, listSecond], { moduleId, openMessage: 'fn(args)' });
+      trace.m(moduleId).info([listFirst, listSecond], { openMessage: 'fn(args)' });
       return { listFirst, listSecond, single };
     }
     export { makeTraced };
@@ -924,7 +1105,7 @@ test('a list marker shares one options slot across targets declared in two neste
         function innerTarget(value) {
           return moduleId + ':inner:' + value;
         }
-        trace([outerTarget, innerTarget], { moduleId, openMessage: 'fn(args)' });
+        trace.m(moduleId).info([outerTarget, innerTarget], { openMessage: 'fn(args)' });
         return innerTarget;
       }
       return { build, outerTarget };
@@ -961,14 +1142,14 @@ test('two list markers in one nested scope get separate per-invocation options s
       function firstB(value) {
         return 'firstB:' + value;
       }
-      trace([firstA, firstB], { moduleId: firstId, openMessage: 'fn(args)' });
+      trace.m(firstId).info([firstA, firstB], { openMessage: 'fn(args)' });
       function secondA(value) {
         return 'secondA:' + value;
       }
       function secondB(value) {
         return 'secondB:' + value;
       }
-      trace([secondA, secondB], { moduleId: secondId, openMessage: 'fn(args)' });
+      trace.m(secondId).info([secondA, secondB], { openMessage: 'fn(args)' });
       return { firstA, firstB, secondA, secondB };
     }
     export { makeGroups };
@@ -1007,7 +1188,7 @@ test('a marker on a block-scoped target keeps per-invocation options', async () 
         function blockScoped(value) {
           return moduleId + ':' + value;
         }
-        trace(blockScoped, { moduleId, openMessage: 'fn(args)' });
+        trace.m(moduleId).info(blockScoped, { openMessage: 'fn(args)' });
         handler = blockScoped;
       }
       return handler;
@@ -1040,7 +1221,7 @@ test('shadowed Array and Object bindings do not affect a list-traced group in th
         return value + 1;
       };
       const arrow = (first, second = 1) => first + second;
-      trace([declaration, expression, arrow], { moduleId: 'TRACE' });
+      trace.m('TRACE').info([declaration, expression, arrow]);
       return { arrow, declaration, expression, Array, Object };
     }
     export { withShadowedGlobals };
@@ -1060,10 +1241,12 @@ test('formatter and cyclic-result failures fall back without changing results', 
   cyclic.self = cyclic;
   const trace = __startTrace('format', [1], {
     moduleId: 'TRACE',
-    openMessage: () => {
-      throw new Error('formatter failed');
+    markerOptions: {
+      openMessage: () => {
+        throw new Error('formatter failed');
+      },
+      closeMessage: 'fn(result)',
     },
-    closeMessage: 'fn(result)',
   });
 
   trace.success(cyclic);
@@ -1074,16 +1257,17 @@ test('formatter and cyclic-result failures fall back without changing results', 
 
 test('trace options format types, results, and successful formatter messages', () => {
   const typed = __startTrace('typed', [1, 'text', null], {
-    closeMessage: 'fn(result)',
     moduleId: 'TRACE',
-    openMessage: 'fn(types)',
+    markerOptions: { closeMessage: 'fn(result)', openMessage: 'fn(types)' },
   });
   typed.success({ nested: true });
 
   const formatted = __startTrace('formatted', ['Ada'], {
-    closeMessage: ({ result }: any) => `close:${result.name}`,
     moduleId: 'ORDER',
-    openMessage: ({ args }) => `open:${args[0]}`,
+    markerOptions: {
+      closeMessage: ({ result }: any) => `close:${result.name}`,
+      openMessage: ({ args }) => `open:${args[0]}`,
+    },
   });
   formatted.success({ name: 'Grace' });
 
@@ -1097,10 +1281,9 @@ test('trace options format types, results, and successful formatter messages', (
 
 test('parent.fn trace messages fall back to the function name', () => {
   const trace = __startTrace('standalone', [], {
-    closeMessage: 'parent.fn',
     moduleId: 'TRACE',
-    openMessage: 'parent.fn',
-    resultAsProps: true,
+    markerOptions: { closeMessage: 'parent.fn', openMessage: 'parent.fn' },
+    propsTarget: 'result',
   });
   trace.success(undefined);
 
@@ -1117,9 +1300,8 @@ test('a parent name is sanitized before it reaches the open and close messages',
     'load',
     [],
     {
-      closeMessage: 'parent.fn',
       moduleId: 'TRACE',
-      openMessage: 'parent.fn',
+      markerOptions: { closeMessage: 'parent.fn', openMessage: 'parent.fn' },
     },
     'we\u001b[31m\nird'
   );
@@ -1132,9 +1314,11 @@ test('a parent name is sanitized before it reaches the open and close messages',
 
 test('custom formatter messages escape terminal control characters', () => {
   const trace = __startTrace('controlled', [], {
-    closeMessage: () => 'close\n\u001b[31mmessage',
     moduleId: 'TRACE',
-    openMessage: () => 'open\n\u001b[32mmessage',
+    markerOptions: {
+      closeMessage: () => 'close\n\u001b[31mmessage',
+      openMessage: () => 'open\n\u001b[32mmessage',
+    },
   });
   trace.success('result');
 
@@ -1170,15 +1354,14 @@ test('a resolved function name is sanitized before it reaches the open, close, a
 
 test('non-string formatters and control characters fall back to safe trace messages', () => {
   const fallback = __startTrace('fallback', [], {
-    closeMessage: (() => 123) as any,
     moduleId: 'TRACE',
-    openMessage: (() => 123) as any,
+    markerOptions: { closeMessage: (() => 123) as any, openMessage: (() => 123) as any },
   });
   fallback.success('result');
 
   const escaped = __startTrace('escaped', ['line\nbreak', '\u001b[31mred\u001b[0m'], {
     moduleId: 'ORDER',
-    openMessage: 'fn(args)',
+    markerOptions: { openMessage: 'fn(args)' },
   });
   escaped.success(undefined);
 
@@ -1243,11 +1426,11 @@ test('an omitted trace level remains visible while a hidden trace leaves no visi
 test('default and destructured traced arrows retain caller arguments for message and props output', async () => {
   const traced = await loadTracedModule(`
     const zero = () => 'zero';
-    trace(zero, { moduleId: 'TRACE', openMessage: 'fn(args)', argsAsProps: true });
+    trace.m('TRACE').props('args').info(zero, { openMessage: 'fn(args)' });
     const defaulted = (first = 'fallback', second = 'two') => first + ':' + second;
-    trace(defaulted, { moduleId: 'ORDER', openMessage: 'fn(args)', argsAsProps: true });
+    trace.m('ORDER').props('args').info(defaulted, { openMessage: 'fn(args)' });
     const destructured = ({ value } = { value: 'fallback' }, [tail] = ['tail']) => value + ':' + tail;
-    trace(destructured, { moduleId: 'TRACE', openMessage: 'fn(args)', argsAsProps: true });
+    trace.m('TRACE').props('args').info(destructured, { openMessage: 'fn(args)' });
     export { defaulted, destructured, zero };
   `);
 
@@ -1289,16 +1472,16 @@ test('shadowed Array and Object bindings do not affect generated trace helpers',
       function declaration(value) {
         return value * 2;
       }
-      trace(declaration, { moduleId: 'TRACE' });
+      trace.m('TRACE').info(declaration);
       const expression = function (value) {
         return value + 1;
       };
-      trace(expression, { moduleId: 'ORDER' });
+      trace.m('ORDER').info(expression);
       return { declaration, expression, Array };
     }
     const Object = { defineProperty() { throw new Error('shadowed Object'); } };
     export const arrow = (first, second = 1) => first + second;
-    trace(arrow, { moduleId: 'TRACE' });
+    trace.m('TRACE').info(arrow);
     export { withShadowedArray };
   `);
 
@@ -1316,7 +1499,7 @@ test('a hidden direct modifier log does not enter history and leaves a visible t
       Loxer.m('ORDER').debug('not visible');
       return 'ok';
     }
-    trace(hiddenDetail, { moduleId: 'TRACE' });
+    trace.m('TRACE').info(hiddenDetail);
     export { hiddenDetail };
   `);
   const historyLength = Loxer.history.length;
@@ -1339,7 +1522,7 @@ test('direct level calls link to the trace box while a level .open() starts its 
       Loxer.of(inner).close('inner done');
       return 'ok';
     }
-    trace(checkout, { moduleId: 'TRACE' });
+    trace.m('TRACE').info(checkout);
     export { checkout };
   `);
 
@@ -1383,7 +1566,7 @@ test('a shadowed Loxer binding is never linked, not even through a level method'
       Loxer.info.open();
       return calls;
     }
-    trace(shadowed, { moduleId: 'TRACE' });
+    trace.m('TRACE').info(shadowed);
     export { shadowed };
   `);
 
@@ -1464,5 +1647,59 @@ test('the transform removes target-list markers and reports unsupported list for
   );
   await rejects('const constant = 1; trace([constant]);').toThrow(
     'trace() target "constant" is not initialized with a function.'
+  );
+});
+
+test('the transform validates fluent marker chains and removes them as one expression', async () => {
+  const result = await transformLoxerTrace(
+    `${imports()} function one() { return 1; } trace.m('TRACE').h().props('args').pp('result').warn(one); export { one };`,
+    transformOptions()
+  );
+  expect(result?.code).not.toContain(".m('TRACE')");
+  expect(result?.code).not.toContain(".props('args')");
+  expect(result?.code).not.toContain('.warn(one)');
+  expect(result?.code).not.toMatch(/import\s*\{\s*trace\s*\}/);
+
+  const rejects = (source: string) =>
+    expect(transformLoxerTrace(`${imports()} ${source}`, transformOptions())).rejects;
+
+  await rejects("function one() {} trace.m('TRACE').module('ORDER').info(one);").toThrow(
+    'trace() modifier "module" may appear only once.'
+  );
+  await rejects("function one() {} trace.h().highlight(false).info(one);").toThrow(
+    'trace() modifier "highlight" may appear only once.'
+  );
+  await rejects("function one() {} trace.props('args').props('result').info(one);").toThrow(
+    'trace() modifier "props" may appear only once.'
+  );
+  await rejects("function one() {} trace.pp('args').pp('result').info(one);").toThrow(
+    'trace() modifier "pp" may appear only once.'
+  );
+  await rejects('function one() {} trace.props().info(one);').toThrow(
+    'trace().props() expects exactly one argument.'
+  );
+  await rejects("function one() {} trace.pp('args', {}).info(one);").toThrow(
+    'trace().pp() expects exactly one argument.'
+  );
+  await rejects("function one() {} trace.m('TRACE', 'ORDER').info(one);").toThrow(
+    'trace().m() expects zero or one argument.'
+  );
+  await rejects("function one() {} trace.props('args');").toThrow(
+    'trace().props() needs a terminal level call.'
+  );
+  await rejects("function one() {} trace.m('TRACE').h();").toThrow(
+    'trace().h() needs a terminal level call.'
+  );
+  await rejects("function one() {} trace.pp('invalid').info(one);").toThrow(
+    'trace().pp() target must be "args", "result", or "argsResult".'
+  );
+  await rejects("function one() {} trace.props('invalid').info(one);").toThrow(
+    'trace().props() target must be "args", "result", or "argsResult".'
+  );
+  await rejects("function one() {} trace['info'](one);").toThrow(
+    'trace() does not support computed fluent members.'
+  );
+  await rejects('function one() {} trace.verbose(one);').toThrow(
+    'trace() does not support fluent member "verbose".'
   );
 });

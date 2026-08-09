@@ -12,22 +12,22 @@ test('an inline literal is accepted as a call argument, an immediately invoked e
     function useEffect(effect) { return effect(); }
     function useMemo(factory) { return factory(); }
 
-    const load = useCallback(trace(async (id) => {
+    const load = useCallback(trace.m('ORDER').info(async (id) => {
       Loxer.log('loading:' + id);
       return 'order:' + id;
-    }, { moduleId: 'ORDER' }));
+    }));
 
     let effectRan;
-    useEffect(trace(() => { effectRan = 'ran'; }, { moduleId: 'TRACE', name: 'syncOrders' }));
+    useEffect(trace.m('TRACE').info(() => { effectRan = 'ran'; }, { name: 'syncOrders' }));
 
-    const memoValue = useMemo(trace(() => 'memo-result', { moduleId: 'TRACE' }));
+    const memoValue = useMemo(trace.m('TRACE').info(() => 'memo-result'));
 
     const handlers = {
-      onClick: trace((event) => 'clicked:' + event, { moduleId: 'TRACE' }),
+      onClick: trace.m('TRACE').info((event) => 'clicked:' + event),
     };
 
     let doubled;
-    doubled = [5].map(trace((value) => value * 2, { moduleId: 'TRACE' }));
+    doubled = [5].map(trace.m('TRACE').info((value) => value * 2));
 
     export { doubled, effectRan, handlers, load, memoValue };
   `);
@@ -52,9 +52,9 @@ test('an inline literal is accepted as a call argument, an immediately invoked e
 test('a named FunctionExpression literal reports its own name instead of the surrounding declarator', async () => {
   const traced = await loadTracedModule(`
     function useCallback(fn) { return fn; }
-    const load = useCallback(trace(function fetchOrder(id) {
+    const load = useCallback(trace.m('ORDER').info(function fetchOrder(id) {
       return 'order:' + id;
-    }, { moduleId: 'ORDER', openMessage: 'fn(args)' }));
+    }, { openMessage: 'fn(args)' }));
     export { load };
   `);
 
@@ -67,7 +67,7 @@ test('a named FunctionExpression literal reports its own name instead of the sur
 test('an explicit name option overrides the surrounding declarator for an inline literal', async () => {
   const traced = await loadTracedModule(`
     function useCallback(fn) { return fn; }
-    const load = useCallback(trace(() => 'value', { moduleId: 'TRACE', name: 'explicitName' }));
+    const load = useCallback(trace.m('TRACE').info(() => 'value', { name: 'explicitName' }));
     export { load };
   `);
 
@@ -81,7 +81,7 @@ test('an inline literal takes its name from a member-expression assignment targe
   const traced = await loadTracedModule(`
     function identity(fn) { return fn; }
     const target = {};
-    target.handler = identity(trace((value) => value + 1, { moduleId: 'TRACE', openMessage: 'fn(args)' }));
+    target.handler = identity(trace.m('TRACE').info((value) => value + 1, { openMessage: 'fn(args)' }));
     export { target };
   `);
 
@@ -95,16 +95,8 @@ test('parent.fn names the class an inline literal is a field of, through a call 
   const traced = await loadTracedModule(`
     function useCallback(fn, deps) { return fn; }
     class Checkout {
-      #discount = trace((price) => price - 1, {
-        moduleId: 'ORDER',
-        openMessage: 'parent.fn',
-        closeMessage: 'parent.fn',
-      });
-      load = useCallback(trace((id) => 'order:' + id, {
-        moduleId: 'ORDER',
-        openMessage: 'parent.fn',
-        closeMessage: 'parent.fn',
-      }), []);
+      #discount = trace.m('ORDER').info((price) => price - 1, { openMessage: 'parent.fn', closeMessage: 'parent.fn',  });
+      load = useCallback(trace.m('ORDER').info((id) => 'order:' + id, { openMessage: 'parent.fn', closeMessage: 'parent.fn',  }), []);
       invokeDiscount(price) {
         return this.#discount(price);
       }
@@ -199,7 +191,7 @@ test('name-boundary shapes all raise the naming error instead of borrowing a nam
   // the walk runs at all, so which boundary stopped the walk cannot matter.
   const traced = await loadTracedModule(`
     const cond = true;
-    const f = cond && trace((id) => id, { moduleId: 'ORDER', name: 'loadOrder' });
+    const f = cond && trace.m('ORDER').info((id) => id, { name: 'loadOrder' });
     export { f };
   `);
   expect(traced.f('x')).toBe('x');
@@ -225,10 +217,10 @@ test('inline literals preserve sync, async, promise-returning, and throwing resu
     let complete;
     const pending = new Promise((resolve) => { complete = resolve; });
 
-    const sync = identity(trace((value) => value * 2, { moduleId: 'TRACE' }));
-    const asyncFn = identity(trace(async (value) => value + 1, { moduleId: 'TRACE' }));
-    const promiseReturning = identity(trace(() => pending, { moduleId: 'TRACE' }));
-    const throwing = identity(trace(() => { throw original; }, { moduleId: 'TRACE' }));
+    const sync = identity(trace.m('TRACE').info((value) => value * 2));
+    const asyncFn = identity(trace.m('TRACE').info(async (value) => value + 1));
+    const promiseReturning = identity(trace.m('TRACE').info(() => pending));
+    const throwing = identity(trace.m('TRACE').info(() => { throw original; }));
 
     export { asyncFn, complete, original, pending, promiseReturning, sync, throwing };
   `);
@@ -290,12 +282,37 @@ test('an inline literal marker inside a factory function re-evaluates its option
   ]);
 });
 
+test('an inline marker evaluates fluent arguments once per factory evaluation in source order', async () => {
+  const traced = await loadTracedModule(`
+    const order = [];
+    function mark(name, value) { order.push(name); return value; }
+    function identity(fn) { return fn; }
+    function makeHandler() {
+      return identity(trace.m(mark('module', 'TRACE')).props(mark('props', 'args'))
+        .info((value) => value + 1, {
+          name: 'handler',
+          openMessage: mark('options', 'fn(args)'),
+        }));
+    }
+    export { makeHandler, order };
+  `);
+
+  const first = traced.makeHandler();
+  expect(traced.order).toEqual(['module', 'props', 'options']);
+  expect(first(1)).toBe(2);
+  expect(traced.order).toEqual(['module', 'props', 'options']);
+
+  const second = traced.makeHandler();
+  expect(second(2)).toBe(3);
+  expect(traced.order).toEqual(['module', 'props', 'options', 'module', 'props', 'options']);
+});
+
 test('two inline markers in one nested scope get separate hoisted option slots', async () => {
   const source = `
     function identity(fn) { return fn; }
     function makeHandlers(labelA, labelB) {
-      const handlerA = identity(trace((value) => labelA + ':' + value, { moduleId: 'TRACE', openMessage: 'fn(args)' }));
-      const handlerB = identity(trace((value) => labelB + ':' + value, { moduleId: 'ORDER', openMessage: 'fn(args)' }));
+      const handlerA = identity(trace.m('TRACE').info((value) => labelA + ':' + value, { openMessage: 'fn(args)' }));
+      const handlerB = identity(trace.m('ORDER').info((value) => labelB + ':' + value, { openMessage: 'fn(args)' }));
       return { handlerA, handlerB };
     }
     export { makeHandlers };
@@ -361,10 +378,10 @@ test('a locally shadowed trace binding is left untouched by the inline-marker tr
 test("an inline literal nested inside another inline literal opens its own box inside its parent's", async () => {
   const traced = await loadTracedModule(`
     function identity(fn) { return fn; }
-    const outer = identity(trace((value) => {
-      const inner = identity(trace((x) => x + 1, { moduleId: 'ORDER', name: 'inner' }));
+    const outer = identity(trace.m('TRACE').info((value) => {
+      const inner = identity(trace.m('ORDER').info((x) => x + 1, { name: 'inner' }));
       return inner(value) * 2;
-    }, { moduleId: 'TRACE', name: 'outer' }));
+    }, { name: 'outer' }));
     export { outer };
   `);
 
@@ -383,10 +400,10 @@ test("an inline literal nested inside a statement-form target's body opens its o
   const traced = await loadTracedModule(`
     function identity(fn) { return fn; }
     function outer(value) {
-      const inner = identity(trace((x) => x + 1, { moduleId: 'ORDER', name: 'inner' }));
+      const inner = identity(trace.m('ORDER').info((x) => x + 1, { name: 'inner' }));
       return inner(value) * 2;
     }
-    trace(outer, { moduleId: 'TRACE' });
+    trace.m('TRACE').info(outer);
     export { outer };
   `);
 
@@ -402,10 +419,10 @@ test("an inline literal nested inside a statement-form target's body opens its o
 test("a direct Loxer call inside an inline literal links to that invocation's box", async () => {
   const traced = await loadTracedModule(`
     function identity(fn) { return fn; }
-    const load = identity(trace((id) => {
+    const load = identity(trace.m('TRACE').info((id) => {
       Loxer.log('loading:' + id);
       return 'order:' + id;
-    }, { moduleId: 'TRACE', openMessage: 'fn(args)' }));
+    }, { openMessage: 'fn(args)' }));
     export { load };
   `);
 
@@ -423,11 +440,11 @@ test('an inline arrow literal keeps lexical this while a function-expression lit
   const traced = await loadTracedModule(`
     function identity(fn) { return fn; }
     function createArrowHandler() {
-      return identity(trace((value) => this.factor * value, { moduleId: 'TRACE', name: 'arrowHandler' }));
+      return identity(trace.m('TRACE').info((value) => this.factor * value, { name: 'arrowHandler' }));
     }
-    const funcHandler = identity(trace(function (value) {
+    const funcHandler = identity(trace.m('ORDER').info(function (value) {
       return this.factor * value;
-    }, { moduleId: 'ORDER' }));
+    }));
     export { createArrowHandler, funcHandler };
   `);
 
@@ -440,10 +457,10 @@ test('an inline arrow literal keeps lexical this while a function-expression lit
 test('a function-expression literal keeps real arguments and both literal kinds preserve Function.length', async () => {
   const traced = await loadTracedModule(`
     function identity(fn) { return fn; }
-    const funcHandler = identity(trace(function (first) {
+    const funcHandler = identity(trace.m('TRACE').info(function (first) {
       return [arguments.length, first];
-    }, { moduleId: 'TRACE' }));
-    const arrowHandler = identity(trace((first, second) => first + second, { moduleId: 'ORDER' }));
+    }));
+    const arrowHandler = identity(trace.m('ORDER').info((first, second) => first + second));
     export { arrowHandler, funcHandler };
   `);
 
@@ -455,20 +472,20 @@ test('a function-expression literal keeps real arguments and both literal kinds 
 
 test('the length-restoring helper is emitted only for an inline arrow with a required parameter', async () => {
   const zeroParam = await transformLoxerTrace(
-    `${imports()} const z = trace(() => 1, { moduleId: 'ORDER' }); export { z };`,
+    `${imports()} const z = trace.m('ORDER').info(() => 1); export { z };`,
     transformOptions()
   );
   expect(zeroParam?.code).not.toContain('withTraceFunctionLength');
 
   const oneParam = await transformLoxerTrace(
-    `${imports()} const w = trace((id) => id, { moduleId: 'ORDER' }); export { w };`,
+    `${imports()} const w = trace.m('ORDER').info((id) => id); export { w };`,
     transformOptions()
   );
   expect(oneParam?.code).toContain('withTraceFunctionLength');
 
   const traced = await loadTracedModule(`
-    const z = trace(() => 1, { moduleId: 'ORDER' });
-    const w = trace((id) => id, { moduleId: 'ORDER' });
+    const z = trace.m('ORDER').info(() => 1);
+    const w = trace.m('ORDER').info((id) => id);
     export { w, z };
   `);
   expect(traced.z.length).toBe(0);
@@ -480,9 +497,9 @@ test('the length-restoring helper is emitted only for an inline arrow with a req
 test('a named function-expression literal re-enters its own box on recursive self-reference', async () => {
   const traced = await loadTracedModule(`
     function identity(fn) { return fn; }
-    const expression = identity(trace(function recurse(value, total) {
+    const expression = identity(trace.m('TRACE').info(function recurse(value, total) {
       return value === 0 ? total : recurse(value - 1, total + 1);
-    }, { moduleId: 'TRACE', openMessage: 'fn(args)' }));
+    }, { openMessage: 'fn(args)' }));
     export { expression };
   `);
 

@@ -69,7 +69,7 @@ function transformInlineMarker(
   );
   marker.callPath.replaceWith(
     t.sequenceExpression([
-      t.assignmentExpression('=', t.cloneNode(optionsId), marker.optionsNode),
+      t.assignmentExpression('=', t.cloneNode(optionsId), marker.configurationNode),
       traced,
     ])
   );
@@ -88,7 +88,7 @@ function transformEnclosingMarker(
     parentName,
     runtime.runtimeId,
     runtime.observeResultId,
-    marker.optionsNode,
+    marker.configurationNode,
     runtime.loxerBinding,
     t
   );
@@ -106,7 +106,9 @@ function transformStatementMarker(
   );
   outermostTargetScope(marker.targets).push({ id: optionsId, kind: 'var' });
   marker.callPath.parentPath.replaceWith(
-    t.expressionStatement(t.assignmentExpression('=', t.cloneNode(optionsId), marker.optionsNode))
+    t.expressionStatement(
+      t.assignmentExpression('=', t.cloneNode(optionsId), marker.configurationNode)
+    )
   );
 
   for (const target of marker.targets) {

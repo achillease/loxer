@@ -1,3 +1,9 @@
+/**
+ * Compile-time fixtures for plain-function trace formatter inference.
+ *
+ * Vitest never executes this file. `test/tsconfig.json` includes it, so `pnpm typecheck:test`
+ * verifies that the marker overloads preserve the callback argument and result types pinned below.
+ */
 import { trace } from '../src/trace';
 
 type AssertFalse<Value extends false> = Value;
@@ -113,6 +119,62 @@ function traceMixedSignatureListFormatterTypeFixture(): void {
       type ResultIsExactUnion = AssertTrue<Equals<typeof result, { amount: number } | number>>;
       const pinned: ResultIsExactUnion = true;
       return `${String(result)} ${pinned}`;
+    },
+  });
+}
+
+function fluentTraceFormatterTypeFixture(): void {
+  function calculateTotal(quantity: number, currency: string): Promise<{ amount: number }> {
+    return Promise.resolve({ amount: quantity });
+  }
+
+  const returned = trace
+    .m('ORDER')
+    .h()
+    .props('argsResult')
+    .pp({ target: 'result', depth: 1 })
+    .warn(calculateTotal, {
+      openMessage({ args }) {
+        type ArgumentsAreExact = AssertTrue<
+          Equals<typeof args, [quantity: number, currency: string]>
+        >;
+        const pinned: ArgumentsAreExact = true;
+        return `${args[0]} ${args[1]} ${pinned}`;
+      },
+      closeMessage({ result }) {
+        type ResultIsExact = AssertTrue<Equals<typeof result, { amount: number }>>;
+        const pinned: ResultIsExact = true;
+        return `${result.amount} ${pinned}`;
+      },
+    });
+  const preservesTarget: typeof calculateTotal = returned;
+  void preservesTarget;
+
+  const inline = trace.debug((value: number) => String(value), {
+    openMessage({ args }) {
+      type ArgumentsAreExact = AssertTrue<Equals<typeof args, [value: number]>>;
+      const pinned: ArgumentsAreExact = true;
+      return `${args[0]} ${pinned}`;
+    },
+    closeMessage({ result }) {
+      type ResultIsExact = AssertTrue<Equals<typeof result, string>>;
+      const pinned: ResultIsExact = true;
+      return `${result} ${pinned}`;
+    },
+  });
+  const preservesInline: (value: number) => string = inline;
+  void preservesInline;
+
+  trace.info<[id: string], number>({
+    openMessage({ args }) {
+      type ArgumentsAreExact = AssertTrue<Equals<typeof args, [id: string]>>;
+      const pinned: ArgumentsAreExact = true;
+      return `${args[0]} ${pinned}`;
+    },
+    closeMessage({ result }) {
+      type ResultIsExact = AssertTrue<Equals<typeof result, number>>;
+      const pinned: ResultIsExact = true;
+      return `${result} ${pinned}`;
     },
   });
 }

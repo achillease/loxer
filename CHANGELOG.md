@@ -160,6 +160,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/), and this
   from `(args) => ...` to `({ args, fn, parentFn }) => ...` and close callbacks from `(result) => ...`
   to `({ result, fn, parentFn }) => ...`; the printers render the same colored call form as the
   built-in templates.
+- **Breaking:** Configure plain-function `trace()` markers through fluent calls. Migrate
+  `moduleId`, `level`, `highlight`, `argsAsProps`, `resultAsProps`, `printArgs`, and `printResult`
+  to `.m()` / `.module()`, an `error()` / `warn()` / `log()` / `info()` / `debug()` terminal,
+  `.h()` / `.highlight()`, `.props()`, and `.pp()`. Marker option objects now accept only `name`,
+  `openMessage`, and `closeMessage`; `@trace()` decorator options are unchanged.
 
 ### Removed
 

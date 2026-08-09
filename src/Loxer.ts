@@ -28,6 +28,9 @@ import {
   OpenedLox,
 } from './types.js';
 
+/** Deliberately non-exported so only the trace runtime can open error-level boxes. */
+const traceOpener: unique symbol = Symbol.for('loxer.traceOpener') as never;
+
 /** Reads a rendered {@link TraceMessage} carrier: its plain text, and the regions of that text the
  * built-in output colors.
  *
@@ -347,7 +350,12 @@ class LoxerInstance implements LoxerType {
     return this.openAtLevel('info', message, props);
   }
 
-  private openAtLevel(level: BoxLevel, message: unknown, props: unknown[]): OpenedLox {
+  /** Opens an ordinary trace lifecycle box at any log level, including `'error'`. */
+  [traceOpener](level: LogLevel, message?: unknown, ...props: unknown[]): OpenedLox {
+    return this.openAtLevel(level, message, props);
+  }
+
+  private openAtLevel(level: LogLevel, message: unknown, props: unknown[]): OpenedLox {
     if (this._isDisabled) {
       return { id: 0, ...disabledOfLoxes() };
     }
@@ -555,6 +563,11 @@ const instance = realmSlot('instance', () => new LoxerInstance());
  * ### For an overview of all methods and a guide on how to use it, take a look at the [Documentation](https://github.com/pcprinz/loxer/blob/master/documentation/index.md).
  */
 export const Loxer: LoxerType = instance;
+
+/** @internal Opens a trace lifecycle box at any log level without widening Loxer's public API. */
+export function __openTrace(level: LogLevel, message?: unknown, ...props: unknown[]): OpenedLox {
+  return instance[traceOpener](level, message, ...props);
+}
 
 /** Returns `Loxer` to its pre-`init()` state: no modules, no output stream, an empty history and an
  * empty pre-init queue, ready to `init()` again.

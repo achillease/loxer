@@ -122,14 +122,14 @@ describe('the built dist/ tree a consumer executes', () => {
     const { trace } = dist;
 
     const rendered = (
-      openMessage: TraceOptionsOf['openMessage'],
-      closeMessage: TraceOptionsOf['closeMessage']
+      openMessage: NonNullable<TraceOptionsOf['markerOptions']>['openMessage'],
+      closeMessage: NonNullable<TraceOptionsOf['markerOptions']>['closeMessage']
     ) => {
       devLogs = [];
       const running = trace.__startTrace(
         'calculate',
         [19.95, 3],
-        { moduleId: 'TRACE', openMessage, closeMessage },
+        { markerOptions: { openMessage, closeMessage }, moduleId: 'TRACE' },
         'Checkout'
       );
       running.success({ total: 59.85 });
@@ -164,7 +164,7 @@ describe('the built dist/ tree a consumer executes', () => {
     const running = trace.__startTrace(
       'calculate',
       [19.95],
-      { moduleId: 'TRACE', openMessage: 'parent.fn(args)' },
+      { markerOptions: { openMessage: 'parent.fn(args)' }, moduleId: 'TRACE' },
       'Checkout'
     );
     running.success(undefined);
@@ -190,8 +190,10 @@ describe('the built dist/ tree a consumer executes', () => {
       [3],
       {
         moduleId: 'TRACE',
-        openMessage: ({ parentFn }) => `retrying ${parentFn(3)}`,
-        closeMessage: ({ fn, result }) => `${fn(result)} ok`,
+        markerOptions: {
+          openMessage: ({ parentFn }) => `retrying ${parentFn(3)}`,
+          closeMessage: ({ fn, result }) => `${fn(result)} ok`,
+        },
       },
       'Checkout'
     );
@@ -217,7 +219,10 @@ describe('the built dist/ tree a consumer executes', () => {
     const running = dist.trace.__startTrace(
       'calculate',
       [],
-      { moduleId: 'TRACE', openMessage: ({ fn }) => `retrying ${fn(content)}` },
+      {
+        markerOptions: { openMessage: ({ fn }) => `retrying ${fn(content)}` },
+        moduleId: 'TRACE',
+      },
       'Checkout'
     );
     running.success(undefined);
@@ -231,8 +236,7 @@ describe('the built dist/ tree a consumer executes', () => {
         Loxer.info('inside calculate');
         return { total: 59.85 };
       }
-      trace(calculate, {
-        moduleId: 'TRACE',
+      trace.m('TRACE').h().props('argsResult').pp({ target: 'result', depth: 1 }).warn(calculate, {
         openMessage: 'fn(args)',
         closeMessage: 'fn(result)'
       });
@@ -244,6 +248,14 @@ describe('the built dist/ tree a consumer executes', () => {
       'inside calculate',
       'calculate({"total":59.85}) done',
     ]);
+    expect(devLogs.map((lox) => lox.level)).toEqual(['warn', 'info', 'warn']);
+    expect(devLogs[0]).toMatchObject({ highlighted: true, moduleId: 'TRACE', props: [19.95, 3] });
+    expect(devLogs[2]).toMatchObject({
+      highlighted: true,
+      moduleId: 'TRACE',
+      printProps: { depth: 1 },
+      props: [{ total: 59.85 }],
+    });
   });
 
   test('dist exports the trace printer type surface from both entry points', () => {

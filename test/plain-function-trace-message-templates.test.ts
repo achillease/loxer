@@ -18,7 +18,10 @@ test.each(templateCases)('$name (marker runtime)', (testCase) => {
   const trace = __startTrace(
     CALL_NAME,
     testCase.args ?? DEFAULT_ARGS,
-    { moduleId: 'TRACE', openMessage: testCase.openMessage, closeMessage: testCase.closeMessage },
+    {
+      markerOptions: { openMessage: testCase.openMessage, closeMessage: testCase.closeMessage },
+      moduleId: 'TRACE',
+    },
     PARENT_NAME
   );
   trace.success(testCase.voidResult ? undefined : testCase.result ?? DEFAULT_RESULT);
@@ -31,7 +34,7 @@ test.each(nonSerializableResultCases)('$name (marker runtime)', (testCase) => {
   const trace = __startTrace(
     CALL_NAME,
     DEFAULT_ARGS,
-    { moduleId: 'TRACE', closeMessage: testCase.closeMessage },
+    { markerOptions: { closeMessage: testCase.closeMessage }, moduleId: 'TRACE' },
     PARENT_NAME
   );
   trace.success(undefined);
@@ -45,7 +48,10 @@ test.each(parentlessFallbackCases)('$name (marker runtime)', (testCase) => {
   const trace = __startTrace(
     CALL_NAME,
     testCase.args ?? DEFAULT_ARGS,
-    { moduleId: 'TRACE', openMessage: testCase.openMessage, closeMessage: testCase.closeMessage },
+    {
+      markerOptions: { openMessage: testCase.openMessage, closeMessage: testCase.closeMessage },
+      moduleId: 'TRACE',
+    },
     undefined
   );
   trace.success(testCase.voidResult ? undefined : testCase.result ?? DEFAULT_RESULT);
@@ -57,7 +63,7 @@ test.each(failureCases)('$name (marker runtime)', (testCase) => {
   const trace = __startTrace(
     CALL_NAME,
     DEFAULT_ARGS,
-    { moduleId: 'TRACE', closeMessage: testCase.closeMessage },
+    { markerOptions: { closeMessage: testCase.closeMessage }, moduleId: 'TRACE' },
     PARENT_NAME
   );
   trace.failure(new Error('boom'));
@@ -77,7 +83,7 @@ test('a template naming no parent form produces the bare name whatever parentNam
   const trace = __startTrace(
     CALL_NAME,
     DEFAULT_ARGS,
-    { moduleId: 'TRACE', openMessage: 'fn(args)', closeMessage: 'fn(result)' },
+    { markerOptions: { openMessage: 'fn(args)', closeMessage: 'fn(result)' }, moduleId: 'TRACE' },
     PARENT_NAME
   );
   trace.success(DEFAULT_RESULT);
@@ -92,7 +98,7 @@ test('a parent.fn template on both the open and the close renders the same memoi
   const trace = __startTrace(
     CALL_NAME,
     DEFAULT_ARGS,
-    { moduleId: 'TRACE', openMessage: 'parent.fn', closeMessage: 'parent.fn' },
+    { markerOptions: { openMessage: 'parent.fn', closeMessage: 'parent.fn' }, moduleId: 'TRACE' },
     PARENT_NAME
   );
   trace.success(DEFAULT_RESULT);

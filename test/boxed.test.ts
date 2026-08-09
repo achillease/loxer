@@ -1,5 +1,6 @@
 import { outputFromCallbacks } from './output-capture';
 import { Loxer, OutputLoxRenderer, resetLoxer } from '../src';
+import { __openTrace } from '../src/Loxer';
 import { ErrorLox, OutputLox } from '../src/loxes';
 
 let devLogs: OutputLox[] = [];
@@ -377,6 +378,25 @@ test('a log added to a visible box keeps a level the module itself would hide', 
   // ... and stays dropped inside a box: the box widens nothing
   expect(devLogs.length).toBe(3);
   expect(devLogs.some((l) => l.message === 'debug inside a visible box')).toBe(false);
+  checkBoxes(['open.ONE.<-open', 'close.ONE.>-close']);
+});
+
+test('an error-level trace lifecycle box remains visible, paired, and laid out as a normal box', () => {
+  Loxer.m('ONE');
+  const trace = __openTrace('error', 'open');
+  Loxer.of(trace.id).close('close');
+  const lifecycle = devLogs.filter((log) => log.message !== 'Loxer initialized');
+
+  expect(trace.id).toBeGreaterThanOrEqual(0);
+  expect(lifecycle.map((log) => [log.type, log.level, log.id])).toEqual([
+    ['open', 'error', trace.id],
+    ['close', 'error', trace.id],
+  ]);
+  expect(Loxer.history.slice(0, 2).map((log) => [log.type, log.level, log.id])).toEqual([
+    ['close', 'error', trace.id],
+    ['open', 'error', trace.id],
+  ]);
+  expect(devErrors).toEqual([]);
   checkBoxes(['open.ONE.<-open', 'close.ONE.>-close']);
 });
 

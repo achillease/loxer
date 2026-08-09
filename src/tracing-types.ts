@@ -1,5 +1,5 @@
 import { PropsPrinterOptions } from './core/PropsPrinter.js';
-import { BoxLevel, ModuleId } from './types.js';
+import { BoxLevel, LogLevel, ModuleId } from './types.js';
 
 export type TraceHighlight = 'open' | 'close' | 'all';
 
@@ -195,4 +195,37 @@ export interface TraceOptions<
    * The counterpart of {@link TraceOptions.printArgs} for the result.
    */
   printResult?: boolean | PropsPrinterOptions;
+}
+
+/** The lifecycle side a fluent trace marker modifier addresses. */
+export type TracePropsTarget = 'args' | 'result' | 'argsResult';
+
+/** Props-printer options for a fluent trace marker, including its required lifecycle routing. */
+export interface ExtendedPropsPrinterOptions extends PropsPrinterOptions {
+  target: TracePropsTarget;
+}
+
+/**
+ * The options object accepted by the plain-function `trace()` marker.
+ *
+ * Operational settings belong to the marker's fluent chain. The decorator keeps the broader
+ * {@link TraceOptions} surface above.
+ */
+export interface TraceMarkerOptions<
+  Args extends readonly unknown[] = readonly unknown[],
+  Result = unknown,
+> {
+  name?: string;
+  openMessage?: FunctionOpenMessage<Args>;
+  closeMessage?: FunctionCloseMessage<Result>;
+}
+
+/** @internal Configuration emitted by `babel-plugin-loxer-trace` for a fluent marker. */
+export interface TraceMarkerRuntimeOptions {
+  markerOptions?: TraceMarkerOptions;
+  moduleId?: ModuleId;
+  highlight?: boolean;
+  level?: LogLevel;
+  propsTarget?: TracePropsTarget;
+  printProps?: TracePropsTarget | ExtendedPropsPrinterOptions;
 }

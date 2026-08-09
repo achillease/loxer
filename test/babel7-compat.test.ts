@@ -97,7 +97,7 @@ test('Babel 7 traces every listed target from one shared options assignment', as
   const transformed = await loadBabel7Module(`
     function first(value) { return 'first:' + value; }
     const second = (value) => 'second:' + value;
-    trace([first, second], { moduleId: 'TRACE' });
+    trace.m('TRACE').h().props('argsResult').pp('args').warn([first, second]);
     export { first, second };
   `);
 

@@ -13,17 +13,17 @@ import {
 test('the enclosing form marks a declaration, a named recursive function expression, and a block-bodied arrow', async () => {
   const traced = await loadTracedModule(`
     function load(id) {
-      trace({ moduleId: 'ORDER', openMessage: 'fn(args)' });
+      trace.m('ORDER').info({ openMessage: 'fn(args)' });
       return 'order:' + id;
     }
 
     const expr = function recurse(value, total) {
-      trace({ moduleId: 'TRACE', openMessage: 'fn(args)' });
+      trace.m('TRACE').info({ openMessage: 'fn(args)' });
       return value === 0 ? total : recurse(value - 1, total + 1);
     };
 
     const arrowLoad = (id) => {
-      trace({ moduleId: 'ORDER', openMessage: 'fn(args)' });
+      trace.m('ORDER').info({ openMessage: 'fn(args)' });
       return 'arrow:' + id;
     };
 
@@ -44,16 +44,14 @@ test('the enclosing form marks a declaration, a named recursive function express
   ]);
 });
 
-test('the enclosing marker configures props rendering independently for its opening and closing logs', async () => {
+test('the enclosing marker applies configured props rendering to both lifecycle sides', async () => {
   const traced = await loadTracedModule(`
     async function load(first, second) {
-      trace({
-        moduleId: 'ORDER',
-        argsAsProps: true,
-        resultAsProps: true,
-        printArgs: { depth: 1 },
-        printResult: true,
-      });
+      trace
+        .m('ORDER')
+        .props('argsResult')
+        .pp({ target: 'argsResult', depth: 1 })
+        .info();
       return { first, second };
     }
     export { load };
@@ -64,39 +62,39 @@ test('the enclosing marker configures props rendering independently for its open
   expect(open.props).toEqual(['one', 'two']);
   expect(open.printProps).toEqual({ depth: 1 });
   expect(close.props).toEqual([{ first: 'one', second: 'two' }]);
-  expect(close.printProps).toEqual({});
+  expect(close.printProps).toEqual({ depth: 1 });
 });
 
 test('the enclosing form marks a class method, a private method, a private field, a getter, a setter, and an object method', async () => {
   const traced = await loadTracedModule(`
     class Service {
       run(value) {
-        trace({ moduleId: 'ORDER', openMessage: 'fn(args)' });
+        trace.m('ORDER').info({ openMessage: 'fn(args)' });
         return this.#run(value);
       }
       #run(value) {
-        trace({ moduleId: 'ORDER', openMessage: 'fn(args)' });
+        trace.m('ORDER').info({ openMessage: 'fn(args)' });
         return 'ran:' + value;
       }
       #load = (value) => {
-        trace({ moduleId: 'ORDER', openMessage: 'fn(args)' });
+        trace.m('ORDER').info({ openMessage: 'fn(args)' });
         return 'loaded:' + value;
       };
       invokeLoad(value) {
         return this.#load(value);
       }
       get total() {
-        trace({ moduleId: 'TRACE' });
+        trace.m('TRACE').info({  });
         return 42;
       }
       set total(value) {
-        trace({ moduleId: 'TRACE' });
+        trace.m('TRACE').info({  });
         this._total = value;
       }
     }
     const helper = {
       compute(value) {
-        trace({ moduleId: 'TRACE', openMessage: 'fn(args)' });
+        trace.m('TRACE').info({ openMessage: 'fn(args)' });
         return value * 2;
       },
     };
@@ -130,7 +128,7 @@ test('an accessor class field names its function the same way a plain or private
   const source = `
     class Service {
       accessor load = (value) => {
-        trace({ moduleId: 'ORDER', openMessage: 'fn(args)' });
+        trace.m('ORDER').info({ openMessage: 'fn(args)' });
         return 'loaded:' + value;
       };
     }
@@ -419,7 +417,7 @@ test('parent.fn survives the await of an async class method and an async file-le
       return value + 1;
     }
     async function settle(value) {
-      trace({ moduleId: 'ORDER', openMessage: 'parent.fn', closeMessage: 'fn(result)' });
+      trace.m('ORDER').info({ openMessage: 'parent.fn', closeMessage: 'fn(result)' });
       await Promise.resolve();
       return { total: value };
     }
@@ -500,7 +498,7 @@ test('fileParentName reports no parent where a name cannot be read', () => {
 test('an inline literal assigned to a private class field reports the field name', async () => {
   const traced = await loadTracedModule(`
     class Service {
-      #load = trace((value) => 'loaded:' + value, { moduleId: 'ORDER', openMessage: 'fn(args)' });
+      #load = trace.m('ORDER').info((value) => 'loaded:' + value, { openMessage: 'fn(args)' });
       invokeLoad(value) {
         return this.#load(value);
       }
@@ -519,13 +517,13 @@ test('the enclosing form marks a class-property arrow, an IIFE, and a derived-cl
   const traced = await loadTracedModule(`
     class Widget {
       load = (id) => {
-        trace({ moduleId: 'ORDER', openMessage: 'fn(args)' });
+        trace.m('ORDER').info({ openMessage: 'fn(args)' });
         return 'widget:' + id;
       };
     }
 
     const iifeResult = (function () {
-      trace({ moduleId: 'TRACE' });
+      trace.m('TRACE').info({  });
       return 'ran';
     })();
 
@@ -536,7 +534,7 @@ test('the enclosing form marks a class-property arrow, an IIFE, and a derived-cl
     }
     class Derived extends Base {
       constructor(value) {
-        trace({ moduleId: 'TRACE' });
+        trace.m('TRACE').info({  });
         super(value * 2);
         this.extra = true;
       }
@@ -579,7 +577,7 @@ test("an enclosing marker in an unnamed arrow resolves through the surrounding d
   const traced = await loadTracedModule(`
     function useCallback(fn) { return fn; }
     const load = useCallback(async () => {
-      trace({ moduleId: 'ORDER' });
+      trace.m('ORDER').info({  });
       return 'loaded';
     }, []);
     export { load };
@@ -595,17 +593,17 @@ test('an enclosing marker in an unnamed object-property arrow resolves through t
   const traced = await loadTracedModule(`
     const handlers = {
       onClick: (event) => {
-        trace({ moduleId: 'TRACE', openMessage: 'fn(args)' });
+        trace.m('TRACE').info({ openMessage: 'fn(args)' });
         return 'clicked:' + event;
       },
       'load-order': (value) => {
-        trace({ moduleId: 'ORDER', openMessage: 'fn(args)' });
+        trace.m('ORDER').info({ openMessage: 'fn(args)' });
         return 'loaded:' + value;
       },
     };
     let assignedHandler;
     assignedHandler = (value) => {
-      trace({ moduleId: 'ORDER', openMessage: 'fn(args)' });
+      trace.m('ORDER').info({ openMessage: 'fn(args)' });
       return 'assigned:' + value;
     };
     export { assignedHandler, handlers };
@@ -625,7 +623,7 @@ test('an explicit name option on the enclosing form overrides the surrounding de
   const traced = await loadTracedModule(`
     function useCallback(fn) { return fn; }
     const load = useCallback(() => {
-      trace({ moduleId: 'ORDER', name: 'explicitName' });
+      trace.m('ORDER').info({ name: 'explicitName' });
       return 'loaded';
     });
     export { load };
@@ -720,7 +718,7 @@ test('the MemberExpression boundary and the call-is-not-a-boundary rule leave le
   // must not reach into and clip that separate path.
   const assigned = await loadTracedModule(`
     const obj = {};
-    obj.handler = trace((id) => id, { moduleId: 'ORDER' });
+    obj.handler = trace.m('ORDER').info((id) => id);
     export { obj };
   `);
   expect(assigned.obj.handler('x')).toBe('x');
@@ -736,7 +734,7 @@ test('the MemberExpression boundary and the call-is-not-a-boundary rule leave le
   // documented form.
   const useCallbackShape = await loadTracedModule(`
     function useCallback(fn, deps) { return fn; }
-    const load = useCallback(trace((id) => id, { moduleId: 'ORDER' }), []);
+    const load = useCallback(trace.m('ORDER').info((id) => id), []);
     export { load };
   `);
   expect(useCallbackShape.load('y')).toBe('y');
@@ -750,7 +748,7 @@ test('the MemberExpression boundary and the call-is-not-a-boundary rule leave le
   // arrow, an IIFE, and a derived-class constructor' above; reasserted here under its own name to
   // keep this guard block self-contained.
   await loadTracedModule(`
-    const d = (function () { trace({ moduleId: 'ORDER' }); })();
+    const d = (function () { trace.m('ORDER').info({  }); })();
     export { d };
   `);
   expect(devLogs.filter((log) => log.type === 'open').map((log) => log.message)).toEqual([
@@ -770,17 +768,17 @@ test('the MemberExpression boundary and the call-is-not-a-boundary rule leave le
     function identity(fn) { return fn; }
 
     const inlineConstructed = new Holder(
-      trace((value) => value, { moduleId: 'ORDER' })
+      trace.m('ORDER').info((value) => value)
     );
     const enclosingConstructed = new Holder(function (value) {
-      trace({ moduleId: 'ORDER' });
+      trace.m('ORDER').info({  });
       return value;
     });
     const inlineOptional = identity?.(
-      trace((value) => value, { moduleId: 'ORDER' })
+      trace.m('ORDER').info((value) => value)
     );
     const enclosingOptional = identity?.(function (value) {
-      trace({ moduleId: 'ORDER' });
+      trace.m('ORDER').info({  });
       return value;
     });
 
@@ -827,7 +825,7 @@ test('the enclosing form rejects a marker that is not the first statement, in a 
 test('the enclosing form rejects a generator host', async () => {
   await expect(
     transformLoxerTrace(
-      `${imports()} function* gen() { trace({ moduleId: 'TRACE' }); yield 1; }`,
+      `${imports()} function* gen() { trace.m('TRACE').info({  }); yield 1; }`,
       transformOptions()
     )
   ).rejects.toThrow('trace() does not support generator functions.');
@@ -850,7 +848,7 @@ test('the enclosing form rejects a function marked twice, beside itself and from
 test('the enclosing form rejects options that read a name the marked body declares, but a parameter stays readable', async () => {
   await expect(
     transformLoxerTrace(
-      `${imports()} function load() { trace({ moduleId: MOD }); const MOD = 'ORDER'; return MOD; }`,
+      `${imports()} function load() { trace({ openMessage: MOD }); const MOD = 'fn'; return MOD; }`,
       transformOptions()
     )
   ).rejects.toThrow(
@@ -859,7 +857,7 @@ test('the enclosing form rejects options that read a name the marked body declar
 
   const traced = await loadTracedModule(`
     function load(moduleId) {
-      trace({ moduleId, openMessage: 'fn(args)' });
+      trace.m(moduleId).info({ openMessage: 'fn(args)' });
       return moduleId;
     }
     export { load };
@@ -887,11 +885,11 @@ test('trace(OPTS) and trace(makeOptions()) are read as the statement form and ke
 test('the enclosing form leaves this, arguments, Function.length, and self-recursion untouched by the in-place rewrite', async () => {
   const traced = await loadTracedModule(`
     function scale(value) {
-      trace({ moduleId: 'TRACE' });
+      trace.m('TRACE').info({  });
       return [this.factor, arguments.length, value];
     }
     const recurse = function countdown(value, total) {
-      trace({ moduleId: 'TRACE', openMessage: 'fn(args)' });
+      trace.m('TRACE').info({ openMessage: 'fn(args)' });
       return value === 0 ? total : countdown(value - 1, total + 1);
     };
     export { recurse, scale };
@@ -913,23 +911,23 @@ test('the enclosing form leaves this, arguments, Function.length, and self-recur
 test('an arrow host records its arguments from its own parameter list, including a destructured, a defaulted, and a rest parameter', async () => {
   const traced = await loadTracedModule(`
     const simple = (first, second) => {
-      trace({ moduleId: 'TRACE', openMessage: 'fn(args)', argsAsProps: true });
+      trace.m('TRACE').props('args').info({ openMessage: 'fn(args)' });
       return first + second;
     };
     const defaulted = (first = 'fallback', second = 'two') => {
-      trace({ moduleId: 'ORDER', openMessage: 'fn(args)', argsAsProps: true });
+      trace.m('ORDER').props('args').info({ openMessage: 'fn(args)' });
       return first + ':' + second;
     };
     const destructured = ({ value } = { value: 'fallback' }, [tail] = ['tail']) => {
-      trace({ moduleId: 'TRACE', openMessage: 'fn(args)', argsAsProps: true });
+      trace.m('TRACE').props('args').info({ openMessage: 'fn(args)' });
       return value + ':' + tail;
     };
     const withRest = (first, ...rest) => {
-      trace({ moduleId: 'TRACE', openMessage: 'fn(args)', argsAsProps: true });
+      trace.m('TRACE').props('args').info({ openMessage: 'fn(args)' });
       return [first, rest];
     };
     const d = (first = 1) => {
-      trace({ moduleId: 'ORDER', openMessage: 'fn(args)', argsAsProps: true });
+      trace.m('ORDER').props('args').info({ openMessage: 'fn(args)' });
       return first;
     };
     export { d, defaulted, destructured, simple, withRest };
@@ -979,20 +977,14 @@ test('an arrow host records its arguments from its own parameter list, including
 test('the enclosing form applies openMessage/closeMessage presets and callbacks, props capture, level, and highlight', async () => {
   const traced = await loadTracedModule(`
     function withPreset(value) {
-      trace({
-        moduleId: 'TRACE',
+      trace.m('TRACE').h().props('argsResult').warn({
         openMessage: 'fn(types)',
         closeMessage: 'fn(result)',
-        level: 'warn',
-        highlight: 'all',
-        argsAsProps: true,
-        resultAsProps: true,
       });
       return { total: value * 2 };
     }
     function withCallback(value) {
-      trace({
-        moduleId: 'ORDER',
+      trace.m('ORDER').info({
         openMessage: ({ args }) => 'starting:' + args[0],
         closeMessage: ({ result }) => 'finished:' + result.total,
       });
@@ -1024,18 +1016,18 @@ test('the enclosing form applies openMessage/closeMessage presets and callbacks,
 test('the enclosing form preserves an async result, rethrows a thrown error unchanged, and keeps native Promise identity', async () => {
   const traced = await loadTracedModule(`
     async function submit(value) {
-      trace({ moduleId: 'TRACE' });
+      trace.m('TRACE').info({  });
       return value + 1;
     }
     const original = new Error('enclosing failure');
     function failSync() {
-      trace({ moduleId: 'TRACE' });
+      trace.m('TRACE').info({  });
       throw original;
     }
     let complete;
     const pending = new Promise((resolve) => { complete = resolve; });
     function loadPending() {
-      trace({ moduleId: 'TRACE' });
+      trace.m('TRACE').info({  });
       return pending;
     }
     export { complete, failSync, loadPending, original, pending, submit };
@@ -1060,7 +1052,7 @@ test('the enclosing form preserves an async result, rethrows a thrown error unch
 test("a direct Loxer call inside an enclosing-form body links to that invocation's box", async () => {
   const traced = await loadTracedModule(`
     function load(id) {
-      trace({ moduleId: 'TRACE', openMessage: 'fn(args)' });
+      trace.m('TRACE').info({ openMessage: 'fn(args)' });
       Loxer.log('loading:' + id);
       return 'order:' + id;
     }
@@ -1080,9 +1072,9 @@ test("a direct Loxer call inside an enclosing-form body links to that invocation
 test("an enclosing marker nested inside another traced function opens its own box inside its parent's", async () => {
   const traced = await loadTracedModule(`
     function outer(value) {
-      trace({ moduleId: 'TRACE', name: 'outer' });
+      trace.m('TRACE').info({ name: 'outer' });
       function inner(x) {
-        trace({ moduleId: 'ORDER', name: 'inner' });
+        trace.m('ORDER').info({ name: 'inner' });
         return x + 1;
       }
       return inner(value) * 2;
@@ -1107,7 +1099,7 @@ test("the enclosing form evaluates its options once per invocation - three calls
       return 'fn(args)';
     }
     function load(id) {
-      trace({ moduleId: 'TRACE', openMessage: markOptions() });
+      trace.m('TRACE').info({ openMessage: markOptions() });
       return 'order:' + id;
     }
     export { load, optionsCalls };
@@ -1122,6 +1114,30 @@ test("the enclosing form evaluates its options once per invocation - three calls
     'load(a)',
     'load(b)',
     'load(c)',
+  ]);
+});
+
+test('an enclosing marker evaluates fluent arguments in source order on each invocation', async () => {
+  const traced = await loadTracedModule(`
+    const order = [];
+    function mark(name, value) { order.push(name); return value; }
+    function load(id) {
+      trace.m(mark('module', 'TRACE')).props(mark('props', 'args'))
+        .info({ openMessage: mark('options', 'fn(args)') });
+      return id;
+    }
+    export { load, order };
+  `);
+
+  expect(traced.load('a')).toBe('a');
+  expect(traced.load('b')).toBe('b');
+  expect(traced.order).toEqual([
+    'module',
+    'props',
+    'options',
+    'module',
+    'props',
+    'options',
   ]);
 });
 
@@ -1156,11 +1172,11 @@ test.each(classParentNameCases)(
 test('parent.fn on the close message alone still renders the parent', async () => {
   const traced = await loadTracedModule(`
     function closeOnly(id) {
-      trace({ moduleId: 'ORDER', closeMessage: 'parent.fn' });
+      trace.m('ORDER').info({ closeMessage: 'parent.fn' });
       return id;
     }
     function closeOnlyWithArgs(id) {
-      trace({ moduleId: 'ORDER', openMessage: 'fn(args)', closeMessage: 'parent.fn' });
+      trace.m('ORDER').info({ openMessage: 'fn(args)', closeMessage: 'parent.fn' });
       return id;
     }
     export { closeOnly, closeOnlyWithArgs };

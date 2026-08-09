@@ -2,6 +2,14 @@ import type { NodePath } from '@babel/core';
 import type * as BabelTypes from '@babel/types';
 import type { EnclosingMarker, Marker, MarkerTarget } from './marker-types.js';
 
+type TraceTerminal = 'error' | 'warn' | 'info' | 'debug';
+type TraceModifier = 'm' | 'module' | 'h' | 'highlight' | 'props' | 'pp';
+
+interface FluentMarkerCall {
+  modifiers: { name: TraceModifier; value: any }[];
+  terminal: TraceTerminal;
+}
+
 /** Rejects a function selected by more than one marker. */
 export function assertOneMarkerPerFunction(markers: Marker[]): void {
   const seenFunctions = new Set<any>();
@@ -42,13 +50,16 @@ export function collectMarkers(
   programPath.traverse({
     /** Validate the marker's shape and resolve the function it traces. */
     CallExpression(callPath: NodePath<any>): void {
-      const callee = callPath.node.callee;
-      if (!t.isIdentifier(callee)) {
+      const parentPath = callPath.parentPath;
+      if (
+        (parentPath.isMemberExpression() || parentPath.isOptionalMemberExpression()) &&
+        parentPath.parentPath?.isCallExpression() &&
+        parentPath.parentPath.node.callee === parentPath.node
+      ) {
         return;
       }
-
-      const binding = callPath.scope.getBinding(callee.name);
-      if (!binding || !markerBindings.has(binding)) {
+      const fluent = collectFluentMarkerCall(callPath, markerBindings, t);
+      if (!fluent) {
         return;
       }
 
@@ -59,7 +70,9 @@ export function collectMarkers(
       // all — mark the function the marker sits in, a function literal marks itself, and an
       // identifier or a list of them marks the bindings they name.
       if (!targetPath || targetPath.isObjectExpression()) {
-        markers.push(collectEnclosingMarker(callPath, isStandaloneStatement, targetPath, t));
+        markers.push(
+          collectEnclosingMarker(callPath, isStandaloneStatement, targetPath, fluent, t)
+        );
 
         return;
       }
@@ -78,21 +91,22 @@ export function collectMarkers(
       // A literal marked by a standalone statement is left to the statement form, whose diagnostic —
       // asking for a named binding — describes that mistake: the traced function would be discarded.
       const options = markerOptions(callPath, t);
+      const configurationNode = markerConfiguration(options, fluent, t);
       markers.push(
         isLiteral && !isStandaloneStatement
           ? {
               callPath,
               className: enclosingClassName(targetPath, t),
+              configurationNode,
               isArrow: targetPath.isArrowFunctionExpression(),
               kind: 'inline',
               literalPath: targetPath,
               name: resolveFunctionName(callPath, targetPath, options, t),
-              optionsNode: options,
             }
           : {
               callPath,
+              configurationNode,
               kind: 'statement',
-              optionsNode: options,
               targets: collectTargets(callPath, t),
             }
       );
@@ -100,6 +114,203 @@ export function collectMarkers(
   });
 
   return markers;
+}
+
+/** Resolves a terminal and its pre-call modifier chain from the imported `trace` binding. */
+function collectFluentMarkerCall(
+  callPath: NodePath<any>,
+  markerBindings: Set<any>,
+  t: typeof BabelTypes
+): FluentMarkerCall | undefined {
+  const directCallee = callPath.node.callee;
+  if (t.isIdentifier(directCallee)) {
+    const binding = callPath.scope.getBinding(directCallee.name);
+
+    return binding && markerBindings.has(binding) ? { modifiers: [], terminal: 'info' } : undefined;
+  }
+  if (!t.isMemberExpression(directCallee)) {
+    return undefined;
+  }
+  if (directCallee.computed || !t.isIdentifier(directCallee.property)) {
+    if (isFluentMarkerRoot(directCallee.object, callPath, markerBindings, t)) {
+      throw callPath.buildCodeFrameError('trace() does not support computed fluent members.');
+    }
+
+    return undefined;
+  }
+
+  const terminalName = directCallee.property.name;
+  if (isModifier(terminalName)) {
+    if (isFluentMarkerRoot(directCallee.object, callPath, markerBindings, t)) {
+      throw callPath.buildCodeFrameError(`trace().${terminalName}() needs a terminal level call.`);
+    }
+
+    return undefined;
+  }
+  const terminal = terminalName === 'log' ? 'info' : terminalName;
+  if (terminal !== 'error' && terminal !== 'warn' && terminal !== 'info' && terminal !== 'debug') {
+    if (isFluentMarkerRoot(directCallee.object, callPath, markerBindings, t)) {
+      throw callPath.buildCodeFrameError(
+        `trace() does not support fluent member "${terminalName}".`
+      );
+    }
+
+    return undefined;
+  }
+
+  const modifiers: { name: TraceModifier; value: any }[] = [];
+  let cursor = directCallee.object;
+  while (t.isCallExpression(cursor)) {
+    const modifierCallee = cursor.callee;
+    if (
+      !t.isMemberExpression(modifierCallee) ||
+      modifierCallee.computed ||
+      !t.isIdentifier(modifierCallee.property)
+    ) {
+      if (isFluentMarkerRoot(cursor, callPath, markerBindings, t)) {
+        throw callPath.buildCodeFrameError('trace() does not support computed fluent members.');
+      }
+
+      return undefined;
+    }
+    const name = modifierCallee.property.name;
+    if (!isModifier(name)) {
+      if (isFluentMarkerRoot(cursor, callPath, markerBindings, t)) {
+        throw callPath.buildCodeFrameError(`trace() does not support fluent member "${name}".`);
+      }
+
+      return undefined;
+    }
+    assertModifierArguments(callPath, name, cursor.arguments);
+    assertLiteralPropsTarget(callPath, name, cursor.arguments[0], t);
+    modifiers.push({
+      name,
+      value:
+        cursor.arguments[0] ??
+        (name === 'h' || name === 'highlight' ? t.booleanLiteral(true) : t.identifier('undefined')),
+    });
+    cursor = modifierCallee.object;
+  }
+  if (!isMarkerRoot(cursor, callPath, markerBindings, t)) {
+    return undefined;
+  }
+
+  const seen = new Set<string>();
+  for (const modifier of modifiers) {
+    const family = modifierFamily(modifier.name);
+    if (seen.has(family)) {
+      throw callPath.buildCodeFrameError(`trace() modifier "${family}" may appear only once.`);
+    }
+    seen.add(family);
+  }
+
+  return { modifiers: modifiers.reverse(), terminal };
+}
+
+function isMarkerRoot(
+  node: any,
+  callPath: NodePath<any>,
+  markerBindings: Set<any>,
+  t: typeof BabelTypes
+): boolean {
+  if (!t.isIdentifier(node)) {
+    return false;
+  }
+
+  const binding = callPath.scope.getBinding(node.name);
+
+  return !!binding && markerBindings.has(binding);
+}
+
+/** Returns whether a member/call chain begins with the imported trace marker binding. */
+function isFluentMarkerRoot(
+  node: any,
+  callPath: NodePath<any>,
+  markerBindings: Set<any>,
+  t: typeof BabelTypes
+): boolean {
+  let cursor = node;
+  while (t.isCallExpression(cursor)) {
+    if (!t.isMemberExpression(cursor.callee)) {
+      return false;
+    }
+    cursor = cursor.callee.object;
+  }
+
+  return isMarkerRoot(cursor, callPath, markerBindings, t);
+}
+
+function isModifier(name: string): name is TraceModifier {
+  return (
+    name === 'm' ||
+    name === 'module' ||
+    name === 'h' ||
+    name === 'highlight' ||
+    name === 'props' ||
+    name === 'pp'
+  );
+}
+
+function modifierFamily(name: TraceModifier): string {
+  return name === 'm' || name === 'module'
+    ? 'module'
+    : name === 'h' || name === 'highlight'
+      ? 'highlight'
+      : name;
+}
+
+function assertModifierArguments(callPath: NodePath<any>, name: TraceModifier, args: any[]): void {
+  const needsValue = name === 'props' || name === 'pp';
+  if ((needsValue && args.length !== 1) || (!needsValue && args.length > 1)) {
+    throw callPath.buildCodeFrameError(
+      `trace().${name}() expects ${needsValue ? 'exactly one argument' : 'zero or one argument'}.`
+    );
+  }
+}
+
+/** Reject invalid literal routing targets while keeping dynamic targets available at runtime. */
+function assertLiteralPropsTarget(
+  callPath: NodePath<any>,
+  name: TraceModifier,
+  target: any,
+  t: typeof BabelTypes
+): void {
+  if (
+    (name === 'props' || name === 'pp') &&
+    t.isStringLiteral(target) &&
+    target.value !== 'args' &&
+    target.value !== 'result' &&
+    target.value !== 'argsResult'
+  ) {
+    throw callPath.buildCodeFrameError(
+      `trace().${name}() target must be "args", "result", or "argsResult".`
+    );
+  }
+}
+
+function markerConfiguration(
+  optionsNode: any,
+  fluent: FluentMarkerCall,
+  t: typeof BabelTypes
+): any {
+  const properties = fluent.modifiers.map((modifier) =>
+    t.objectProperty(t.identifier(modifierKey(modifier.name)), modifier.value)
+  );
+  properties.push(t.objectProperty(t.identifier('level'), t.stringLiteral(fluent.terminal)));
+  properties.push(t.objectProperty(t.identifier('markerOptions'), optionsNode));
+
+  return t.objectExpression(properties);
+}
+
+function modifierKey(name: TraceModifier): string {
+  if (name === 'm' || name === 'module') {
+    return 'moduleId';
+  }
+  if (name === 'h' || name === 'highlight') {
+    return 'highlight';
+  }
+
+  return name === 'props' ? 'propsTarget' : 'printProps';
 }
 
 /** Reads the marker's options argument, which every form shares in the second position. */
@@ -117,6 +328,7 @@ function collectEnclosingMarker(
   callPath: NodePath<any>,
   isStandaloneStatement: boolean,
   optionsPath: NodePath<any> | undefined,
+  fluent: FluentMarkerCall,
   t: typeof BabelTypes
 ): EnclosingMarker {
   if (callPath.node.arguments.length > 1) {
@@ -136,10 +348,10 @@ function collectEnclosingMarker(
   return {
     callPath,
     className: enclosingClassName(functionPath, t),
+    configurationNode: markerConfiguration(optionsNode, fluent, t),
     functionPath,
     kind: 'enclosing',
     name: resolveFunctionName(callPath, functionPath, optionsNode, t),
-    optionsNode,
   };
 }
 

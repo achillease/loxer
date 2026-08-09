@@ -13,7 +13,7 @@ export interface MarkerTarget {
 export interface StatementMarker {
   kind: 'statement';
   callPath: NodePath<any>;
-  optionsNode: any;
+  configurationNode: any;
   targets: MarkerTarget[];
 }
 
@@ -21,7 +21,7 @@ export interface InlineMarker {
   kind: 'inline';
   callPath: NodePath<any>;
   className?: string;
-  optionsNode: any;
+  configurationNode: any;
   literalPath: NodePath<any>;
   name: string;
   isArrow: boolean;
@@ -31,7 +31,7 @@ export interface EnclosingMarker {
   kind: 'enclosing';
   callPath: NodePath<any>;
   className?: string;
-  optionsNode: any;
+  configurationNode: any;
   functionPath: NodePath<any>;
   name: string;
 }

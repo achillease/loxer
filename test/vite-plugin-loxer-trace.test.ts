@@ -58,6 +58,18 @@ test('passes the module id on as the filename, so a traced function reports that
   expect(result?.code).toContain('}, "orderService")');
 });
 
+test('transforms a point marker through the canonical Vite path', async () => {
+  const plugin = loxerTrace();
+  const source =
+    "import { trace } from 'loxer/trace'; function save(order) { trace.point.ORDER.pp().warn('parent.fn', 'retrying', order); }";
+
+  const result = await runTransform(plugin, source, '/repo/orders/orderService.ts');
+
+  expect(result?.code).toContain('__tracePoint');
+  expect(result?.code).not.toContain('trace.point.ORDER');
+  expect(result?.code).toContain('orderService');
+});
+
 test('transforms a static-bracket module target-list marker through the canonical transform', async () => {
   const plugin = loxerTrace();
   const source =

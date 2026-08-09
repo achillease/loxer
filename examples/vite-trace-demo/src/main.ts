@@ -163,6 +163,7 @@ trace.PAYMENT.info(chargePayment, {
 
 async function submitOrder(orderId: number, delay: number): Promise<{ orderId: number }> {
   Loxer.log(`Starting order workflow ${orderId}`);
+  trace.point.ORDER.info('fn', 'Submitting order', orderId);
   await reserveInventory(orderId, delay);
   await chargePayment(orderId);
   Loxer.debug(`Order ${orderId} is ready to submit`);

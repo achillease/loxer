@@ -41,6 +41,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/), and this
   function literal, and first-statement `trace(options)` traces its enclosing function without
   wrapping it, so callbacks can stay inline for React hooks. Use the `name` option when a function
   has no inferable name.
+- Add `trace.point` for one context-aware log inside a named function without opening a trace box.
+  Use the same fluent module, level, highlight, and props-printing controls as `trace`, and choose
+  an ordinary message, a `fn` / `parent.fn` prefix, or a callback that composes the supplied
+  function-name printers. A point inside a traced function joins that function's box; one elsewhere
+  remains a single unboxed log.
 - Add type-safe module ids: augment `LoxerModuleRegistry` with the keys of your modules and
   `Loxer.m()`, `Loxer.module()`, `Loxer.getModuleLevel()` and the `moduleId` trace option accept
   only those ids plus the built-ins — autocompleted, with a compile error on a typo. Leaving the

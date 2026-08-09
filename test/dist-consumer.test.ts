@@ -19,7 +19,11 @@ const builtBabelPlugin = resolve(
   dirname(fileURLToPath(import.meta.url)),
   '../packages/babel-plugin-loxer-trace/dist/index.js'
 );
-const missingBuiltArtifacts = [distIndex, distTrace, builtBabelPlugin].filter(
+const builtVitePlugin = resolve(
+  dirname(fileURLToPath(import.meta.url)),
+  '../packages/vite-plugin-loxer-trace/dist/index.js'
+);
+const missingBuiltArtifacts = [distIndex, distTrace, builtBabelPlugin, builtVitePlugin].filter(
   (artifact) => !existsSync(artifact)
 );
 if (missingBuiltArtifacts.length > 0) {
@@ -29,6 +33,7 @@ if (missingBuiltArtifacts.length > 0) {
 type DistIndex = typeof import('../src/index');
 type DistTrace = typeof import('../src/trace');
 type BuiltBabelPlugin = typeof import('../packages/babel-plugin-loxer-trace/src/index');
+type BuiltVitePlugin = typeof import('../packages/vite-plugin-loxer-trace/src/index');
 /** the options object `__startTrace` takes, with its optionality stripped */
 type TraceOptionsOf = NonNullable<Parameters<DistTrace['__startTrace']>[2]>;
 
@@ -38,6 +43,7 @@ let devLogs: OutputLox[] = [];
 let devErrors: ErrorLox[] = [];
 let dist: { index: DistIndex; trace: DistTrace };
 let babelPlugin: BuiltBabelPlugin;
+let vitePlugin: BuiltVitePlugin;
 let transformedModuleId = 0;
 
 /** the module graph under `dist/` shares the realm slot with the `src/` copy this file also imports
@@ -50,7 +56,7 @@ async function loadDist(): Promise<{ index: DistIndex; trace: DistTrace }> {
   return { index, trace };
 }
 
-async function loadBuiltTransformedModule(body: string): Promise<any> {
+async function transformBuiltModule(body: string): Promise<string> {
   const traceUrl = pathToFileURL(distTrace).href;
   const indexUrl = pathToFileURL(distIndex).href;
   const result = await babelPlugin.transformLoxerTrace(
@@ -67,9 +73,32 @@ async function loadBuiltTransformedModule(body: string): Promise<any> {
     throw new Error('Expected the built Babel plugin to emit transformed code.');
   }
 
-  const moduleUrl = `data:text/javascript;base64,${Buffer.from(result.code).toString('base64')}`;
+  return result.code;
+}
 
-  return import(`${moduleUrl}#${transformedModuleId++}`);
+async function loadBuiltTransformedModule(body: string): Promise<{ code: string; module: any }> {
+  const code = await transformBuiltModule(body);
+  const moduleUrl = `data:text/javascript;base64,${Buffer.from(code).toString('base64')}`;
+
+  return { code, module: await import(`${moduleUrl}#${transformedModuleId++}`) };
+}
+
+async function transformWithBuiltVitePlugin(source: string): Promise<string> {
+  const plugin = vitePlugin.default();
+  if (typeof plugin.transform !== 'function') {
+    throw new Error('Expected the built Vite plugin to provide a transform hook.');
+  }
+  const result = await plugin.transform.call(undefined as never, source, 'src/checkout.ts');
+  if (
+    typeof result !== 'object' ||
+    result === null ||
+    !('code' in result) ||
+    typeof result.code !== 'string'
+  ) {
+    throw new Error('Expected the built Vite plugin to emit transformed code.');
+  }
+
+  return result.code;
 }
 
 /** Colors are chosen at the renderer, not by a config flag: the raw lox always carries the plain
@@ -99,6 +128,7 @@ function initDist(index: DistIndex): void {
 beforeAll(async () => {
   dist = await loadDist();
   babelPlugin = (await import(pathToFileURL(builtBabelPlugin).href)) as BuiltBabelPlugin;
+  vitePlugin = (await import(pathToFileURL(builtVitePlugin).href)) as BuiltVitePlugin;
 });
 
 beforeEach(() => {
@@ -231,7 +261,7 @@ describe('the built dist/ tree a consumer executes', () => {
   });
 
   test('a direct module emitted by the built Babel plugin runs against both root dist entry points', async () => {
-    const transformed = await loadBuiltTransformedModule(`
+    const { module: transformed } = await loadBuiltTransformedModule(`
       export function calculate(price, quantity) {
         Loxer.info('inside calculate');
         return { total: 59.85 };
@@ -258,8 +288,99 @@ describe('the built dist/ tree a consumer executes', () => {
     });
   });
 
+  test('a built point-only module imports only its helper and preserves point output semantics', async () => {
+    const { code, module: transformed } = await loadBuiltTransformedModule(`
+      export function save(order) {
+        trace.point.TRACE.pp().warn('parent.fn', 'retrying', order);
+        return order.id;
+      }
+    `);
+
+    expect(code).toContain('__tracePoint');
+    expect(code).not.toContain('__startTrace');
+    expect(code).not.toContain('__observeTraceResult');
+    expect(code).not.toContain('__setTraceFunctionLength');
+    expect(code).not.toContain('trace.point');
+    expect(code).not.toMatch(/import\s*\{[^}]*\btrace\b[^}]*\}\s*from/);
+    expect(transformed.save({ id: 7 })).toBe(7);
+    expect(devLogs).toHaveLength(1);
+    expect(devLogs[0]).toMatchObject({
+      level: 'warn',
+      message: 'checkout.save(): retrying',
+      moduleId: 'TRACE',
+      printProps: {},
+      props: [{ id: 7 }],
+      type: 'single',
+    });
+  });
+
+  test('a mixed built module cleans markers, preserves spread and callback routes, and links points', async () => {
+    const { code, module: transformed } = await loadBuiltTransformedModule(`
+      let callbackCalls = 0;
+      function save(order, selector) {
+        trace.point.TRACE.pp(...[{ depth: 1 }]).warn(...[selector, 'retrying', order]);
+        trace.point.info(({ fn }) => {
+          callbackCalls += 1;
+          return fn('callback');
+        }, order);
+        return order.id;
+      }
+      trace.TRACE.info(save);
+      export { callbackCalls, save };
+    `);
+
+    expect(code).toContain('__tracePoint');
+    expect(code).toContain('__startTrace');
+    expect(code).toContain('__observeTraceResult');
+    expect(code).toContain('__setTraceFunctionLength');
+    expect(code).not.toContain('trace.point');
+    expect(code).not.toContain('trace.TRACE');
+    expect(code).not.toMatch(/import\s*\{[^}]*\btrace\b[^}]*\}\s*from/);
+
+    const order = { id: 9 };
+    expect(transformed.save(order, 'fn')).toBe(9);
+    expect(transformed.callbackCalls).toBe(1);
+    expect(devLogs.map((log) => [log.type, log.level, log.message])).toEqual([
+      ['open', 'info', 'checkout.save()'],
+      ['single', 'warn', 'save(): retrying'],
+      ['single', 'info', 'save(callback)'],
+      ['close', 'info', 'save done'],
+    ]);
+    expect(devLogs[1]).toMatchObject({ moduleId: 'TRACE', printProps: {}, props: [order] });
+    expect(devLogs[2].props).toEqual([order]);
+    expect(new Set(devLogs.map((log) => log.id)).size).toBe(1);
+  });
+
+  test.each([
+    {
+      name: 'point-only',
+      source:
+        "import { trace } from 'loxer/trace'; export function save() { trace.point.info('fn', 'saved'); }",
+      lifecycle: false,
+    },
+    {
+      name: 'mixed point and lifecycle markers',
+      source:
+        "import { trace } from 'loxer/trace'; function save() { trace.point.info('fn', 'saved'); } trace.info(save); export { save };",
+      lifecycle: true,
+    },
+  ])(
+    'the built Vite adapter emits selective helpers for $name input',
+    async ({ source, lifecycle }) => {
+      const code = await transformWithBuiltVitePlugin(source);
+
+      expect(code).toContain('__tracePoint');
+      expect(code.includes('__startTrace')).toBe(lifecycle);
+      expect(code.includes('__observeTraceResult')).toBe(lifecycle);
+      expect(code.includes('__setTraceFunctionLength')).toBe(lifecycle);
+      expect(code).not.toContain('trace.point');
+      expect(code).not.toContain('trace.info(save)');
+      expect(code).not.toMatch(/import\s*\{[^}]*\btrace\b[^}]*\}\s*from/);
+    }
+  );
+
   test('a computed module emitted by the built Babel plugin evaluates once and routes through dist', async () => {
-    const transformed = await loadBuiltTransformedModule(`
+    const { module: transformed } = await loadBuiltTransformedModule(`
       let selections = 0;
       function selectModule() { selections += 1; return 'TRACE'; }
       export function calculate(value) { return value * 2; }

@@ -150,6 +150,23 @@ source text directly. Supply `parserPlugins` for syntax Babel cannot infer from 
 `traceImport` and `loxerImport` let an integrator point the transform at alternative module
 specifiers. They default to `loxer/trace` and `loxer` respectively.
 
+## Context-aware trace points
+
+Use `trace.point` inside a named function for one contextual log without wrapping that function:
+
+```ts
+function saveOrder(orderId: string) {
+  trace.point.ORDER.info('fn', 'Saved order', orderId);
+  trace.point.info(({ parentFn }) => parentFn('saved'), orderId);
+}
+```
+
+The transform replaces the terminal with `__tracePoint`, preserves modifier and terminal evaluation
+order, and imports only the helpers the module needs. `fn` and `parent.fn` select the inferred name;
+callbacks receive `{ fn, parentFn }`; later arguments are props. A point directly inside a traced
+function joins its invocation box. Computed string access such as `trace['point']` has the same marker
+meaning as `trace.point`.
+
 ## Relationship with Vite
 
 For Vite applications, configure `vite-plugin-loxer-trace` instead of manually calling the Babel

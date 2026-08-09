@@ -27,6 +27,7 @@ import {
   OfLoxes,
   OpenedLox,
 } from './types.js';
+import type { TracePointRuntimeOptions } from './tracing-types.js';
 
 /** Deliberately non-exported so only the trace runtime can open error-level boxes. */
 const traceOpener: unique symbol = Symbol.for('loxer.traceOpener') as never;
@@ -243,9 +244,7 @@ class LoxerInstance implements LoxerType {
     return this.m(moduleId);
   }
   m(moduleId?: string) {
-    this._moduleId = isNES(moduleId) ? moduleId : 'DEFAULT';
-    // catch wrong module ids
-    this._moduleId = this._modules.ensureModule(this._moduleId);
+    this._moduleId = this.resolveModuleId(moduleId);
 
     return this;
   }
@@ -274,6 +273,49 @@ class LoxerInstance implements LoxerType {
         type: 'single',
       })
     );
+  }
+
+  /** Writes a generated trace point without widening the public logger chain. */
+  writeTracePoint(
+    level: LogLevel,
+    options: TracePointRuntimeOptions,
+    containingBoxId: number | undefined,
+    resolveMessage: () => unknown,
+    props: unknown[]
+  ): void {
+    if (this._isDisabled) {
+      this.resetState();
+
+      return;
+    }
+    const containingModule =
+      !options.hasModule && containingBoxId !== undefined
+        ? this._loxes.findOpenLox(containingBoxId)?.moduleId
+        : undefined;
+    const moduleId = options.hasModule
+      ? this.resolveModuleId(options.moduleId)
+      : (containingModule ?? 'NONE');
+    const isHidden = this._isInitialized && this._modules.isHiddenAt(level, moduleId);
+    const message = isHidden ? '' : resolveMessage();
+    const trace = isHidden ? undefined : traceMessageData(message);
+    this.switchOutput(
+      new Lox({
+        id: containingBoxId ?? this.nextId(),
+        highlighted: options.highlight === true,
+        props,
+        printProps: options.printProps,
+        level,
+        message: trace?.text ?? (isHidden ? '' : stringifyMessage(message)),
+        messageSpans: trace?.spans ?? [],
+        moduleId,
+        type: 'single',
+      })
+    );
+  }
+
+  /** Normalizes an explicit module selection for public chains and generated trace points. */
+  private resolveModuleId(moduleId?: string): string {
+    return this._modules.ensureModule(isNES(moduleId) ? moduleId : 'DEFAULT');
   }
 
   /** The message a `'single'` log carries — left empty for one the level gate is about to drop.
@@ -567,6 +609,17 @@ export const Loxer: LoxerType = instance;
 /** @internal Opens a trace lifecycle box at any log level without widening Loxer's public API. */
 export function __openTrace(level: LogLevel, message?: unknown, ...props: unknown[]): OpenedLox {
   return instance[traceOpener](level, message, ...props);
+}
+
+/** @internal Writes a contextual single log emitted by the trace marker transform. */
+export function __writeTracePoint(
+  level: LogLevel,
+  options: TracePointRuntimeOptions,
+  containingBoxId: number | undefined,
+  resolveMessage: () => unknown,
+  props: unknown[]
+): void {
+  instance.writeTracePoint(level, options, containingBoxId, resolveMessage, props);
 }
 
 /** Returns `Loxer` to its pre-`init()` state: no modules, no output stream, an empty history and an

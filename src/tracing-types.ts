@@ -18,6 +18,17 @@ export type TraceHighlight = 'open' | 'close' | 'all';
  */
 export type TraceCallPrinter = (content?: unknown) => string;
 
+/** The printers a `trace.point` message callback receives. */
+export interface TracePointMessageContext {
+  /** renders the surrounding function as `calculate(content)` */
+  fn: TraceCallPrinter;
+  /** renders the surrounding function as `Checkout.calculate(content)` */
+  parentFn: TraceCallPrinter;
+}
+
+/** A contextual `trace.point` message that preserves trace-name color spans. */
+export type TracePointMessage = (context: TracePointMessageContext) => string;
+
 /** What an `openMessage` callback receives: the call's arguments, and the printers that render it
  * in the shape the templates use. */
 export interface TraceOpenMessageContext<Args extends readonly unknown[] = readonly unknown[]> {
@@ -228,4 +239,16 @@ export interface TraceMarkerRuntimeOptions {
   level?: LogLevel;
   propsTarget?: TracePropsTarget;
   printProps?: TracePropsTarget | ExtendedPropsPrinterOptions;
+}
+
+/** A contextual selector accepted by a {@link TracePoint} terminal call. */
+export type TracePointSelector = 'fn' | 'parent.fn';
+
+/** Runtime configuration emitted for one build-time {@link trace.point} call. @internal */
+export interface TracePointRuntimeOptions {
+  hasModule?: boolean;
+  highlight?: boolean;
+  level?: LogLevel;
+  moduleId?: ModuleId;
+  printProps?: PropsPrinterOptions;
 }

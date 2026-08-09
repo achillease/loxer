@@ -45,6 +45,11 @@ import {
   type ExtendedPropsPrinterOptions,
   type TraceMarkerOptions,
   type TraceModuleId,
+  type TracePoint,
+  type TracePointMessage,
+  type TracePointMessageContext,
+  type TracePointModuleId,
+  type TracePointSelector,
   type TraceOpenMessageContext as TraceOpenMessageContextFromTrace,
   type TracePropsTarget,
 } from 'loxer/trace';
@@ -76,10 +81,15 @@ const modules = {
   'ORDER-API': { fullName: 'Order API', color: '#0af', devLevel: 'info', prodLevel: 'error' },
   info: { fullName: 'Info', color: '#ccc', devLevel: 'info', prodLevel: 'error' },
   call: { fullName: 'Call', color: '#aaa', devLevel: 'info', prodLevel: 'error' },
+  props: { fullName: 'Props', color: '#0cc', devLevel: 'info', prodLevel: 'error' },
+  printProps: { fullName: 'Print props', color: '#c0c', devLevel: 'info', prodLevel: 'error' },
 } satisfies LoxerModules;
 
 declare module 'loxer' {
-  interface LoxerModuleRegistry extends Record<keyof typeof modules, true> {}
+  interface LoxerModuleRegistry extends Record<
+    keyof typeof modules | 'props' | 'printProps',
+    true
+  > {}
 }
 
 Loxer.init({ modules });
@@ -93,11 +103,20 @@ type Equals<A, B> =
   (<T>() => T extends A ? 1 : 2) extends <T>() => T extends B ? 1 : 2 ? true : false;
 const keysStayLiteral: Equals<
   keyof typeof modules,
-  'PERS' | 'DB' | 'ORDER-API' | 'info' | 'call'
+  'PERS' | 'DB' | 'ORDER-API' | 'info' | 'call' | 'props' | 'printProps'
 > = true;
 const idIsNarrowed: Equals<
   ModuleId,
-  'PERS' | 'DB' | 'ORDER-API' | 'info' | 'call' | 'NONE' | 'DEFAULT' | 'INVALID'
+  | 'PERS'
+  | 'DB'
+  | 'ORDER-API'
+  | 'info'
+  | 'call'
+  | 'props'
+  | 'printProps'
+  | 'NONE'
+  | 'DEFAULT'
+  | 'INVALID'
 > = true;
 
 // --- registered ids are accepted --------------------------------------------------------------
@@ -194,13 +213,60 @@ traceMarker.highlight().DB.pp('result').info(load);
 traceMarker['ORDER-API'].debug(load);
 const computedTraceModule: TraceModuleId = 'PERS';
 traceMarker[computedTraceModule].info(load);
-const directIdsAreSafe: Equals<TraceModuleId, 'PERS' | 'DB' | 'ORDER-API'> = true;
+traceMarker.point.PERS.h().pp().info('saved');
+traceMarker.point.props.warn('parent.fn', 'retrying');
+traceMarker.point.error('failed');
+traceMarker.point.log('saved');
+traceMarker.point.module('PERS').highlight().printProps({ depth: 1 }).debug('details');
+traceMarker.point.pp().h(false).m('DB').info('fn(types)', 'ordinary prop');
+const computedPointModule: TracePointModuleId = 'props';
+traceMarker.point[computedPointModule].debug();
+const publicPoint: TracePoint = traceMarker.point;
+const pointSelector: TracePointSelector = 'fn';
+const pointContext: TracePointMessageContext = {
+  fn: (content) => String(content),
+  parentFn: (content) => String(content),
+};
+const pointMessage: TracePointMessage = ({ fn, parentFn }) => `${parentFn(fn('order'))}`;
+type PointContextKeysAreExact = Equals<keyof TracePointMessageContext, 'fn' | 'parentFn'>;
+const pointContextKeysAreExact: PointContextKeysAreExact = true;
+publicPoint.info(pointMessage);
+void pointSelector;
+void pointContext;
+void pointContextKeysAreExact;
+const directIdsAreSafe: Equals<TraceModuleId, 'PERS' | 'DB' | 'ORDER-API' | 'printProps'> = true;
 void directIdsAreSafe;
+const pointDirectIdsAreSafe: Equals<TracePointModuleId, 'PERS' | 'DB' | 'ORDER-API' | 'props'> =
+  true;
+void pointDirectIdsAreSafe;
 // reserved registry keys stay available through the compatible method selectors and Loxer
 traceMarker.m('info').info(load);
 traceMarker.module('call').warn(load);
 Loxer.m('info').log('ok');
 Loxer.module('call').log('ok');
+// @ts-expect-error point `printProps` is a modifier, not a direct module
+traceMarker.point.printProps.info('saved');
+// @ts-expect-error point props-printing aliases are one modifier family
+traceMarker.point.pp().printProps().info('saved');
+// @ts-expect-error point module aliases are one modifier family
+traceMarker.point.m('PERS').module('DB').info('saved');
+// @ts-expect-error point direct selection consumes the module family
+traceMarker.point.PERS.m('DB').info('saved');
+// @ts-expect-error two point direct selections consume the module family
+traceMarker.point.PERS.DB.info('saved');
+// @ts-expect-error point highlighting aliases are one modifier family
+traceMarker.point.h().highlight().info('saved');
+// @ts-expect-error points do not expose lifecycle open
+traceMarker.point.open('saved');
+// @ts-expect-error points do not expose lifecycle box lookup
+traceMarker.point.of(1);
+// @ts-expect-error points do not expose lifecycle props capture
+traceMarker.point.props('args');
+// @ts-expect-error point terminals end the fluent chain
+traceMarker.point.warn.m('PERS');
+// @ts-expect-error contextual selectors are exact
+const invalidPointSelector: TracePointSelector = 'parent.fn(types)';
+void invalidPointSelector;
 // @ts-expect-error 'PRES' is not a registered module id
 traceMarker.m('PRES').info(load);
 // @ts-expect-error 'PRES' is not a registered direct module id
@@ -226,10 +292,7 @@ void extendedPrinter;
 const missingPrintTarget: ExtendedPropsPrinterOptions = { depth: 1 };
 void missingPrintTarget;
 
-type MarkerKeysAreExact = Equals<
-  keyof TraceMarkerOptions,
-  'name' | 'openMessage' | 'closeMessage'
->;
+type MarkerKeysAreExact = Equals<keyof TraceMarkerOptions, 'name' | 'openMessage' | 'closeMessage'>;
 const markerKeysAreExact: MarkerKeysAreExact = true;
 type DecoratorKeysAreExact = Equals<
   keyof import('loxer').TraceOptions,
@@ -405,7 +468,12 @@ traceMarker.info(load, { argsAsItem: true });
 traceMarker.info(load, { resultAsItem: true });
 traceMarker.props('args').pp({ target: 'args', depth: 1 }).info(load);
 traceMarker.props('result').pp('result').info(load);
-traceDecorator({ argsAsProps: true, printArgs: true, resultAsProps: true, printResult: { keys: [] } });
+traceDecorator({
+  argsAsProps: true,
+  printArgs: true,
+  resultAsProps: true,
+  printResult: { keys: [] },
+});
 // @ts-expect-error `prettyResult` was removed; use `resultAsProps` with `printResult` instead
 traceMarker.info(load, { closeMessage: 'prettyResult' });
 // @ts-expect-error 'functionName' / 'parent.functionName' were replaced by 'fn' / 'parent.fn'

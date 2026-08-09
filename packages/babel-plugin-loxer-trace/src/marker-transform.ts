@@ -6,6 +6,7 @@ import type {
   InlineMarker,
   Marker,
   MarkerTarget,
+  PointMarker,
   RuntimeIds,
   StatementMarker,
 } from './marker-types.js';
@@ -34,13 +35,17 @@ export function transformMarker(
     transformInlineMarker(marker, programPath, runtime, marker.className || fileName, t);
   } else if (marker.kind === 'enclosing') {
     transformEnclosingMarker(marker, runtime, marker.className || fileName, t);
-  } else {
+  } else if (marker.kind === 'statement') {
     transformStatementMarker(marker, programPath, runtime, fileName, t);
+  } else {
+    transformPointMarker(marker, runtime, marker.className || fileName, t);
   }
 }
 
 /** Orders nested marker transforms from the innermost function outwards. */
-export function innermostFirst(markers: Marker[]): Marker[] {
+export function innermostFirst(
+  markers: Exclude<Marker, PointMarker>[]
+): Exclude<Marker, PointMarker>[] {
   return markers
     .map((marker, index) => ({ depth: transformDepth(marker), index, marker }))
     .sort((one, other) => other.depth - one.depth || one.index - other.index)
@@ -65,6 +70,7 @@ function transformInlineMarker(
     runtime.withFunctionLengthId,
     optionsId,
     runtime.loxerBinding,
+    runtime.tracePointId,
     t
   );
   marker.callPath.replaceWith(
@@ -90,6 +96,7 @@ function transformEnclosingMarker(
     runtime.observeResultId,
     marker.configurationNode,
     runtime.loxerBinding,
+    runtime.tracePointId,
     t
   );
 }
@@ -121,12 +128,13 @@ function transformStatementMarker(
       runtime.setFunctionLengthId,
       optionsId,
       runtime.loxerBinding,
+      runtime.tracePointId,
       t
     );
   }
 }
 
-function transformDepth(marker: Marker): number {
+function transformDepth(marker: Exclude<Marker, PointMarker>): number {
   if (marker.kind === 'inline') {
     return pathDepth(marker.literalPath);
   }
@@ -135,6 +143,25 @@ function transformDepth(marker: Marker): number {
   }
 
   return Math.min(...marker.targets.map((target) => pathDepth(target.binding.path)));
+}
+
+function transformPointMarker(
+  marker: PointMarker,
+  runtime: RuntimeIds,
+  parentName: string | undefined,
+  t: typeof BabelTypes
+): void {
+  marker.callPath.replaceWith(
+    t.callExpression(t.cloneNode(runtime.tracePointId), [
+      marker.configurationNode,
+      t.stringLiteral(marker.functionName),
+      parentName === undefined
+        ? t.unaryExpression('void', t.numericLiteral(0))
+        : t.stringLiteral(parentName),
+      t.unaryExpression('void', t.numericLiteral(0)),
+      ...marker.callPath.node.arguments,
+    ])
+  );
 }
 
 function pathDepth(path: NodePath<any>): number {

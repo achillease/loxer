@@ -41,6 +41,21 @@ trace.info(placeOrder, { moduleId: 'ORDER' });
 
 A file is transformed only when it mentions `loxer/trace`, so files without a marker cost nothing.
 
+### Context-aware trace points
+
+The Vite adapter transforms `trace.point` in the same pre-transform pass as function markers. Use it
+inside a named function for one contextual log without opening a new box:
+
+```ts
+function placeOrder(id: string) {
+  trace.point.info('parent.fn', 'Placing order', id);
+}
+```
+
+The terminal accepts an ordinary message, an `fn` or `parent.fn` selector, or a callback receiving
+`{ fn, parentFn }`. Values after the message are props. A point in a traced function joins that
+invocation's box.
+
 ## Options
 
 ```typescript

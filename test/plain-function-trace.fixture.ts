@@ -5,6 +5,7 @@ import {
   __observeTraceResult,
   __setTraceFunctionLength,
   __startTrace,
+  __tracePoint,
   __withTraceFunctionLength,
   trace,
 } from '../src/trace';
@@ -18,6 +19,7 @@ export {
   __observeTraceResult,
   __setTraceFunctionLength,
   __startTrace,
+  __tracePoint,
   __withTraceFunctionLength,
 };
 
@@ -30,7 +32,8 @@ const traceRuntimeUrl = asDataModule(
     'export const __startTrace = (...args) => globalThis.__loxerStartTrace(...args);' +
     'export const __observeTraceResult = (...args) => globalThis.__loxerObserveTraceResult(...args);' +
     'export const __setTraceFunctionLength = (...args) => globalThis.__loxerSetFunctionLength(...args);' +
-    'export const __withTraceFunctionLength = (...args) => globalThis.__loxerWithFunctionLength(...args);'
+    'export const __withTraceFunctionLength = (...args) => globalThis.__loxerWithFunctionLength(...args);' +
+    'export const __tracePoint = (...args) => globalThis.__loxerTracePoint(...args);'
 );
 const loxerRuntimeUrl = asDataModule(
   'export const Loxer = new Proxy({}, { get: (_target, property) => {' +
@@ -49,6 +52,7 @@ beforeEach(() => {
   (globalThis as any).__loxerSetFunctionLength = __setTraceFunctionLength;
   (globalThis as any).__loxerWithFunctionLength = __withTraceFunctionLength;
   (globalThis as any).__loxerStartTrace = __startTrace;
+  (globalThis as any).__loxerTracePoint = __tracePoint;
   (globalThis as any).__loxerTraceLoxer = Loxer;
   Loxer.init({
     dev: true,
@@ -76,6 +80,7 @@ afterEach(() => {
   delete (globalThis as any).__loxerSetFunctionLength;
   delete (globalThis as any).__loxerWithTraceFunctionLength;
   delete (globalThis as any).__loxerStartTrace;
+  delete (globalThis as any).__loxerTracePoint;
   delete (globalThis as any).__loxerTraceLoxer;
   resetLoxer();
 });

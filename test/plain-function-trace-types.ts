@@ -4,7 +4,15 @@
  * Vitest never executes this file. `test/tsconfig.json` includes it, so `pnpm typecheck:test`
  * verifies that the marker overloads preserve the callback argument and result types pinned below.
  */
-import { trace, type TraceModuleId } from '../src/trace';
+import {
+  trace,
+  type TraceModuleId,
+  type TracePoint,
+  type TracePointMessage,
+  type TracePointMessageContext,
+  type TracePointModuleId,
+  type TracePointSelector,
+} from '../src/trace';
 
 type AssertFalse<Value extends false> = Value;
 type LegacyMarkerIsAbsent = 'loxed' extends keyof typeof import('../src/trace') ? true : false;
@@ -60,6 +68,58 @@ function traceFormatterTypeFixture(): void {
       return `${result.amount} ${pinned}`;
     },
   });
+}
+
+function tracePointFormatterTypeFixture(): void {
+  const point: TracePoint = trace.point;
+  const callback: TracePointMessage = ({ fn, parentFn }) => `${parentFn(fn('order'))}`;
+  const context: TracePointMessageContext = {
+    fn: (content) => String(content),
+    parentFn: (content) => String(content),
+  };
+  const selector: TracePointSelector = 'parent.fn';
+  type ContextKeysAreExact = AssertTrue<Equals<keyof TracePointMessageContext, 'fn' | 'parentFn'>>;
+  type EmptyPointRegistryHasNoDirectIds = AssertTrue<Equals<TracePointModuleId, never>>;
+  const contextKeysAreExact: ContextKeysAreExact = true;
+  const emptyPointRegistryHasNoDirectIds: EmptyPointRegistryHasNoDirectIds = true;
+  void context;
+  void contextKeysAreExact;
+  void emptyPointRegistryHasNoDirectIds;
+
+  point.error('failed');
+  point.warn(selector, 'retrying', { id: 1 });
+  trace.point.log();
+  trace.point.info('fn');
+  trace.point.debug(callback, { id: 1 });
+  trace.point.module().highlight(false).printProps({ depth: 1 }).info('details');
+  trace.point
+    .pp({ keys: ['id'] })
+    .h()
+    .m()
+    .debug('details');
+  // near misses remain ordinary messages rather than contextual selectors
+  trace.point.info('fn(types)', 'ordinary prop');
+  // @ts-expect-error a point selector is one of the two exact reserved values
+  const nearMissSelector: TracePointSelector = 'fn(types)';
+  void nearMissSelector;
+  // @ts-expect-error point formatter contexts expose only the name printers
+  trace.point.info(({ args }) => String(args));
+  // @ts-expect-error module aliases are one modifier family
+  trace.point.m().module();
+  // @ts-expect-error highlighting aliases are one modifier family
+  trace.point.h().highlight();
+  // @ts-expect-error props-printing aliases are one modifier family
+  trace.point.pp().printProps();
+  // @ts-expect-error points are single logs, not lifecycle boxes
+  trace.point.open('order');
+  // @ts-expect-error points cannot address an existing lifecycle box
+  trace.point.of(1);
+  // @ts-expect-error lifecycle props capture is not a point modifier
+  trace.point.props('args');
+  // @ts-expect-error a terminal ends the fluent chain
+  trace.point.info.m();
+  // @ts-expect-error the point marker is not directly callable
+  trace.point('saved');
 }
 
 function traceListFormatterTypeFixture(): void {

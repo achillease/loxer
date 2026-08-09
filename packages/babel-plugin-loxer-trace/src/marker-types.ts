@@ -36,12 +36,21 @@ export interface EnclosingMarker {
   name: string;
 }
 
-export type Marker = EnclosingMarker | InlineMarker | StatementMarker;
+export interface PointMarker {
+  kind: 'point';
+  callPath: NodePath<any>;
+  className?: string;
+  configurationNode: any;
+  functionName: string;
+}
+
+export type Marker = EnclosingMarker | InlineMarker | PointMarker | StatementMarker;
 
 export interface RuntimeIds {
   loxerBinding: any;
   observeResultId: any;
   runtimeId: any;
   setFunctionLengthId: any;
+  tracePointId: any;
   withFunctionLengthId: any;
 }

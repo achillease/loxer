@@ -20,6 +20,7 @@ export function traceBinding(
   setFunctionLengthId: any,
   optionsId: any,
   loxerBinding: any,
+  tracePointId: any,
   t: typeof BabelTypes
 ): void {
   if (bindingPath.isFunctionDeclaration()) {
@@ -28,7 +29,7 @@ export function traceBinding(
     }
 
     const stateId = bindingPath.scope.generateUidIdentifier('traceState');
-    rewriteDirectLoxerCalls(bindingPath.get('body'), loxerBinding, stateId, t);
+    rewriteDirectLoxerCalls(bindingPath.get('body'), loxerBinding, stateId, tracePointId, t);
     const originalBody = bindingPath.node.body;
     const invokeId = bindingPath.scope.generateUidIdentifier('invokeTrace');
     bindingPath.node.body = buildWrapperBody(
@@ -69,7 +70,7 @@ export function traceBinding(
   }
 
   const stateId = initPath.scope.generateUidIdentifier('traceState');
-  rewriteDirectLoxerCalls(initPath.get('body'), loxerBinding, stateId, t);
+  rewriteDirectLoxerCalls(initPath.get('body'), loxerBinding, stateId, tracePointId, t);
   const invokeId = initPath.scope.generateUidIdentifier('invokeTrace');
 
   if (initPath.isArrowFunctionExpression()) {
@@ -134,6 +135,7 @@ export function traceLiteral(
   withFunctionLengthId: any,
   optionsId: any,
   loxerBinding: any,
+  tracePointId: any,
   t: typeof BabelTypes
 ): any {
   if (literalPath.node.generator) {
@@ -144,7 +146,13 @@ export function traceLiteral(
   }
 
   const stateId = literalPath.scope.generateUidIdentifier('traceState');
-  rewriteDirectLoxerCalls(literalPath.get('body') as NodePath<any>, loxerBinding, stateId, t);
+  rewriteDirectLoxerCalls(
+    literalPath.get('body') as NodePath<any>,
+    loxerBinding,
+    stateId,
+    tracePointId,
+    t
+  );
   const invokeId = literalPath.scope.generateUidIdentifier('invokeTrace');
   const isAsync = literalPath.node.async;
 
@@ -206,10 +214,17 @@ export function traceEnclosingFunction(
   observeResultId: any,
   optionsNode: any,
   loxerBinding: any,
+  tracePointId: any,
   t: typeof BabelTypes
 ): void {
   const stateId = functionPath.scope.generateUidIdentifier('traceState');
-  rewriteDirectLoxerCalls(functionPath.get('body') as NodePath<any>, loxerBinding, stateId, t);
+  rewriteDirectLoxerCalls(
+    functionPath.get('body') as NodePath<any>,
+    loxerBinding,
+    stateId,
+    tracePointId,
+    t
+  );
 
   const prelude: any[] = [];
   const argsExpression = functionPath.isArrowFunctionExpression()

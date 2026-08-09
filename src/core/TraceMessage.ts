@@ -3,6 +3,8 @@ import type {
   FunctionCloseMessage,
   FunctionOpenMessage,
   TraceCallPrinter,
+  TracePointMessage,
+  TracePointSelector,
 } from '../tracing-types.js';
 import { stringifyMessage } from './PropsPrinter.js';
 import { qualifiedFunctionName } from './TraceNames.js';
@@ -434,5 +436,33 @@ export function renderFailureMessage(
     return extractSpans(`${name} failed`);
   } catch {
     return extractSpans(`${mark('fn', call.name)} failed`);
+  }
+}
+
+/** @internal Renders the context prefix of a single `trace.point` log. */
+export function renderPointMessage(
+  call: TraceCall,
+  selector: TracePointSelector,
+  message: unknown
+): TraceMessage {
+  const prefix = extractSpans(`${markedName(call, selector)}()`);
+  const suffix = stringifyMessage(message);
+
+  return suffix.length > 0 ? { ...prefix, text: `${prefix.text}: ${suffix}` } : prefix;
+}
+
+/** @internal Renders a callback message for one contextual `trace.point` log. */
+export function renderPointCallbackMessage(
+  call: TraceCall,
+  callback: TracePointMessage
+): TraceMessage {
+  const fallback = () => extractSpans(`${mark('fn', call.name)}()`);
+
+  try {
+    const markers = callbackMarkers();
+
+    return fromCallback(callback(printers(call, markers.mark)), fallback, markers.extract);
+  } catch {
+    return fallback();
   }
 }

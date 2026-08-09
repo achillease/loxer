@@ -1,6 +1,6 @@
 import type { NodePath } from '@babel/core';
 import type * as BabelTypes from '@babel/types';
-import type { EnclosingMarker, Marker, MarkerTarget } from './marker-types.js';
+import type { EnclosingMarker, Marker, MarkerTarget, PointMarker } from './marker-types.js';
 
 type TraceTerminal = 'error' | 'warn' | 'info' | 'debug';
 type TraceModifier = 'm' | 'module' | 'h' | 'highlight' | 'props' | 'pp';
@@ -27,9 +27,17 @@ const reservedDirectModules = new Set([
   'toString',
   'warn',
 ]);
+const reservedPointDirectModules = new Set(
+  [...reservedDirectModules].filter((name) => name !== 'props').concat('printProps')
+);
 
 interface FluentMarkerCall {
   modifiers: { name: TraceModifier; value: any }[];
+  terminal: TraceTerminal;
+}
+
+interface FluentPointCall {
+  modifiers: { name: 'm' | 'module' | 'h' | 'highlight' | 'pp' | 'printProps'; value: any }[];
   terminal: TraceTerminal;
 }
 
@@ -55,6 +63,9 @@ function markedFunctions(marker: Marker): { name: string; node: any }[] {
   }
   if (marker.kind === 'enclosing') {
     return [{ name: marker.name, node: marker.functionPath.node }];
+  }
+  if (marker.kind === 'point') {
+    return [];
   }
 
   return marker.targets.map((target) => ({
@@ -87,6 +98,12 @@ export function collectMarkers(
         parentPath?.isCallExpression() &&
         parentPath.node.callee === cursor.node
       ) {
+        return;
+      }
+      const point = collectFluentPointCall(callPath, markerBindings, t);
+      if (point) {
+        markers.push(collectPointMarker(callPath, point, t));
+
         return;
       }
       const fluent = collectFluentMarkerCall(callPath, markerBindings, t);
@@ -298,6 +315,281 @@ function collectFluentMarkerCall(
   }
 
   return { modifiers: modifiers.reverse(), terminal };
+}
+
+/** Resolves a `trace.point` terminal and its single-log modifier chain. */
+function collectFluentPointCall(
+  callPath: NodePath<any>,
+  markerBindings: Set<any>,
+  t: typeof BabelTypes
+): FluentPointCall | undefined {
+  const callee = callPath.node.callee;
+  if (!t.isMemberExpression(callee)) {
+    return undefined;
+  }
+  if (!isPointFluentRoot(callee.object, callPath, markerBindings, t)) {
+    return undefined;
+  }
+  if (callee.computed || !t.isIdentifier(callee.property)) {
+    if (isPointRoot(callee.object, callPath, markerBindings, t)) {
+      throw callPath.buildCodeFrameError('trace.point does not support computed fluent members.');
+    }
+
+    return undefined;
+  }
+  const terminal = callee.property.name === 'log' ? 'info' : callee.property.name;
+  if (terminal !== 'error' && terminal !== 'warn' && terminal !== 'info' && terminal !== 'debug') {
+    if (isPointRoot(callee.object, callPath, markerBindings, t)) {
+      throw callPath.buildCodeFrameError(
+        `trace.point does not support fluent member "${callee.property.name}".`
+      );
+    }
+
+    return undefined;
+  }
+
+  const modifiers: FluentPointCall['modifiers'] = [];
+  let cursor = callee.object;
+  while (!isPointRoot(cursor, callPath, markerBindings, t)) {
+    if (t.isCallExpression(cursor)) {
+      const modifierCallee = cursor.callee;
+      if (
+        !t.isMemberExpression(modifierCallee) ||
+        modifierCallee.computed ||
+        !t.isIdentifier(modifierCallee.property)
+      ) {
+        throw callPath.buildCodeFrameError('trace.point does not support computed fluent members.');
+      }
+      const name = modifierCallee.property.name;
+      if (
+        name !== 'm' &&
+        name !== 'module' &&
+        name !== 'h' &&
+        name !== 'highlight' &&
+        name !== 'pp' &&
+        name !== 'printProps'
+      ) {
+        throw callPath.buildCodeFrameError(`trace.point does not support fluent member "${name}".`);
+      }
+      if (cursor.arguments.length > 1) {
+        throw callPath.buildCodeFrameError(`trace.point.${name}() expects zero or one argument.`);
+      }
+      const fallback =
+        name === 'h' || name === 'highlight'
+          ? t.booleanLiteral(true)
+          : name === 'pp' || name === 'printProps'
+            ? t.objectExpression([])
+            : t.unaryExpression('void', t.numericLiteral(0));
+      modifiers.push({
+        name,
+        value: pointModifierValue(cursor.arguments[0], fallback, callPath, t),
+      });
+      cursor = modifierCallee.object;
+      continue;
+    }
+    if (!t.isMemberExpression(cursor)) {
+      throw callPath.buildCodeFrameError('trace.point does not support computed fluent members.');
+    }
+    if (!cursor.computed) {
+      if (!t.isIdentifier(cursor.property)) {
+        throw callPath.buildCodeFrameError('trace.point does not support computed fluent members.');
+      }
+      const moduleName = cursor.property.name;
+      if (reservedPointDirectModules.has(moduleName)) {
+        throw callPath.buildCodeFrameError(
+          `trace.point direct module "${moduleName}" is reserved; use trace.point.m("${moduleName}") instead.`
+        );
+      }
+      modifiers.push({ name: 'm', value: t.stringLiteral(moduleName) });
+    } else {
+      if (
+        t.isStringLiteral(cursor.property) &&
+        reservedPointDirectModules.has(cursor.property.value)
+      ) {
+        throw callPath.buildCodeFrameError(
+          `trace.point direct module "${cursor.property.value}" is reserved; use trace.point.m("${cursor.property.value}") instead.`
+        );
+      }
+      modifiers.push({ name: 'm', value: cursor.property });
+    }
+    cursor = cursor.object;
+  }
+  const seen = new Set<string>();
+  for (const modifier of modifiers) {
+    const family =
+      modifier.name === 'm' || modifier.name === 'module'
+        ? 'module'
+        : modifier.name === 'h' || modifier.name === 'highlight'
+          ? 'highlight'
+          : 'printProps';
+    if (seen.has(family)) {
+      throw callPath.buildCodeFrameError(`trace.point modifier "${family}" may appear only once.`);
+    }
+    seen.add(family);
+  }
+
+  return { modifiers: modifiers.reverse(), terminal };
+}
+
+/** Preserves a modifier's optional spread argument and its no-argument default. */
+function pointModifierValue(
+  argument: any,
+  fallback: any,
+  callPath: NodePath<any>,
+  t: typeof BabelTypes
+): any {
+  if (argument === undefined) {
+    return fallback;
+  }
+  if (isKnownPointModifierValue(argument, t)) {
+    return argument;
+  }
+  if (!t.isSpreadElement(argument)) {
+    const valueId = callPath.scope.generateUidIdentifier('pointModifier');
+    callPath.scope.push({ id: valueId, kind: 'var' });
+
+    return t.conditionalExpression(
+      t.binaryExpression(
+        '===',
+        t.assignmentExpression('=', t.cloneNode(valueId), argument),
+        t.unaryExpression('void', t.numericLiteral(0))
+      ),
+      fallback,
+      t.cloneNode(valueId)
+    );
+  }
+
+  const values = t.identifier('values');
+  const firstValue = () => t.memberExpression(t.cloneNode(values), t.numericLiteral(0), true);
+
+  return t.callExpression(
+    t.arrowFunctionExpression(
+      [t.restElement(values)],
+      t.conditionalExpression(
+        t.binaryExpression('===', firstValue(), t.unaryExpression('void', t.numericLiteral(0))),
+        fallback,
+        firstValue()
+      )
+    ),
+    [argument]
+  );
+}
+
+function isKnownPointModifierValue(node: any, t: typeof BabelTypes): boolean {
+  return (
+    t.isStringLiteral(node) ||
+    t.isNumericLiteral(node) ||
+    t.isBooleanLiteral(node) ||
+    t.isNullLiteral(node) ||
+    t.isBigIntLiteral(node) ||
+    t.isRegExpLiteral(node)
+  );
+}
+
+function isPointRoot(
+  node: any,
+  callPath: NodePath<any>,
+  markerBindings: Set<any>,
+  t: typeof BabelTypes
+): boolean {
+  return (
+    t.isMemberExpression(node) &&
+    ((!node.computed && t.isIdentifier(node.property, { name: 'point' })) ||
+      (node.computed && t.isStringLiteral(node.property, { value: 'point' }))) &&
+    isMarkerRoot(node.object, callPath, markerBindings, t)
+  );
+}
+
+/** Returns whether a fluent chain eventually reaches the reserved `trace.point` root. */
+function isPointFluentRoot(
+  node: any,
+  callPath: NodePath<any>,
+  markerBindings: Set<any>,
+  t: typeof BabelTypes
+): boolean {
+  let cursor = node;
+  while (t.isCallExpression(cursor) || t.isMemberExpression(cursor)) {
+    if (isPointRoot(cursor, callPath, markerBindings, t)) {
+      return true;
+    }
+    cursor = t.isCallExpression(cursor)
+      ? t.isMemberExpression(cursor.callee)
+        ? cursor.callee.object
+        : undefined
+      : cursor.object;
+  }
+
+  return false;
+}
+
+function collectPointMarker(
+  callPath: NodePath<any>,
+  fluent: FluentPointCall,
+  t: typeof BabelTypes
+): PointMarker {
+  let functionPath = callPath.parentPath;
+  while (functionPath && !functionPath.isFunction()) {
+    functionPath = functionPath.parentPath;
+  }
+  if (!functionPath) {
+    throw callPath.buildCodeFrameError(
+      'trace.point must be inside a named function so it can describe that call site.'
+    );
+  }
+  if (isFunctionParameterDescendant(callPath, functionPath)) {
+    throw callPath.buildCodeFrameError(
+      'trace.point cannot be used in a parameter default. Move the point into the function body.'
+    );
+  }
+
+  return {
+    callPath,
+    className: enclosingClassName(functionPath, t),
+    configurationNode: pointConfiguration(fluent, t),
+    functionName: resolveFunctionName(
+      callPath,
+      functionPath,
+      t.objectExpression([]),
+      t,
+      'Cannot name the trace.point call site. Use a named function or a stable binding.'
+    ),
+    kind: 'point',
+  };
+}
+
+/** Returns whether a point belongs to the parameter list of its enclosing function. */
+function isFunctionParameterDescendant(
+  callPath: NodePath<any>,
+  functionPath: NodePath<any>
+): boolean {
+  for (
+    let path: NodePath<any> | null = callPath;
+    path && path !== functionPath;
+    path = path.parentPath
+  ) {
+    if (path.parentPath === functionPath && path.listKey === 'params') {
+      return true;
+    }
+  }
+
+  return false;
+}
+
+function pointConfiguration(fluent: FluentPointCall, t: typeof BabelTypes): any {
+  const properties: any[] = [];
+  for (const modifier of fluent.modifiers) {
+    if (modifier.name === 'm' || modifier.name === 'module') {
+      properties.push(t.objectProperty(t.identifier('hasModule'), t.booleanLiteral(true)));
+      properties.push(t.objectProperty(t.identifier('moduleId'), modifier.value));
+    } else if (modifier.name === 'h' || modifier.name === 'highlight') {
+      properties.push(t.objectProperty(t.identifier('highlight'), modifier.value));
+    } else {
+      properties.push(t.objectProperty(t.identifier('printProps'), modifier.value));
+    }
+  }
+  properties.push(t.objectProperty(t.identifier('level'), t.stringLiteral(fluent.terminal)));
+
+  return t.objectExpression(properties);
 }
 
 function isMarkerRoot(
@@ -517,7 +809,9 @@ function resolveFunctionName(
   callPath: NodePath<any>,
   functionPath: NodePath<any>,
   optionsNode: any,
-  t: typeof BabelTypes
+  t: typeof BabelTypes,
+  unnameableMessage = 'Cannot name the trace() target. Assign the function to a named binding, or name it with the ' +
+    'name option.'
 ): string {
   const declared = declaredName(callPath, optionsNode, t);
   if (declared !== undefined) {
@@ -534,10 +828,7 @@ function resolveFunctionName(
     return surrounding;
   }
 
-  throw callPath.buildCodeFrameError(
-    'Cannot name the trace() target. Assign the function to a named binding, or name it with the ' +
-      'name option.'
-  );
+  throw callPath.buildCodeFrameError(unnameableMessage);
 }
 
 /** Returns the name a function carries itself, as a declaration id or as the key of a method. */

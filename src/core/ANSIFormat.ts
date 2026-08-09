@@ -216,7 +216,9 @@ export class ANSIFormat {
     } else if (lox.type === 'close') {
       prefix = this.closeLogPrefix();
     }
-    if (lox.level === 'warn') {
+    if (lox.level === 'error') {
+      prefix = this.colorizePrefix(options.colors?.errorColor ?? DEFAULT_ERROR_COLOR);
+    } else if (lox.level === 'warn') {
       prefix = this.colorizePrefix(options.colors?.warnColor ?? DEFAULT_WARN_COLOR);
     }
     let message = this.colorMessageSpans(lox, prefix);

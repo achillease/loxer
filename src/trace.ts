@@ -8,11 +8,12 @@ import {
   TraceCall,
 } from './core/TraceMessage.js';
 import { sanitizeControlCharacters } from './Helpers.js';
-import { __openTrace, Loxer } from './Loxer.js';
+import { __openTrace, __writeTracePoint, Loxer } from './Loxer.js';
 import {
   ExtendedPropsPrinterOptions,
   TraceMarkerOptions,
   TraceMarkerRuntimeOptions,
+  TracePointRuntimeOptions,
   TracePropsTarget,
 } from './tracing-types.js';
 import { ModuleId, RegisteredModuleId } from './types.js';
@@ -25,7 +26,12 @@ export type {
   TraceOpenMessageContext,
   TraceOptions,
   TracePropsTarget,
+  TracePointSelector,
+  TracePointMessage,
+  TracePointMessageContext,
 } from './tracing-types.js';
+import type { TracePointMessage, TracePointSelector } from './tracing-types.js';
+import { renderPointCallbackMessage, renderPointMessage } from './core/TraceMessage.js';
 
 type PlainFunctionTraceTarget = (...args: any[]) => unknown;
 
@@ -59,6 +65,7 @@ type TraceMarkerReservedMember =
   | 'highlight'
   | 'props'
   | 'pp'
+  | 'point'
   | 'apply'
   | 'arguments'
   | 'bind'
@@ -90,7 +97,58 @@ interface TraceMarkerModifiers<Delete extends string> {
   pp(target: TracePropsTarget | ExtendedPropsPrinterOptions): TraceMarkerChain<Delete | 'pp'>;
 }
 
-export type TraceMarker = TraceMarkerChain<never>;
+export type TraceMarker = TraceMarkerChain<never> & { readonly point: TracePoint };
+
+interface TracePointTerminal {
+  (message: TracePointMessage, ...props: unknown[]): void;
+  (selector: TracePointSelector, message?: unknown, ...props: unknown[]): void;
+  (message?: unknown, ...props: unknown[]): void;
+}
+
+interface TracePointTerminals {
+  error: TracePointTerminal;
+  warn: TracePointTerminal;
+  log: TracePointTerminal;
+  info: TracePointTerminal;
+  debug: TracePointTerminal;
+}
+
+type TracePointReservedMember =
+  | keyof TracePointTerminals
+  | 'm'
+  | 'module'
+  | 'h'
+  | 'highlight'
+  | 'pp'
+  | 'printProps'
+  | 'apply'
+  | 'arguments'
+  | 'bind'
+  | 'call'
+  | 'caller'
+  | 'length'
+  | 'name'
+  | 'prototype'
+  | 'then'
+  | 'toString';
+export type TracePointModuleId = Exclude<RegisteredModuleId, TracePointReservedMember>;
+type TracePointChain<Delete extends string> = TracePointTerminals &
+  Omit<TracePointModifiers<Delete>, Delete> &
+  ('module' extends Delete ? Record<never, never> : TracePointModuleMembers<Delete>);
+type TracePointModuleMembers<Delete extends string> = {
+  readonly [ModuleId in TracePointModuleId]: TracePointChain<Delete | 'm' | 'module'>;
+};
+interface TracePointModifiers<Delete extends string> {
+  m(moduleId?: ModuleId): TracePointChain<Delete | 'm' | 'module'>;
+  module(moduleId?: ModuleId): TracePointChain<Delete | 'm' | 'module'>;
+  h(doit?: boolean): TracePointChain<Delete | 'h' | 'highlight'>;
+  highlight(doit?: boolean): TracePointChain<Delete | 'h' | 'highlight'>;
+  pp(options?: PropsPrinterOptions): TracePointChain<Delete | 'pp' | 'printProps'>;
+  printProps(options?: PropsPrinterOptions): TracePointChain<Delete | 'pp' | 'printProps'>;
+}
+
+/** A build-time marker for one contextual log within the surrounding function. */
+export type TracePoint = TracePointChain<never>;
 
 export interface FunctionTrace {
   readonly id: number;
@@ -154,27 +212,76 @@ const markerIntrospectionProperties = new Set([
 for (const name of ['m', 'module', 'h', 'highlight', 'props', 'pp']) {
   Object.defineProperty(marker, name, { value: () => traceMarker });
 }
+const pointMarker = Object.create(null) as Record<PropertyKey, unknown>;
+for (const name of ['m', 'module', 'h', 'highlight', 'pp', 'printProps']) {
+  Object.defineProperty(pointMarker, name, { value: () => tracePointMarker });
+}
+for (const name of ['error', 'warn', 'log', 'info', 'debug']) {
+  Object.defineProperty(pointMarker, name, { value: missingTransform });
+}
+const tracePointMarker = createMarkerProxy(pointMarker);
+Object.defineProperty(marker, 'point', { value: tracePointMarker });
 for (const name of ['error', 'warn', 'log', 'info', 'debug']) {
   Object.defineProperty(marker, name, { value: missingTransform });
 }
 
 /** Marks plain functions for `babel-plugin-loxer-trace`; only terminal methods are callable. */
-const traceMarker = new Proxy(marker as object, {
-  get(target, property, receiver) {
-    if (
-      typeof property === 'symbol' ||
-      markerIntrospectionProperties.has(property) ||
-      Reflect.has(target, property)
-    ) {
-      return Reflect.get(target, property, receiver);
-    }
+const traceMarker = createMarkerProxy(marker);
 
-    return marker;
-  },
-});
+function createMarkerProxy(targetMarker: object): object {
+  return new Proxy(targetMarker, {
+    get(target, property, receiver) {
+      if (
+        typeof property === 'symbol' ||
+        markerIntrospectionProperties.has(property) ||
+        Reflect.has(target, property)
+      ) {
+        return Reflect.get(target, property, receiver);
+      }
+
+      return targetMarker;
+    },
+  });
+}
 
 /** Marks plain functions for `babel-plugin-loxer-trace`; direct properties select registered modules. */
 export const trace: TraceMarker = traceMarker as TraceMarker;
+
+/** @internal Runtime target of a transformed `trace.point` terminal. */
+export function __tracePoint(
+  options: TracePointRuntimeOptions,
+  functionName: string,
+  parentName: string | undefined,
+  containingBoxId: number | undefined,
+  ...args: unknown[]
+): void {
+  const [first, second] = args;
+  const level = resolveThreshold(options.level, 'info');
+  const selector: TracePointSelector | undefined =
+    first === 'fn' || first === 'parent.fn' ? first : undefined;
+  const callback = typeof first === 'function' ? (first as TracePointMessage) : undefined;
+  __writeTracePoint(
+    level,
+    options,
+    containingBoxId,
+    () => {
+      if (callback === undefined && selector === undefined) {
+        return first;
+      }
+
+      const call: TraceCall = {
+        name: sanitizeMessage(functionName),
+        resolveParentName: parentNameResolver(() => parentName ?? ''),
+      };
+      if (callback !== undefined) {
+        return renderPointCallbackMessage(call, callback);
+      }
+
+      return renderPointMessage(call, selector!, second);
+    },
+    selector === undefined ? args.slice(1) : args.slice(2)
+  );
+}
 
 /** @internal */
 export function __startTrace(

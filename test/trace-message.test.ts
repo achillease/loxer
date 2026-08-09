@@ -1,12 +1,18 @@
 import { vi } from 'vitest';
+import { Loxer, resetLoxer } from '../src';
 import {
   parentNameResolver,
   renderCloseMessage,
   renderFailureMessage,
   renderOpenMessage,
+  renderPointCallbackMessage,
   type TraceCall,
   type TraceMessage,
 } from '../src/core/TraceMessage';
+import { __tracePoint } from '../src/trace';
+import { ANSIFormat } from '../src/core/ANSIFormat';
+import { ColoredOutputLoxRenderer } from '../src/core/OutputRenderer';
+import type { OutputLox } from '../src/loxes';
 
 /** the call every test in this file renders against, unless it needs its own parent or arguments */
 function baseCall(resolveParentName: () => string = () => 'Checkout'): TraceCall & {
@@ -82,6 +88,100 @@ describe('span <-> text agreement', () => {
       expect(span.end).toBeLessThanOrEqual(message.text.length);
       expect(span.end).toBeGreaterThan(span.start);
     });
+  });
+});
+
+describe('point message callbacks', () => {
+  test('receive the same span-aware fn and parentFn printers as openMessage', () => {
+    const message = renderPointCallbackMessage(
+      { name: 'calculate', resolveParentName: parentNameResolver(() => 'Checkout') },
+      ({ parentFn, fn }) => `retrying ${parentFn(fn('basket'))}`
+    );
+
+    expect(message.text).toBe('retrying Checkout.calculate(calculate(basket))');
+    expect(spanTexts(message)).toEqual(['Checkout', 'calculate', 'calculate(basket)']);
+  });
+
+  test('falls back to fn() when the callback throws', () => {
+    const message = renderPointCallbackMessage(
+      { name: 'calculate', resolveParentName: () => 'Checkout' },
+      () => {
+        throw new Error('formatter failed');
+      }
+    );
+
+    expect(message.text).toBe('calculate()');
+  });
+});
+
+describe('empty point messages', () => {
+  afterEach(() => {
+    resetLoxer();
+  });
+
+  test.each([
+    { terminal: 'log', level: 'info' },
+    { terminal: 'info', level: 'info' },
+    { terminal: 'debug', level: 'debug' },
+  ] as const)('$terminal() forwards no message through the ordinary log funnel', ({ level }) => {
+    const logs: OutputLox[] = [];
+    Loxer.init({
+      dev: true,
+      defaultLevels: { devLevel: 'debug', prodLevel: 'error' },
+      output(event) {
+        if (event.kind === 'log' && event.environment === 'dev') {
+          logs.push(event.lox);
+        }
+      },
+    });
+    logs.length = 0;
+
+    __tracePoint({ level }, 'save', 'Orders', undefined);
+
+    expect(logs).toHaveLength(1);
+    expect(logs[0].message).toBe('');
+    expect(logs[0].messageSpans).toEqual([]);
+  });
+});
+
+describe('alert point messages', () => {
+  afterEach(() => {
+    resetLoxer();
+  });
+
+  test.each([
+    { terminal: 'warn', level: 'warn' },
+    { terminal: 'error', level: 'error' },
+  ] as const)('$terminal() retains parent and function spans', ({ level }) => {
+    const logs: OutputLox[] = [];
+    Loxer.init({
+      dev: true,
+      defaultLevels: { devLevel: 'debug', prodLevel: 'error' },
+      output(event) {
+        if (event.kind === 'log' && event.environment === 'dev') {
+          logs.push(event.lox);
+        }
+      },
+    });
+    logs.length = 0;
+
+    __tracePoint({ level }, 'save', 'Orders', undefined, 'parent.fn', 'retrying');
+
+    expect(logs).toHaveLength(1);
+    expect(logs[0].message).toBe('Orders.save(): retrying');
+    expect(logs[0].messageSpans).toEqual([
+      { start: 0, end: 6, kind: 'parent' },
+      { start: 7, end: 11, kind: 'fn' },
+    ]);
+    const levelPrefix = (level === 'error' ? ANSIFormat.fgError('') : ANSIFormat.fgWarn('')).slice(
+      0,
+      -ANSIFormat.CODE.Reset.length
+    );
+    expect(ColoredOutputLoxRenderer(logs[0]).message).toBe(
+      `${levelPrefix}${ANSIFormat.fgClass('Orders')}${levelPrefix}.${ANSIFormat.fgFunction(
+        'save'
+      )}${levelPrefix}(): retrying${ANSIFormat.CODE.Reset}`
+    );
   });
 });
 

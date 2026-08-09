@@ -2,7 +2,7 @@ import type { NodePath } from '@babel/core';
 import type * as BabelTypes from '@babel/types';
 import { assertOneMarkerPerFunction, collectMarkers, fileParentName } from './marker-collection.js';
 import { innermostFirst, transformMarker } from './marker-transform.js';
-import type { BabelPluginApi, RuntimeIds } from './marker-types.js';
+import type { BabelPluginApi, Marker, RuntimeIds } from './marker-types.js';
 import { needsFunctionLength } from './trace-binding.js';
 import type { LoxerTracePluginOptions } from './types.js';
 
@@ -46,7 +46,14 @@ export default function loxerTracePlugin(
         );
         // the file a marked function is written in is the parent of every function no class holds
         const fileName = fileParentName(state?.file?.opts?.filename ?? state?.filename);
-        for (const marker of innermostFirst(markers)) {
+        // A point must become its helper call before a surrounding function marker wraps that body:
+        // the wrapper then assigns this invocation's id without crossing a nested-function boundary.
+        for (const marker of markers.filter((candidate) => candidate.kind === 'point')) {
+          transformMarker(marker, programPath, runtime, fileName, t);
+        }
+        for (const marker of innermostFirst(
+          markers.filter((candidate) => candidate.kind !== 'point')
+        )) {
           transformMarker(marker, programPath, runtime, fileName, t);
         }
         for (const binding of imports.markerBindings) {
@@ -106,21 +113,37 @@ function collectImports(
 function addRuntimeImports(
   programPath: NodePath<any>,
   runtimeImportPath: NodePath<any>,
-  markers: Parameters<typeof innermostFirst>[0],
+  markers: Marker[],
   loxerBinding: any,
   t: typeof BabelTypes
 ): RuntimeIds {
-  const runtimeId = programPath.scope.generateUidIdentifier('startTrace');
-  const observeResultId = programPath.scope.generateUidIdentifier('observeTraceResult');
-  const setFunctionLengthId = programPath.scope.generateUidIdentifier('setTraceFunctionLength');
-  runtimeImportPath.node.specifiers.push(
-    t.importSpecifier(runtimeId, t.identifier('__startTrace')),
-    t.importSpecifier(observeResultId, t.identifier('__observeTraceResult')),
-    t.importSpecifier(setFunctionLengthId, t.identifier('__setTraceFunctionLength'))
-  );
+  const hasFunctionMarker = markers.some((marker) => marker.kind !== 'point');
+  const hasPointMarker = markers.some((marker) => marker.kind === 'point');
+  let runtimeId: any;
+  let observeResultId: any;
+  let setFunctionLengthId: any;
+  if (hasFunctionMarker) {
+    runtimeId = programPath.scope.generateUidIdentifier('startTrace');
+    observeResultId = programPath.scope.generateUidIdentifier('observeTraceResult');
+    setFunctionLengthId = programPath.scope.generateUidIdentifier('setTraceFunctionLength');
+    runtimeImportPath.node.specifiers.push(
+      t.importSpecifier(runtimeId, t.identifier('__startTrace')),
+      t.importSpecifier(observeResultId, t.identifier('__observeTraceResult')),
+      t.importSpecifier(setFunctionLengthId, t.identifier('__setTraceFunctionLength'))
+    );
+  }
+
+  let tracePointId: any;
+  if (hasPointMarker) {
+    tracePointId = generatePointHelperIdentifier(programPath);
+    runtimeImportPath.node.specifiers.push(
+      t.importSpecifier(tracePointId, t.identifier('__tracePoint'))
+    );
+  }
 
   let withFunctionLengthId: any;
   if (
+    hasFunctionMarker &&
     markers.some(
       (marker) =>
         marker.kind === 'inline' &&
@@ -134,5 +157,29 @@ function addRuntimeImports(
     );
   }
 
-  return { loxerBinding, observeResultId, runtimeId, setFunctionLengthId, withFunctionLengthId };
+  return {
+    loxerBinding,
+    observeResultId,
+    runtimeId,
+    setFunctionLengthId,
+    tracePointId,
+    withFunctionLengthId,
+  };
+}
+
+/** Avoids a consumer binding shadowing the generated point helper inside a nested scope. */
+function generatePointHelperIdentifier(programPath: NodePath<any>): any {
+  const occupiedNames = new Set<string>();
+  programPath.traverse({
+    Identifier(identifierPath: NodePath<any>): void {
+      occupiedNames.add(identifierPath.node.name);
+    },
+  });
+
+  let identifier = programPath.scope.generateUidIdentifier('tracePoint');
+  while (occupiedNames.has(identifier.name)) {
+    identifier = programPath.scope.generateUidIdentifier('tracePoint');
+  }
+
+  return identifier;
 }

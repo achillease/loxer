@@ -140,6 +140,23 @@ See the [plain-function tracing guide](https://github.com/pcprinz/loxer/blob/mas
 and the [Babel plugin README](https://github.com/pcprinz/loxer/blob/master/packages/babel-plugin-loxer-trace/README.md)
 for supported function shapes, options, and transform details.
 
+### Context-aware trace points
+
+`trace.point` writes one contextual log inside a named function without opening another box. It is a
+build-time marker, so its module must pass through the same Babel or Vite plugin as `trace.info()`.
+
+```ts
+function submitOrder(orderId: string) {
+  trace.point.ORDER.info('fn', 'Submitting order', orderId);
+  trace.point.info(({ parentFn }) => `${parentFn('saved')}`, orderId);
+}
+```
+
+Point terminals are `error`, `warn`, `log`, `info`, and `debug`. Use `fn` or `parent.fn` as the first
+argument to prefix a message with the inferred name; a callback receives `fn` and `parentFn` printers.
+Values after the message are props. Point errors are normal error-level logs on the log stream; use
+`Loxer.error()` for an error event. An untransformed point throws a missing-transform error.
+
 ## Preview Example
 
 Consider the following log output (without the log date):

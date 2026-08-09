@@ -56,6 +56,27 @@ or arrow function. It does not trace generators, async generators, aliases, or s
 detached helper functions. Instrument such code separately, or use explicit `Loxer.open()` /
 `Loxer.of()` calls when it needs to join a particular box.
 
+## Context-aware single logs with `trace.point`
+
+`trace.point` is a build-time marker for one log inside a named function. It does not open a box. When
+the containing function is traced, the point joins that invocation's box; a point in a nested function
+remains separate unless that nested function has its own trace marker.
+
+```ts
+function submitOrder(orderId: string) {
+  trace.point.ORDER.h().info('fn', 'Submitting order', orderId);
+  trace.point.pp({ depth: 1 }).warn('parent.fn', 'Retrying order', { orderId });
+  trace.point.info(({ fn, parentFn }) => `${parentFn(fn('saved'))}`, orderId);
+}
+```
+
+Each terminal accepts an ordinary message, `fn` or `parent.fn` plus an optional message, or a callback.
+The callback receives `{ fn, parentFn }`; all following values are props. `m`/`module`, `h`/`highlight`,
+and `pp`/`printProps` use the corresponding one-shot logger behavior. Point terminals are `error`,
+`warn`, `log`, `info`, and `debug`; `log` writes at the `info` level. A point error is an ordinary log
+on the normal output stream, not an `Loxer.error()` event. Every file that executes a point must be
+transformed by the Babel or Vite tracing plugin, otherwise the marker throws a clear configuration error.
+
 ## Tracing several functions with the same options
 
 Instead of a single function, `trace` also accepts an array literal of them plus the options they all

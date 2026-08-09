@@ -56,7 +56,7 @@ test.each([
 
     const code = emittedJavaScript(result);
     expect(code).toContain('__startTrace');
-    expect(code).not.toContain('trace([fixtureFirst, fixtureSecond])');
+    expect(code).not.toContain('trace.info([fixtureFirst, fixtureSecond])');
     expect((code.match(/_startTrace\w*\(/g) ?? []).length).toBeGreaterThanOrEqual(2);
   }
 );

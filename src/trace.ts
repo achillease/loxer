@@ -15,7 +15,7 @@ import {
   TraceMarkerRuntimeOptions,
   TracePropsTarget,
 } from './tracing-types.js';
-import { ModuleId } from './types.js';
+import { ModuleId, RegisteredModuleId } from './types.js';
 
 export type {
   ExtendedPropsPrinterOptions,
@@ -51,34 +51,46 @@ interface TraceMarkerTerminals {
   debug: TraceMarkerCall;
 }
 
-type TraceMarkerTerminal = TraceMarkerCall & TraceMarkerTerminals;
+type TraceMarkerReservedMember =
+  | keyof TraceMarkerTerminals
+  | 'm'
+  | 'module'
+  | 'h'
+  | 'highlight'
+  | 'props'
+  | 'pp'
+  | 'apply'
+  | 'arguments'
+  | 'bind'
+  | 'call'
+  | 'caller'
+  | 'length'
+  | 'name'
+  | 'prototype'
+  | 'then'
+  | 'toString';
+
+/** A registered module id that is safe to select directly on {@link trace}. */
+export type TraceModuleId = Exclude<RegisteredModuleId, TraceMarkerReservedMember>;
+
+type TraceMarkerChain<Delete extends string> = TraceMarkerTerminals &
+  Omit<TraceMarkerModifiers<Delete>, Delete> &
+  ('module' extends Delete ? Record<never, never> : TraceMarkerModuleMembers<Delete>);
+
+type TraceMarkerModuleMembers<Delete extends string> = {
+  readonly [ModuleId in TraceModuleId]: TraceMarkerChain<Delete | 'm' | 'module'>;
+};
 
 interface TraceMarkerModifiers<Delete extends string> {
-  m(
-    moduleId?: ModuleId
-  ): TraceMarkerTerminal &
-    Omit<TraceMarkerModifiers<Delete | 'm' | 'module'>, Delete | 'm' | 'module'>;
-  module(
-    moduleId?: ModuleId
-  ): TraceMarkerTerminal &
-    Omit<TraceMarkerModifiers<Delete | 'm' | 'module'>, Delete | 'm' | 'module'>;
-  h(
-    doit?: boolean
-  ): TraceMarkerTerminal &
-    Omit<TraceMarkerModifiers<Delete | 'h' | 'highlight'>, Delete | 'h' | 'highlight'>;
-  highlight(
-    doit?: boolean
-  ): TraceMarkerTerminal &
-    Omit<TraceMarkerModifiers<Delete | 'h' | 'highlight'>, Delete | 'h' | 'highlight'>;
-  props(
-    target: TracePropsTarget
-  ): TraceMarkerTerminal & Omit<TraceMarkerModifiers<Delete | 'props'>, Delete | 'props'>;
-  pp(
-    target: TracePropsTarget | ExtendedPropsPrinterOptions
-  ): TraceMarkerTerminal & Omit<TraceMarkerModifiers<Delete | 'pp'>, Delete | 'pp'>;
+  m(moduleId?: ModuleId): TraceMarkerChain<Delete | 'm' | 'module'>;
+  module(moduleId?: ModuleId): TraceMarkerChain<Delete | 'm' | 'module'>;
+  h(doit?: boolean): TraceMarkerChain<Delete | 'h' | 'highlight'>;
+  highlight(doit?: boolean): TraceMarkerChain<Delete | 'h' | 'highlight'>;
+  props(target: TracePropsTarget): TraceMarkerChain<Delete | 'props'>;
+  pp(target: TracePropsTarget | ExtendedPropsPrinterOptions): TraceMarkerChain<Delete | 'pp'>;
 }
 
-export type TraceMarker = TraceMarkerTerminal & TraceMarkerModifiers<never>;
+export type TraceMarker = TraceMarkerChain<never>;
 
 export interface FunctionTrace {
   readonly id: number;
@@ -126,25 +138,43 @@ const missingTransform = (): never => {
   );
 };
 
-const marker = missingTransform as unknown as TraceMarker;
-for (const name of [
-  'm',
-  'module',
-  'h',
-  'highlight',
-  'props',
-  'pp',
-  'error',
-  'warn',
-  'log',
-  'info',
-  'debug',
-]) {
-  Object.defineProperty(marker, name, { value: marker });
+const marker = Object.create(null) as Record<PropertyKey, unknown>;
+const markerIntrospectionProperties = new Set([
+  'apply',
+  'arguments',
+  'bind',
+  'call',
+  'caller',
+  'length',
+  'name',
+  'prototype',
+  'then',
+  'toString',
+]);
+for (const name of ['m', 'module', 'h', 'highlight', 'props', 'pp']) {
+  Object.defineProperty(marker, name, { value: () => traceMarker });
+}
+for (const name of ['error', 'warn', 'log', 'info', 'debug']) {
+  Object.defineProperty(marker, name, { value: missingTransform });
 }
 
-/** Marks plain functions for `babel-plugin-loxer-trace`; modifiers must precede a terminal call. */
-export const trace: TraceMarker = marker as TraceMarker;
+/** Marks plain functions for `babel-plugin-loxer-trace`; only terminal methods are callable. */
+const traceMarker = new Proxy(marker as object, {
+  get(target, property, receiver) {
+    if (
+      typeof property === 'symbol' ||
+      markerIntrospectionProperties.has(property) ||
+      Reflect.has(target, property)
+    ) {
+      return Reflect.get(target, property, receiver);
+    }
+
+    return marker;
+  },
+});
+
+/** Marks plain functions for `babel-plugin-loxer-trace`; direct properties select registered modules. */
+export const trace: TraceMarker = traceMarker as TraceMarker;
 
 /** @internal */
 export function __startTrace(

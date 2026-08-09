@@ -6,6 +6,16 @@ import {
   transformOptions,
 } from './plain-function-trace.fixture';
 
+const directModuleSelectorCases = [
+  { name: 'direct dot', marker: 'trace.TRACE', moduleId: 'TRACE' },
+  { name: 'static bracket', marker: "trace['ORDER']", moduleId: 'ORDER' },
+  { name: 'computed', marker: 'trace[selected]', moduleId: 'TRACE' },
+  { name: '.m()', marker: "trace.m('ORDER')", moduleId: 'ORDER' },
+  { name: '.module()', marker: "trace.module('TRACE')", moduleId: 'TRACE' },
+] as const;
+
+const terminalLevels = ['error', 'warn', 'info', 'info'] as const;
+
 test('an inline literal is accepted as a call argument, an immediately invoked effect/memo factory, an object property, and an array-method callback', async () => {
   const traced = await loadTracedModule(`
     function useCallback(fn) { return fn; }
@@ -119,7 +129,7 @@ test('parent.fn names the class an inline literal is a field of, through a call 
 test('an inline literal with no name source raises a build-time error naming the fix', async () => {
   await expect(
     transformLoxerTrace(
-      `${imports()} function useEffect(effect, deps) { effect(); } useEffect(trace(() => {}), []);`,
+      `${imports()} function useEffect(effect, deps) { effect(); } useEffect(trace.info(() => {}), []);`,
       transformOptions()
     )
   ).rejects.toThrow('Cannot name the trace() target');
@@ -130,60 +140,68 @@ test('name-boundary shapes all raise the naming error instead of borrowing a nam
     expect(transformLoxerTrace(`${imports()} ${source}`, options)).rejects;
 
   // bare statement position: no assignment wraps the call that receives the literal
-  await rejects('function useEffect(effect) { effect(); } useEffect(trace(() => {}));').toThrow(
-    'Cannot name the trace() target'
-  );
+  await rejects(
+    'function useEffect(effect) { effect(); } useEffect(trace.info(() => {}));'
+  ).toThrow('Cannot name the trace() target');
 
   // array element
-  await rejects('const list = [trace(() => {})];').toThrow('Cannot name the trace() target');
+  await rejects('const list = [trace.info(() => {})];').toThrow('Cannot name the trace() target');
 
   // conditional (ternary) branch
-  await rejects('const chosen = flag ? trace(() => {}) : trace(() => {});').toThrow(
+  await rejects('const chosen = flag ? trace.info(() => {}) : trace.info(() => {});').toThrow(
     'Cannot name the trace() target'
   );
 
   // JSX node/attribute
-  await rejects('const a = <button onClick={trace(() => {})} />;', {
+  await rejects('const a = <button onClick={trace.info(() => {})} />;', {
     ...transformOptions(),
     parserPlugins: ['jsx'],
   }).toThrow('Cannot name the trace() target');
 
   // logical-expression alternatives: the function is only conditionally the value produced
-  await rejects('const f = cond && trace(() => {});').toThrow('Cannot name the trace() target');
-  await rejects('const g = cond || trace(() => {});').toThrow('Cannot name the trace() target');
-  await rejects('const h = cond ?? trace(() => {});').toThrow('Cannot name the trace() target');
+  await rejects('const f = cond && trace.info(() => {});').toThrow(
+    'Cannot name the trace() target'
+  );
+  await rejects('const g = cond || trace.info(() => {});').toThrow(
+    'Cannot name the trace() target'
+  );
+  await rejects('const h = cond ?? trace.info(() => {});').toThrow(
+    'Cannot name the trace() target'
+  );
 
   // sequence expression: the function is one of several evaluated operands
-  await rejects('const i = (0, trace(() => {}));').toThrow('Cannot name the trace() target');
+  await rejects('const i = (0, trace.info(() => {}));').toThrow('Cannot name the trace() target');
 
   // destructuring default value: the name reachable past it is the destructured binding's own
   // name, which only applies when the property is missing - not a name for the function itself
-  await rejects('const { x = trace(() => {}) } = obj;').toThrow('Cannot name the trace() target');
+  await rejects('const { x = trace.info(() => {}) } = obj;').toThrow(
+    'Cannot name the trace() target'
+  );
 
   // object spread: the name past it belongs to the object, exactly as for the array-element case
-  await rejects('const o = {...trace(function () {}, {})};').toThrow(
+  await rejects('const o = {...trace.info(function () {}, {})};').toThrow(
     'Cannot name the trace() target'
   );
 
   // template interpolation: the function is coerced to a string
-  await rejects('const s = `${trace(function () {}, {})}`;').toThrow(
+  await rejects('const s = `${trace.info(function () {}, {})}`;').toThrow(
     'Cannot name the trace() target'
   );
 
   // yielded operand: `d` is whatever the generator's driver passes to the next `.next(value)`,
   // unrelated to the operand
-  await rejects('function* g() { const d = yield trace(function () {}, {}); }').toThrow(
+  await rejects('function* g() { const d = yield trace.info(function () {}, {}); }').toThrow(
     'Cannot name the trace() target'
   );
 
   // property read off the traced function: the name past it belongs to the property being read
-  await rejects('const d = trace(function () {}, {}).foo;').toThrow(
+  await rejects('const d = trace.info(function () {}, {}).foo;').toThrow(
     'Cannot name the trace() target'
   );
 
   // optional property read off the traced function: the optional-member node is its own Babel
   // shape and must stop the walk just like an ordinary member read
-  await rejects('const e = trace(function () {}, {})?.foo;').toThrow(
+  await rejects('const e = trace.info(function () {}, {})?.foo;').toThrow(
     'Cannot name the trace() target'
   );
 
@@ -204,7 +222,7 @@ test('an inline literal name option must be a string literal, not a computed ide
   await expect(
     transformLoxerTrace(
       `${imports()} const label = 'dynamic'; function useCallback(fn) { return fn; } ` +
-        'const load = useCallback(trace(() => {}, { name: label }));',
+        'const load = useCallback(trace.info(() => {}, { name: label }));',
       transformOptions()
     )
   ).rejects.toThrow('trace() name must be a string literal.');
@@ -260,7 +278,7 @@ test('an inline literal marker inside a factory function re-evaluates its option
       return { moduleId: 'TRACE', openMessage: 'fn(args)' };
     }
     function makeTraced(label) {
-      const handler = identity(trace((value) => label + ':' + value, makeOptions(label)));
+      const handler = identity(trace.info((value) => label + ':' + value, makeOptions(label)));
       return handler;
     }
     export { makeTraced, optionsCalls };
@@ -281,6 +299,36 @@ test('an inline literal marker inside a factory function re-evaluates its option
     'handler(c)',
   ]);
 });
+
+test.each(directModuleSelectorCases)(
+  'every terminal transforms a $name selector for an inline literal',
+  async ({ marker, moduleId }) => {
+    const traced = await loadTracedModule(`
+      const selected = 'TRACE';
+      function identity(fn) { return fn; }
+      const atError = identity(${marker}.error(() => 'error'));
+      const atWarn = identity(${marker}.warn(() => 'warn'));
+      const atLog = identity(${marker}.log(() => 'log'));
+      const atInfo = identity(${marker}.info(() => 'info'));
+      const atDebug = identity(${marker}.debug(() => 'debug'));
+      export { atDebug, atError, atInfo, atLog, atWarn };
+    `);
+
+    expect([
+      traced.atError(),
+      traced.atWarn(),
+      traced.atLog(),
+      traced.atInfo(),
+      traced.atDebug(),
+    ]).toEqual(['error', 'warn', 'log', 'info', 'debug']);
+    expect(devLogs.map((log) => [log.level, log.moduleId])).toEqual(
+      terminalLevels.flatMap((level) => [
+        [level, moduleId],
+        [level, moduleId],
+      ])
+    );
+  }
+);
 
 test('an inline marker evaluates fluent arguments once per factory evaluation in source order', async () => {
   const traced = await loadTracedModule(`
@@ -305,6 +353,47 @@ test('an inline marker evaluates fluent arguments once per factory evaluation in
   const second = traced.makeHandler();
   expect(second(2)).toBe(3);
   expect(traced.order).toEqual(['module', 'props', 'options', 'module', 'props', 'options']);
+});
+
+test('an inline computed module evaluates once per factory evaluation in modifier order', async () => {
+  const traced = await loadTracedModule(`
+    const order = [];
+    function mark(name, value) { order.push(name); return value; }
+    function identity(fn) { return fn; }
+    function makeHandler() {
+      return identity(trace.h(mark('highlight', true))[mark('module', 'TRACE')]
+        .info((value) => value + 1, {
+          name: 'handler',
+          openMessage: mark('options', 'fn(args)'),
+        }));
+    }
+    export { makeHandler, order };
+  `);
+
+  const first = traced.makeHandler();
+  expect(traced.order).toEqual(['highlight', 'module', 'options']);
+  expect(first(1)).toBe(2);
+  expect(first(2)).toBe(3);
+  expect(traced.order).toEqual(['highlight', 'module', 'options']);
+
+  const second = traced.makeHandler();
+  expect(second(3)).toBe(4);
+  expect(traced.order).toEqual([
+    'highlight',
+    'module',
+    'options',
+    'highlight',
+    'module',
+    'options',
+  ]);
+  expect(devLogs.map((log) => log.moduleId)).toEqual([
+    'TRACE',
+    'TRACE',
+    'TRACE',
+    'TRACE',
+    'TRACE',
+    'TRACE',
+  ]);
 });
 
 test('two inline markers in one nested scope get separate hoisted option slots', async () => {
@@ -347,7 +436,7 @@ test('an inline literal rejects a generator function', async () => {
   await expect(
     transformLoxerTrace(
       `${imports()} function useCallback(fn) { return fn; } ` +
-        "const load = useCallback(trace(function* () { yield 1; }, { moduleId: 'TRACE' }));",
+        "const load = useCallback(trace.info(function* () { yield 1; }, { moduleId: 'TRACE' }));",
       transformOptions()
     )
   ).rejects.toThrow('trace() does not support generator functions.');

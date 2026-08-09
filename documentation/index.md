@@ -35,7 +35,7 @@ async function submitOrder(orderId: number) {
   return charge(orderId);
 }
 
-trace(submitOrder, {
+trace.info(submitOrder, {
   moduleId: 'ORDER',
   openMessage: 'parent.fn(args)',
   closeMessage: 'parent.fn(result)',
@@ -72,7 +72,7 @@ function saveOrder(orderId: number) {
 }
 const cancelOrder = (orderId: number) => repository.cancel(orderId);
 
-trace([loadOrder, saveOrder, cancelOrder], {
+trace.info([loadOrder, saveOrder, cancelOrder], {
   moduleId: 'ORDER',
   openMessage: 'parent.fn(args)',
 });
@@ -81,7 +81,7 @@ trace([loadOrder, saveOrder, cancelOrder], {
 Each listed function is traced exactly as its own `trace` marker would trace it: its own box per
 invocation, its own linked direct `Loxer` calls, and unchanged callable behavior. The single
 difference is the options, which are evaluated once and shared, so a helper call such as
-`trace([loadOrder, saveOrder], orderTraceOptions())` runs that helper one time for the group.
+`trace.info([loadOrder, saveOrder], orderTraceOptions())` runs that helper one time for the group.
 
 A list accepts the same targets as a single marker and rejects the same unsupported ones. It must be
 an array literal of identifiers — a spread element, a computed member such as `service.method`, an

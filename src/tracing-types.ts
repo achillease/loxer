@@ -41,7 +41,7 @@ export interface TraceCloseMessageContext<Result = unknown> {
 }
 
 /**
- * How the opening box message is built for `@trace()` and `trace()`.
+ * How the opening box message is built for `@trace()` and `trace.info()`.
  *
  * Templates render against the traced name (`propertyKey` for methods, the binding name for plain
  * functions), and `parent.` prefixes it with the class a traced method belongs to, or the file a
@@ -59,14 +59,14 @@ export interface TraceCloseMessageContext<Result = unknown> {
  * parentheses, the separators and the ` done` suffix stay in the color of the message around them.
  *
  * A callback receives a {@link TraceOpenMessageContext} and must return the message string. `Args`
- * is inferred from the target a `trace()` marker names; pass it explicitly on
- * `@trace<Args, Result>()` and on `trace<Args, Result>(options)`.
+ * is inferred from the target a `trace.info()` marker names; pass it explicitly on
+ * `@trace<Args, Result>()` and on `trace.info<Args, Result>(options)`.
  *
  * @example
  * ```ts
  * import { trace } from 'loxer/trace';
  *
- * trace(calculate, { openMessage: 'fn(args)' });
+ * trace.info(calculate, { openMessage: 'fn(args)' });
  *
  * ```
  *
@@ -89,7 +89,7 @@ export type FunctionOpenMessage<Args extends readonly unknown[] = readonly unkno
   | 'parent.fn(args)';
 
 /**
- * How the successful closing box message is built for `@trace()` and `trace()`.
+ * How the successful closing box message is built for `@trace()` and `trace.info()`.
  *
  * Templates render against the traced name (`propertyKey` for methods, the binding name for plain
  * functions), and `parent.` prefixes it the way {@link FunctionOpenMessage} describes. For async
@@ -104,14 +104,14 @@ export type FunctionOpenMessage<Args extends readonly unknown[] = readonly unkno
  * `'parent.fn'` message of the same name form instead of a payload.
  *
  * A callback receives a {@link TraceCloseMessageContext} and must return the message string.
- * `Result` is inferred from the target a `trace()` marker names; pass it explicitly on
- * `@trace<Args, Result>()` and on `trace<Args, Result>(options)`. A failed call closes with
+ * `Result` is inferred from the target a `trace.info()` marker names; pass it explicitly on
+ * `@trace<Args, Result>()` and on `trace.info<Args, Result>(options)`. A failed call closes with
  * `… failed` in the name form this option selects, and never reaches a callback.
  *
  * ### for functions
  * ```ts
  * calculate(price: number, quantity: number) { ... }
- * trace(calculate, { closeMessage: 'fn(result)' });
+ * trace.info(calculate, { closeMessage: 'fn(result)' });
  * ```
  *
  * ### for decorators
@@ -130,12 +130,12 @@ export type FunctionCloseMessage<Result = unknown> =
   | 'parent.fn(result)';
 
 /**
- * Options shared by the `@trace()` method decorator and the `trace()` function marker in each of
+ * Options shared by the `@trace()` method decorator and the `trace.info()` function marker in each of
  * its forms.
  *
- * A marker that names its target — `trace(target | [targets], options)` — infers `Args` and `Result`
+ * A marker that names its target — `trace.info(target | [targets], options)` — infers `Args` and `Result`
  * from it, from the union of every listed target when it marks a list. `@trace()` and the
- * `trace(options)` marker inside a function have no signature in hand, so supply them explicitly
+ * `trace.info(options)` marker inside a function have no signature in hand, so supply them explicitly
  * when formatter callbacks need precise types.
  * A `parent.` template names the class a traced method belongs to — a decorated method, or a
  * method, getter, setter, or field a marker reaches inside a class body — and otherwise the file a
@@ -166,14 +166,14 @@ export interface TraceOptions<
   level?: BoxLevel;
   /** the name a marked function reports in its box messages
    *
-   * A function reached by a marker rather than by name — a literal passed to `trace()`, or the
-   * function a `trace(options)` statement sits in — is named after itself, or after the binding,
-   * assignment target, or property it belongs to: `const load = useCallback(trace(...), [])` reports
+   * A function reached by a marker rather than by name — a literal passed to `trace.info()`, or the
+   * function a `trace.info(options)` statement sits in — is named after itself, or after the binding,
+   * assignment target, or property it belongs to: `const load = useCallback(trace.info(...), [])` reports
    * `load`. Supply `name` where nothing names it, such as
-   * `useEffect(trace(() => { ... }, { name: 'syncOrders' }), [])`.
+   * `useEffect(trace.info(() => { ... }, { name: 'syncOrders' }), [])`.
    *
    * Has to be a string literal, because the transform reads it while it builds. `@trace()` and
-   * `trace(namedFunction, options)` know their target's name and ignore it.
+   * `trace.info(namedFunction, options)` know their target's name and ignore it.
    */
   name?: string;
   /** which lifecycle messages should be highlighted */
@@ -206,7 +206,7 @@ export interface ExtendedPropsPrinterOptions extends PropsPrinterOptions {
 }
 
 /**
- * The options object accepted by the plain-function `trace()` marker.
+ * The options object accepted by the plain-function `trace.info()` marker.
  *
  * Operational settings belong to the marker's fluent chain. The decorator keeps the broader
  * {@link TraceOptions} surface above.

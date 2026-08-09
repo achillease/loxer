@@ -31,9 +31,9 @@ const modules = {
   },
 } satisfies LoxerModules;
 
-// Registering them types every module id in this app: the `moduleId: 'CALC'` trace options and
-// `Loxer.m(...)` / `Loxer.module(...)` now autocomplete these four ids, and a typo like 'CLAC' is a
-// compile error instead of a red INVALIDMODULE label at runtime.
+// Registering them types every module id in this app: `trace.CALC` and `Loxer.m(...)` /
+// `Loxer.module(...)` now autocomplete these four ids, and a typo like `trace.CLAC` is a compile
+// error instead of a red INVALIDMODULE label at runtime.
 declare module 'loxer' {
   interface LoxerModuleRegistry extends Record<keyof typeof modules, true> {}
 }
@@ -64,7 +64,7 @@ app.innerHTML = `
       <h1>Plain-function trace demo</h1>
       <p class="intro">
         Each action below calls a normal TypeScript function marked with
-        <code>trace(functionName, options)</code>. The panel shows the real Loxer output events.
+        <code>trace.MODULE.info(functionName, options)</code>. The panel shows the real Loxer output events.
       </p>
     </header>
 
@@ -123,16 +123,14 @@ function calculateTotal(unitPrice: number, quantity: number): number {
   return total;
 }
 
-trace(calculateTotal, {
-  argsAsProps: true,
-  closeMessage: ({ result, fn }) => `${fn(result.toFixed(2))} done`,
-  highlight: 'close',
-  moduleId: 'CALC',
-  openMessage: 'fn(args)',
-  // the arguments are attached and rendered; the result is attached without being rendered
-  printArgs: { depth: 1 },
-  resultAsProps: true,
-});
+trace.CALC.h()
+  .props('argsResult')
+  .pp({ target: 'args', depth: 1 })
+  .info(calculateTotal, {
+    closeMessage: ({ result, fn }) => `${fn(result.toFixed(2))} done`,
+    openMessage: 'fn(args)',
+    // The arguments are attached and rendered; the result is attached without being rendered.
+  });
 
 async function reserveInventory(orderId: number, delay: number): Promise<number> {
   Loxer.log(`Reserving inventory for order ${orderId}`);
@@ -142,8 +140,7 @@ async function reserveInventory(orderId: number, delay: number): Promise<number>
   return orderId;
 }
 
-trace(reserveInventory, {
-  moduleId: 'INVENTORY',
+trace.INVENTORY.info(reserveInventory, {
   openMessage: ({ args: [orderId], fn }) => fn(String(orderId)),
 });
 
@@ -160,8 +157,7 @@ async function chargePayment(orderId: number): Promise<number> {
   return orderId;
 }
 
-trace(chargePayment, {
-  moduleId: 'PAYMENT',
+trace.PAYMENT.info(chargePayment, {
   openMessage: ({ args: [orderId], fn }) => fn(String(orderId)),
 });
 
@@ -174,25 +170,21 @@ async function submitOrder(orderId: number, delay: number): Promise<{ orderId: n
   return { orderId };
 }
 
-trace(submitOrder, {
-  closeMessage: ({ result: { orderId } }) => `Order ${orderId} submitted`,
-  moduleId: 'ORDER',
-  openMessage: ({ args: [orderId], parentFn }) => parentFn(String(orderId)),
-  printResult: true,
-  resultAsProps: true,
-});
+trace.ORDER.props('result')
+  .pp('result')
+  .info(submitOrder, {
+    closeMessage: ({ result: { orderId } }) => `Order ${orderId} submitted`,
+    openMessage: ({ args: [orderId], parentFn }) => parentFn(String(orderId)),
+  });
 
 // A function literal handed straight to the marker is traced where it stands, so a callback needs no
 // declaration of its own to be traced. This one takes its box name from the binding it belongs to,
 // and its `Loxer.log` lands in the box the click opens.
-const runSyncDemo = trace(
-  () => {
-    const total = calculateTotal(19.95, 3);
-    Loxer.log(`Reporting ${total.toFixed(2)} to the status line`);
-    setStatus(`Sync result preserved: ${total.toFixed(2)}`);
-  },
-  { moduleId: 'CALC' }
-);
+const runSyncDemo = trace.CALC.info(() => {
+  const total = calculateTotal(19.95, 3);
+  Loxer.log(`Reporting ${total.toFixed(2)} to the status line`);
+  setStatus(`Sync result preserved: ${total.toFixed(2)}`);
+}, {});
 
 getElement<HTMLButtonElement>('sync-demo').addEventListener('click', runSyncDemo);
 
@@ -212,7 +204,7 @@ getElement<HTMLButtonElement>('failure-demo').addEventListener('click', async ()
 // either, hence the `name` option, and its options are evaluated on every click, because they sit
 // inside the traced body.
 getElement<HTMLButtonElement>('overlap-demo').addEventListener('click', async () => {
-  trace({ moduleId: 'ORDER', name: 'runOverlapDemo' });
+  trace.ORDER.info({ name: 'runOverlapDemo' });
   setStatus('Running two overlapping invocations with different delays…');
   Loxer.log('Starting two overlapping order workflows');
   const results = await Promise.all([submitOrder(101, 650), submitOrder(102, 250)]);
@@ -223,14 +215,14 @@ getElement<HTMLButtonElement>('overlap-demo').addEventListener('click', async ()
 // `name` option. Without it the build stops rather than invent a name for the box.
 getElement<HTMLButtonElement>('clear-output').addEventListener(
   'click',
-  trace(
+  trace.ORDER.info(
     () => {
       records.length = 0;
       output.replaceChildren();
       emptyOutput.hidden = false;
       setStatus('Output cleared.');
     },
-    { moduleId: 'ORDER', name: 'clearOutput' }
+    { name: 'clearOutput' }
   )
 );
 

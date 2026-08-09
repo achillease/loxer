@@ -12,11 +12,11 @@
 <li><a href="" aria-current="page">TraceOptions</a></li></ul>
 <h1>Interface TraceOptions&lt;Args, Result&gt;</h1></div>
 <section class="tsd-panel tsd-comment">
-<div class="tsd-comment tsd-typography"><p>Options shared by the <code>@trace()</code> method decorator and the <code>trace()</code> function marker in each of
+<div class="tsd-comment tsd-typography"><p>Options shared by the <code>@trace()</code> method decorator and the <code>trace.info()</code> function marker in each of
 its forms.</p>
-<p>A marker that names its target — <code>trace(target | [targets], options)</code> — infers <code>Args</code> and <code>Result</code>
+<p>A marker that names its target — <code>trace.info(target | [targets], options)</code> — infers <code>Args</code> and <code>Result</code>
 from it, from the union of every listed target when it marks a list. <code>@trace()</code> and the
-<code>trace(options)</code> marker inside a function have no signature in hand, so supply them explicitly
+<code>trace.info(options)</code> marker inside a function have no signature in hand, so supply them explicitly
 when formatter callbacks need precise types.
 A <code>parent.</code> template names the class a traced method belongs to — a decorated method, or a
 method, getter, setter, or field a marker reaches inside a class body — and otherwise the file a
@@ -80,13 +80,13 @@ event.</p>
 <h3 class="tsd-anchor-link" id="name"><code class="tsd-tag">Optional</code><span>name</span><a href="#name" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
 <div class="tsd-signature"><span class="tsd-kind-property">name</span><span class="tsd-signature-symbol">?:</span> <span class="tsd-signature-type">string</span></div>
 <div class="tsd-comment tsd-typography"><p>the name a marked function reports in its box messages</p>
-<p>A function reached by a marker rather than by name — a literal passed to <code>trace()</code>, or the
-function a <code>trace(options)</code> statement sits in — is named after itself, or after the binding,
-assignment target, or property it belongs to: <code>const load = useCallback(trace(...), [])</code> reports
+<p>A function reached by a marker rather than by name — a literal passed to <code>trace.info()</code>, or the
+function a <code>trace.info(options)</code> statement sits in — is named after itself, or after the binding,
+assignment target, or property it belongs to: <code>const load = useCallback(trace.info(...), [])</code> reports
 <code>load</code>. Supply <code>name</code> where nothing names it, such as
-<code>useEffect(trace(() =&gt; { ... }, { name: 'syncOrders' }), [])</code>.</p>
+<code>useEffect(trace.info(() =&gt; { ... }, { name: 'syncOrders' }), [])</code>.</p>
 <p>Has to be a string literal, because the transform reads it while it builds. <code>@trace()</code> and
-<code>trace(namedFunction, options)</code> know their target's name and ignore it.</p>
+<code>trace.info(namedFunction, options)</code> know their target's name and ignore it.</p>
 </div></section>
 <section class="tsd-panel tsd-member">
 <h3 class="tsd-anchor-link" id="highlight"><code class="tsd-tag">Optional</code><span>highlight</span><a href="#highlight" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>

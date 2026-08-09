@@ -45,6 +45,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/), and this
   `Loxer.m()`, `Loxer.module()`, `Loxer.getModuleLevel()` and the `moduleId` trace option accept
   only those ids plus the built-ins — autocompleted, with a compile error on a typo. Leaving the
   registry untouched keeps a module id an ordinary `string`.
+- Add registered direct module shortcuts to the plain-function trace marker: use
+  `trace.PROJECTS.info(loadProjects)`, bracket access for non-identifier keys, or a typed computed
+  selector. Keep `.m()` / `.module()` for runtime-selected and reserved module ids.
 - Hold the `modules` of `Loxer.init()` and `@initLoxer()` to the same registry (`RegisteredModules`):
   a registered id the object does not define, and an id it defines without registering, are both
   compile errors — the second one even when the object is declared elsewhere and passed in as a
@@ -164,7 +167,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/), and this
   `moduleId`, `level`, `highlight`, `argsAsProps`, `resultAsProps`, `printArgs`, and `printResult`
   to `.m()` / `.module()`, an `error()` / `warn()` / `log()` / `info()` / `debug()` terminal,
   `.h()` / `.highlight()`, `.props()`, and `.pp()`. Marker option objects now accept only `name`,
-  `openMessage`, and `closeMessage`; `@trace()` decorator options are unchanged.
+  `openMessage`, and `closeMessage`; `@trace()` decorator options are unchanged. The root marker
+  no longer supplies an implicit `info` terminal: migrate `trace(target, options)` and
+  `trace(options)` to `trace.info(...)` or another explicit level terminal.
 
 ### Removed
 

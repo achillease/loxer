@@ -4,6 +4,6 @@ function fixtureValue(): number {
   return 42;
 }
 
-trace(fixtureValue);
+trace.info(fixtureValue);
 
 document.body.textContent = String(fixtureValue());

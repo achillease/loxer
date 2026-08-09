@@ -1,6 +1,6 @@
 # vite-plugin-loxer-trace
 
-Vite adapter for Loxer's plain-function tracing. It rewrites every `trace(...)` marker in your
+Vite adapter for Loxer's plain-function tracing. It rewrites every `trace.info(...)` marker in your
 source into the instrumentation Loxer needs, so a traced function opens and closes its own box on
 each invocation without you writing a single log call.
 
@@ -36,7 +36,7 @@ function placeOrder(id: string) {
   /* ... */
 }
 
-trace(placeOrder, { moduleId: 'ORDER' });
+trace.info(placeOrder, { moduleId: 'ORDER' });
 ```
 
 A file is transformed only when it mentions `loxer/trace`, so files without a marker cost nothing.

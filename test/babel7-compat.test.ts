@@ -47,12 +47,12 @@ test('Babel 7 accepts the plugin and replaces the marker with injected runtime h
   const result = await transformWithBabel7(`
     import { trace } from '${traceRuntimeUrl}';
     function value() { return 1; }
-    trace(value);
+    trace.info(value);
     export { value };
   `);
 
   expect(babelApiVersion).toMatch(/^7\./);
-  expect(result).not.toContain('trace(value)');
+  expect(result).not.toContain('trace.info(value)');
   expect(result).toContain('__startTrace');
   expect(result).toContain('__observeTraceResult');
   expect(result).toContain('__setTraceFunctionLength');
@@ -63,12 +63,12 @@ test('Babel 7 output preserves this, arguments, length, and named recursion', as
     function inspect(first, second) {
       return [this.factor, arguments.length, first + second];
     }
-    trace(inspect);
+    trace.info(inspect);
 
     function factorial(value) {
       return value <= 1 ? 1 : value * factorial(value - 1);
     }
-    trace(factorial);
+    trace.info(factorial);
 
     export { factorial, inspect };
   `);
@@ -83,7 +83,7 @@ test('Babel 7 output preserves a returned native Promise identity', async () => 
     let resolvePending;
     const original = new Promise((resolve) => { resolvePending = resolve; });
     function pending() { return original; }
-    trace(pending);
+    trace.info(pending);
     export { original, pending, resolvePending };
   `);
 
@@ -93,11 +93,11 @@ test('Babel 7 output preserves a returned native Promise identity', async () => 
   await expect(returned).resolves.toBe('finished');
 });
 
-test('Babel 7 traces every listed target from one shared options assignment', async () => {
+test('Babel 7 traces a direct-module target list from one shared options assignment', async () => {
   const transformed = await loadBabel7Module(`
     function first(value) { return 'first:' + value; }
     const second = (value) => 'second:' + value;
-    trace.m('TRACE').h().props('argsResult').pp('args').warn([first, second]);
+    trace.TRACE.h().props('argsResult').pp('args').warn([first, second]);
     export { first, second };
   `);
 
@@ -110,7 +110,7 @@ test('Babel 7 reports plugin validation failures with a source code frame', asyn
   const source = `
     import { trace } from '${traceRuntimeUrl}';
     function value() { return 1; }
-    const invalid = trace(value);
+    const invalid = trace.info(value);
   `;
 
   let diagnostic = '';
@@ -123,7 +123,7 @@ test('Babel 7 reports plugin validation failures with a source code frame', asyn
   expect(diagnostic).toContain(
     'trace() must be a standalone statement beside its named function binding.'
   );
-  expect(diagnostic).toContain('> 4 |     const invalid = trace(value);');
+  expect(diagnostic).toContain('> 4 |     const invalid = trace.info(value);');
   expect(diagnostic).toMatch(/\|\s+\^{5,}/);
 });
 

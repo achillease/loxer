@@ -14,6 +14,39 @@ import {
   transformOptions,
 } from './plain-function-trace.fixture';
 
+const directModuleSelectorCases = [
+  { name: 'direct dot', marker: 'trace.TRACE', moduleId: 'TRACE' },
+  { name: 'static bracket', marker: "trace['ORDER']", moduleId: 'ORDER' },
+  { name: 'computed', marker: 'trace[selected]', moduleId: 'TRACE' },
+  { name: '.m()', marker: "trace.m('ORDER')", moduleId: 'ORDER' },
+  { name: '.module()', marker: "trace.module('TRACE')", moduleId: 'TRACE' },
+] as const;
+
+const terminalLevels = [
+  ['error', 'error'],
+  ['warn', 'warn'],
+  ['log', 'info'],
+  ['info', 'info'],
+  ['debug', 'debug'],
+] as const;
+
+function initializeDebugTraceOutput(): void {
+  resetLoxer();
+  Loxer.init({
+    dev: true,
+    defaultLevels: { devLevel: 'debug', prodLevel: 'error' },
+    output: outputFromCallbacks({
+      devError: (error) => devErrors.push(error),
+      devLog: (log) => devLogs.push(log),
+    }),
+    modules: {
+      TRACE: { color: '#00ff99', devLevel: 'debug', prodLevel: 'error', fullName: 'Trace' },
+      ORDER: { color: '#ffcc00', devLevel: 'debug', prodLevel: 'error', fullName: 'Order' },
+    },
+  });
+  resetTraceLogs();
+}
+
 test('a transformed function preserves sync result, modifier chains, and its box ID', async () => {
   const traced = await loadTracedModule(`
     function calculate(value) {
@@ -503,10 +536,10 @@ test('nested and overlapping transformed invocations link each direct log to its
 });
 
 test('the runtime marker fails loudly without a transform', () => {
-  expect(() => trace(() => 'untransformed')).toThrow(
+  expect(() => trace.info(() => 'untransformed')).toThrow(
     'trace() is a build-time marker. Configure babel-plugin-loxer-trace'
   );
-  expect(() => trace([() => 'untransformed'])).toThrow(
+  expect(() => trace.info([() => 'untransformed'])).toThrow(
     'trace() is a build-time marker. Configure babel-plugin-loxer-trace'
   );
 });
@@ -514,6 +547,8 @@ test('the runtime marker fails loudly without a transform', () => {
 test.each([
   ['modifier', () => trace.m('TRACE').info(() => 'untransformed')],
   ['terminal', () => trace.error(() => 'untransformed')],
+  ['direct dot module', () => (trace as any).TRACE.info(() => 'untransformed')],
+  ['direct bracket module', () => (trace as any)['ORDER-API'].info(() => 'untransformed')],
 ] as const)('an untransformed fluent %s fails with the marker diagnostic', (_name, call) => {
   expect(call).toThrow(
     'trace() is a build-time marker. Configure babel-plugin-loxer-trace or ' +
@@ -521,10 +556,100 @@ test.each([
   );
 });
 
-test('bare, log, and info terminals are equivalent while error uses ordinary lifecycle logs', async () => {
+test('the runtime marker keeps promise, symbol, and object introspection outside module selection', () => {
+  const runtimeMarker = trace as unknown as Record<PropertyKey, unknown>;
+
+  expect(runtimeMarker.then).toBeUndefined();
+  expect(runtimeMarker[Symbol.iterator]).toBeUndefined();
+  expect(runtimeMarker[Symbol.toStringTag]).toBeUndefined();
+  expect(runtimeMarker.toString).toBeUndefined();
+  expect(Object.getPrototypeOf(trace)).toBeNull();
+  expect(Object.prototype.toString.call(trace)).toBe('[object Object]');
+
+  expect((Loxer as unknown as Record<PropertyKey, unknown>).TRACE).toBeUndefined();
+  expect((Loxer as unknown as Record<PropertyKey, unknown>)['ORDER-API']).toBeUndefined();
+  expect(Object.getPrototypeOf(Loxer)).not.toBeNull();
+});
+
+test.each(directModuleSelectorCases)(
+  'every terminal transforms a $name selector for a named target',
+  async ({ marker, moduleId }) => {
+    const traced = await loadTracedModule(`
+      const selected = 'TRACE';
+      function atError() { return 'error'; }
+      ${marker}.error(atError);
+      function atWarn() { return 'warn'; }
+      ${marker}.warn(atWarn);
+      function atLog() { return 'log'; }
+      ${marker}.log(atLog);
+      function atInfo() { return 'info'; }
+      ${marker}.info(atInfo);
+      function atDebug() { return 'debug'; }
+      ${marker}.debug(atDebug);
+      export { atDebug, atError, atInfo, atLog, atWarn };
+    `);
+    initializeDebugTraceOutput();
+
+    expect([
+      traced.atError(),
+      traced.atWarn(),
+      traced.atLog(),
+      traced.atInfo(),
+      traced.atDebug(),
+    ]).toEqual(['error', 'warn', 'log', 'info', 'debug']);
+    expect(devLogs.map((log) => [log.level, log.moduleId])).toEqual(
+      terminalLevels.flatMap(([, level]) => [
+        [level, moduleId],
+        [level, moduleId],
+      ])
+    );
+  }
+);
+
+test.each(directModuleSelectorCases)(
+  'every terminal transforms a $name selector for a target list',
+  async ({ marker, moduleId }) => {
+    const traced = await loadTracedModule(`
+      const selected = 'TRACE';
+      function atError() { return 'error'; }
+      function alsoError() { return 'also-error'; }
+      ${marker}.error([atError, alsoError]);
+      function atWarn() { return 'warn'; }
+      function alsoWarn() { return 'also-warn'; }
+      ${marker}.warn([atWarn, alsoWarn]);
+      function atLog() { return 'log'; }
+      function alsoLog() { return 'also-log'; }
+      ${marker}.log([atLog, alsoLog]);
+      function atInfo() { return 'info'; }
+      function alsoInfo() { return 'also-info'; }
+      ${marker}.info([atInfo, alsoInfo]);
+      function atDebug() { return 'debug'; }
+      function alsoDebug() { return 'also-debug'; }
+      ${marker}.debug([atDebug, alsoDebug]);
+      export { atDebug, atError, atInfo, atLog, atWarn };
+    `);
+    initializeDebugTraceOutput();
+
+    expect([
+      traced.atError(),
+      traced.atWarn(),
+      traced.atLog(),
+      traced.atInfo(),
+      traced.atDebug(),
+    ]).toEqual(['error', 'warn', 'log', 'info', 'debug']);
+    expect(devLogs.map((log) => [log.level, log.moduleId])).toEqual(
+      terminalLevels.flatMap(([, level]) => [
+        [level, moduleId],
+        [level, moduleId],
+      ])
+    );
+  }
+);
+
+test('log and info terminals are equivalent while error uses ordinary lifecycle logs', async () => {
   const traced = await loadTracedModule(`
     function bare() { return 'bare'; }
-    trace(bare);
+    trace.info(bare);
     function logged() { return 'logged'; }
     trace.m('TRACE').log(logged);
     function informed() { return 'informed'; }
@@ -646,6 +771,63 @@ test('fluent marker arguments evaluate once in source order and the whole chain 
   expect(devLogs.map((log) => log.level)).toEqual(['warn', 'warn']);
 });
 
+test('direct dot, bracket, and computed modules transform across all marker terminals', async () => {
+  const source = `
+    const selected = 'TRACE';
+    function atError() { return 'error'; }
+    trace.TRACE.error(atError);
+    function atWarn() { return 'warn'; }
+    trace['ORDER'].warn(atWarn);
+    function atLog() { return 'log'; }
+    trace[selected].log(atLog);
+    function atInfo() { return 'info'; }
+    trace.m('ORDER').info(atInfo);
+    function atDebug() { return 'debug'; }
+    trace.module('TRACE').debug(atDebug);
+    export { atDebug, atError, atInfo, atLog, atWarn };
+  `;
+  const result = await transformLoxerTrace(`${imports()}${source}`, transformOptions());
+  expect(result?.code).not.toMatch(/import\s*\{\s*trace\s*\}/);
+  expect(result?.code).not.toContain('trace.');
+  expect(result?.code).not.toContain('trace[');
+
+  resetLoxer();
+  Loxer.init({
+    dev: true,
+    output: outputFromCallbacks({
+      devError: (error) => devErrors.push(error),
+      devLog: (log) => devLogs.push(log),
+    }),
+    defaultLevels: { devLevel: 'debug', prodLevel: 'error' },
+    modules: {
+      TRACE: { color: '#00ff99', devLevel: 'debug', prodLevel: 'error', fullName: 'Trace' },
+      ORDER: { color: '#ffcc00', devLevel: 'debug', prodLevel: 'error', fullName: 'Order' },
+    },
+  });
+  resetTraceLogs();
+
+  const traced = await loadTracedModule(source);
+  expect([
+    traced.atError(),
+    traced.atWarn(),
+    traced.atLog(),
+    traced.atInfo(),
+    traced.atDebug(),
+  ]).toEqual(['error', 'warn', 'log', 'info', 'debug']);
+  expect(devLogs.map((log) => [log.type, log.level, log.moduleId])).toEqual([
+    ['open', 'error', 'TRACE'],
+    ['close', 'error', 'TRACE'],
+    ['open', 'warn', 'ORDER'],
+    ['close', 'warn', 'ORDER'],
+    ['open', 'info', 'TRACE'],
+    ['close', 'info', 'TRACE'],
+    ['open', 'info', 'ORDER'],
+    ['close', 'info', 'ORDER'],
+    ['open', 'debug', 'TRACE'],
+    ['close', 'debug', 'TRACE'],
+  ]);
+});
+
 test('a target-list marker evaluates fluent arguments once in source order', async () => {
   const traced = await loadTracedModule(`
     const order = [];
@@ -661,6 +843,26 @@ test('a target-list marker evaluates fluent arguments once in source order', asy
   expect(traced.first(1)).toBe(2);
   expect(traced.second(1)).toBe(3);
   expect(traced.order).toEqual(['module', 'props', 'options']);
+});
+
+test('computed direct modules preserve source order and once-only target-list evaluation', async () => {
+  const traced = await loadTracedModule(`
+    const order = [];
+    function mark(name, value) { order.push(name); return value; }
+    function first(value) { return value + 1; }
+    function second(value) { return value + 2; }
+    trace.h(mark('highlight', true))[mark('module', 'TRACE')]
+      .props(mark('props', 'args')).info([first, second], mark('options', {
+        openMessage: 'fn(args)'
+      }));
+    export { first, order, second };
+  `);
+
+  expect(traced.order).toEqual(['highlight', 'module', 'props', 'options']);
+  expect(traced.first(1)).toBe(2);
+  expect(traced.second(1)).toBe(3);
+  expect(traced.order).toEqual(['highlight', 'module', 'props', 'options']);
+  expect(devLogs.map((log) => log.moduleId)).toEqual(['TRACE', 'TRACE', 'TRACE', 'TRACE']);
 });
 
 test('props capture and printing route independently and printer routing metadata is stripped', async () => {
@@ -1592,15 +1794,19 @@ test('initialization does not require a global process object', () => {
 
 test('the transform removes the marker and reports unsupported marker forms', async () => {
   const result = await transformLoxerTrace(
-    `${imports()} function one() { return 1; } trace(one); export { one };`,
+    `${imports()} function one() { return 1; } trace.info(one); export { one };`,
     transformOptions()
   );
-  expect(result?.code).not.toContain('trace(one)');
+  expect(result?.code).not.toContain('trace.info(one)');
   expect(result?.code).toContain('__startTrace');
 
   await expect(
+    transformLoxerTrace(`${imports()} function one() { return 1; } trace(one);`, transformOptions())
+  ).rejects.toThrow('trace() must end with an error, warn, info, debug, or log terminal call.');
+
+  await expect(
     transformLoxerTrace(
-      `${imports()} function one() { return 1; } const value = trace(one);`,
+      `${imports()} function one() { return 1; } const value = trace.info(one);`,
       transformOptions()
     )
   ).rejects.toThrow('trace() must be a standalone statement');
@@ -1608,44 +1814,44 @@ test('the transform removes the marker and reports unsupported marker forms', as
 
 test('the transform removes target-list markers and reports unsupported list forms', async () => {
   const result = await transformLoxerTrace(
-    `${imports()} function one() { return 1; } function two() { return 2; } trace([one, two]); export { one, two };`,
+    `${imports()} function one() { return 1; } function two() { return 2; } trace.info([one, two]); export { one, two };`,
     transformOptions()
   );
-  expect(result?.code).not.toContain('trace([one, two])');
+  expect(result?.code).not.toContain('trace.info([one, two])');
   expect(result?.code).toContain('__startTrace');
 
   const rejects = (source: string) =>
     expect(transformLoxerTrace(`${imports()} ${source}`, transformOptions())).rejects;
 
-  await rejects('trace([]);').toThrow('trace() expects at least one target.');
-  await rejects('function one() { return 1; } trace([...[one]]);').toThrow(
+  await rejects('trace.info([]);').toThrow('trace() expects at least one target.');
+  await rejects('function one() { return 1; } trace.info([...[one]]);').toThrow(
     'trace() targets must be named function-binding identifiers.'
   );
-  await rejects('const service = { run() {} }; trace([service.run]);').toThrow(
+  await rejects('const service = { run() {} }; trace.info([service.run]);').toThrow(
     'trace() targets must be named function-binding identifiers.'
   );
   await rejects(
-    'function one() { return 1; } function two() { return 2; } trace([one, , two]);'
+    'function one() { return 1; } function two() { return 2; } trace.info([one, , two]);'
   ).toThrow('trace() targets must be named function-binding identifiers.');
-  await rejects('trace(() => 1);').toThrow(
+  await rejects('trace.info(() => 1);').toThrow(
     'trace() targets must be named function-binding identifiers.'
   );
-  await rejects('function one() { return 1; } trace(one, ...[{ moduleId: "TRACE" }]);').toThrow(
-    'trace() options cannot be a spread argument.'
-  );
-  await rejects('const list = [one]; function one() { return 1; } trace(list);').toThrow(
+  await rejects(
+    'function one() { return 1; } trace.info(one, ...[{ moduleId: "TRACE" }]);'
+  ).toThrow('trace() options cannot be a spread argument.');
+  await rejects('const list = [one]; function one() { return 1; } trace.info(list);').toThrow(
     'trace() target "list" is not initialized with a function.'
   );
-  await rejects('function one() { return 1; } const value = trace([one]);').toThrow(
+  await rejects('function one() { return 1; } const value = trace.info([one]);').toThrow(
     'trace() must be a standalone statement beside its named function binding.'
   );
-  await rejects('function one() { return 1; } trace([one, one]);').toThrow(
+  await rejects('function one() { return 1; } trace.info([one, one]);').toThrow(
     'Function "one" has more than one trace() marker.'
   );
-  await rejects('function one() { return 1; } trace(one); trace([one]);').toThrow(
+  await rejects('function one() { return 1; } trace.info(one); trace.info([one]);').toThrow(
     'Function "one" has more than one trace() marker.'
   );
-  await rejects('const constant = 1; trace([constant]);').toThrow(
+  await rejects('const constant = 1; trace.info([constant]);').toThrow(
     'trace() target "constant" is not initialized with a function.'
   );
 });
@@ -1666,7 +1872,7 @@ test('the transform validates fluent marker chains and removes them as one expre
   await rejects("function one() {} trace.m('TRACE').module('ORDER').info(one);").toThrow(
     'trace() modifier "module" may appear only once.'
   );
-  await rejects("function one() {} trace.h().highlight(false).info(one);").toThrow(
+  await rejects('function one() {} trace.h().highlight(false).info(one);').toThrow(
     'trace() modifier "highlight" may appear only once.'
   );
   await rejects("function one() {} trace.props('args').props('result').info(one);").toThrow(
@@ -1701,5 +1907,52 @@ test('the transform validates fluent marker chains and removes them as one expre
   );
   await rejects('function one() {} trace.verbose(one);').toThrow(
     'trace() does not support fluent member "verbose".'
+  );
+});
+
+test.each([
+  {
+    name: 'a direct and method module duplicate',
+    source: "function one() {} trace.TRACE.m('ORDER').info(one);",
+    diagnostic: 'trace() modifier "module" may appear only once.',
+  },
+  {
+    name: 'two direct module selectors',
+    source: "function one() {} trace.TRACE['ORDER'].info(one);",
+    diagnostic: 'trace() modifier "module" may appear only once.',
+  },
+  {
+    name: 'a reserved dot module',
+    source: 'function one() {} trace.call.info(one);',
+    diagnostic: 'trace() direct module "call" is reserved; use trace.m("call") instead.',
+  },
+  {
+    name: 'a reserved static-bracket module',
+    source: "function one() {} trace['call'].info(one);",
+    diagnostic: 'trace() direct module "call" is reserved; use trace.m("call") instead.',
+  },
+  {
+    name: 'a computed terminal',
+    source: "const level = 'info'; function one() {} trace.TRACE[level](one);",
+    diagnostic: 'trace() does not support computed fluent members.',
+  },
+  {
+    name: 'optional chaining',
+    source: 'function one() {} trace?.TRACE.info(one);',
+    diagnostic: 'trace() does not support optional chaining.',
+  },
+  {
+    name: 'an unknown terminal',
+    source: 'function one() {} trace.TRACE.verbose(one);',
+    diagnostic: 'trace() does not support fluent member "verbose".',
+  },
+  {
+    name: 'an incomplete direct chain',
+    source: 'trace.TRACE;',
+    diagnostic: 'trace() must end with an error, warn, info, debug, or log terminal call.',
+  },
+] as const)('the transform diagnoses $name', async ({ source, diagnostic }) => {
+  await expect(transformLoxerTrace(`${imports()} ${source}`, transformOptions())).rejects.toThrow(
+    diagnostic
   );
 });

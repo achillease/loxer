@@ -4,6 +4,29 @@ import type { EnclosingMarker, Marker, MarkerTarget } from './marker-types.js';
 
 type TraceTerminal = 'error' | 'warn' | 'info' | 'debug';
 type TraceModifier = 'm' | 'module' | 'h' | 'highlight' | 'props' | 'pp';
+const reservedDirectModules = new Set([
+  'apply',
+  'arguments',
+  'bind',
+  'call',
+  'caller',
+  'debug',
+  'error',
+  'h',
+  'highlight',
+  'info',
+  'length',
+  'log',
+  'm',
+  'module',
+  'name',
+  'pp',
+  'props',
+  'prototype',
+  'then',
+  'toString',
+  'warn',
+]);
 
 interface FluentMarkerCall {
   modifiers: { name: TraceModifier; value: any }[];
@@ -50,11 +73,19 @@ export function collectMarkers(
   programPath.traverse({
     /** Validate the marker's shape and resolve the function it traces. */
     CallExpression(callPath: NodePath<any>): void {
-      const parentPath = callPath.parentPath;
+      let cursor = callPath;
+      let parentPath = cursor.parentPath;
+      while (
+        (parentPath?.isMemberExpression() || parentPath?.isOptionalMemberExpression()) &&
+        parentPath.node.object === cursor.node
+      ) {
+        cursor = parentPath;
+        parentPath = parentPath.parentPath;
+      }
       if (
-        (parentPath.isMemberExpression() || parentPath.isOptionalMemberExpression()) &&
-        parentPath.parentPath?.isCallExpression() &&
-        parentPath.parentPath.node.callee === parentPath.node
+        cursor !== callPath &&
+        parentPath?.isCallExpression() &&
+        parentPath.node.callee === cursor.node
       ) {
         return;
       }
@@ -113,7 +144,48 @@ export function collectMarkers(
     },
   });
 
+  assertEveryMarkerReferenceIsConsumed(markerBindings, markers);
+
   return markers;
+}
+
+/**
+ * A trace import is a build-time-only value. Reject incomplete direct chains (and every other
+ * unsupported reference) before the plugin removes that import and leaves a dangling identifier.
+ */
+function assertEveryMarkerReferenceIsConsumed(markerBindings: Set<any>, markers: Marker[]): void {
+  const markerCalls = new Set(markers.map((marker) => marker.callPath.node));
+
+  for (const binding of markerBindings) {
+    for (const identifierPath of binding.referencePaths as NodePath<any>[]) {
+      let cursor = identifierPath;
+      while (true) {
+        const parent = cursor.parentPath;
+        if (
+          (parent?.isMemberExpression() || parent?.isOptionalMemberExpression()) &&
+          parent.node.object === cursor.node
+        ) {
+          if (parent.isOptionalMemberExpression()) {
+            throw parent.buildCodeFrameError('trace() does not support optional chaining.');
+          }
+          cursor = parent;
+          continue;
+        }
+        if (parent?.isCallExpression() && parent.node.callee === cursor.node) {
+          cursor = parent;
+          continue;
+        }
+        break;
+      }
+
+      if (cursor.isCallExpression() && markerCalls.has(cursor.node)) {
+        continue;
+      }
+      throw cursor.buildCodeFrameError(
+        'trace() must end with an error, warn, info, debug, or log terminal call.'
+      );
+    }
+  }
 }
 
 /** Resolves a terminal and its pre-call modifier chain from the imported `trace` binding. */
@@ -123,11 +195,6 @@ function collectFluentMarkerCall(
   t: typeof BabelTypes
 ): FluentMarkerCall | undefined {
   const directCallee = callPath.node.callee;
-  if (t.isIdentifier(directCallee)) {
-    const binding = callPath.scope.getBinding(directCallee.name);
-
-    return binding && markerBindings.has(binding) ? { modifiers: [], terminal: 'info' } : undefined;
-  }
   if (!t.isMemberExpression(directCallee)) {
     return undefined;
   }
@@ -160,39 +227,65 @@ function collectFluentMarkerCall(
 
   const modifiers: { name: TraceModifier; value: any }[] = [];
   let cursor = directCallee.object;
-  while (t.isCallExpression(cursor)) {
-    const modifierCallee = cursor.callee;
-    if (
-      !t.isMemberExpression(modifierCallee) ||
-      modifierCallee.computed ||
-      !t.isIdentifier(modifierCallee.property)
-    ) {
-      if (isFluentMarkerRoot(cursor, callPath, markerBindings, t)) {
-        throw callPath.buildCodeFrameError('trace() does not support computed fluent members.');
-      }
+  while (!isMarkerRoot(cursor, callPath, markerBindings, t)) {
+    if (t.isCallExpression(cursor)) {
+      const modifierCallee = cursor.callee;
+      if (
+        !t.isMemberExpression(modifierCallee) ||
+        modifierCallee.computed ||
+        !t.isIdentifier(modifierCallee.property)
+      ) {
+        if (isFluentMarkerRoot(cursor, callPath, markerBindings, t)) {
+          throw callPath.buildCodeFrameError('trace() does not support computed fluent members.');
+        }
 
+        return undefined;
+      }
+      const name = modifierCallee.property.name;
+      if (!isModifier(name)) {
+        if (isFluentMarkerRoot(cursor, callPath, markerBindings, t)) {
+          throw callPath.buildCodeFrameError(`trace() does not support fluent member "${name}".`);
+        }
+
+        return undefined;
+      }
+      assertModifierArguments(callPath, name, cursor.arguments);
+      assertLiteralPropsTarget(callPath, name, cursor.arguments[0], t);
+      modifiers.push({
+        name,
+        value:
+          cursor.arguments[0] ??
+          (name === 'h' || name === 'highlight'
+            ? t.booleanLiteral(true)
+            : t.identifier('undefined')),
+      });
+      cursor = modifierCallee.object;
+      continue;
+    }
+
+    if (!t.isMemberExpression(cursor)) {
       return undefined;
     }
-    const name = modifierCallee.property.name;
-    if (!isModifier(name)) {
-      if (isFluentMarkerRoot(cursor, callPath, markerBindings, t)) {
-        throw callPath.buildCodeFrameError(`trace() does not support fluent member "${name}".`);
+    if (!cursor.computed) {
+      if (!t.isIdentifier(cursor.property)) {
+        return undefined;
       }
-
-      return undefined;
+      const moduleName = cursor.property.name;
+      if (reservedDirectModules.has(moduleName)) {
+        throw callPath.buildCodeFrameError(
+          `trace() direct module "${moduleName}" is reserved; use trace.m("${moduleName}") instead.`
+        );
+      }
+      modifiers.push({ name: 'm', value: t.stringLiteral(moduleName) });
+    } else {
+      if (t.isStringLiteral(cursor.property) && reservedDirectModules.has(cursor.property.value)) {
+        throw callPath.buildCodeFrameError(
+          `trace() direct module "${cursor.property.value}" is reserved; use trace.m("${cursor.property.value}") instead.`
+        );
+      }
+      modifiers.push({ name: 'm', value: cursor.property });
     }
-    assertModifierArguments(callPath, name, cursor.arguments);
-    assertLiteralPropsTarget(callPath, name, cursor.arguments[0], t);
-    modifiers.push({
-      name,
-      value:
-        cursor.arguments[0] ??
-        (name === 'h' || name === 'highlight' ? t.booleanLiteral(true) : t.identifier('undefined')),
-    });
-    cursor = modifierCallee.object;
-  }
-  if (!isMarkerRoot(cursor, callPath, markerBindings, t)) {
-    return undefined;
+    cursor = cursor.object;
   }
 
   const seen = new Set<string>();
@@ -230,11 +323,15 @@ function isFluentMarkerRoot(
   t: typeof BabelTypes
 ): boolean {
   let cursor = node;
-  while (t.isCallExpression(cursor)) {
-    if (!t.isMemberExpression(cursor.callee)) {
-      return false;
+  while (t.isCallExpression(cursor) || t.isMemberExpression(cursor)) {
+    if (t.isCallExpression(cursor)) {
+      if (!t.isMemberExpression(cursor.callee)) {
+        return false;
+      }
+      cursor = cursor.callee.object;
+    } else {
+      cursor = cursor.object;
     }
-    cursor = cursor.callee.object;
   }
 
   return isMarkerRoot(cursor, callPath, markerBindings, t);

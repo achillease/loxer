@@ -1,6 +1,6 @@
 # Babel plugin for Loxer traces
 
-`babel-plugin-loxer-trace` turns an explicit `trace()` marker into runtime code that traces a
+`babel-plugin-loxer-trace` turns an explicit `trace.info()` marker into runtime code that traces a
 named plain function with Loxer boxes. It is the canonical transform: the Vite companion package
 delegates to this package instead of implementing a second transform.
 
@@ -38,18 +38,18 @@ async function submitOrder(orderId: string) {
   return charge(orderId);
 }
 
-trace(submitOrder, {
+trace.info(submitOrder, {
   moduleId: 'ORDER',
   openMessage: 'parent.fn(args)',
   closeMessage: 'parent.fn(result)',
 });
 ```
 
-`trace()` is deliberately not a runtime wrapper. If it runs in the browser or Node, the build step
+`trace.info()` is deliberately not a runtime wrapper. If it runs in the browser or Node, the build step
 was skipped and it throws a configuration error. A successful transform removes both the marker
 call and the marker import.
 
-To instrument a group of functions the same way, mark them together: `trace()` also accepts an array
+To instrument a group of functions the same way, mark them together: `trace.info()` also accepts an array
 literal of named functions plus the options they share.
 
 ```ts
@@ -60,7 +60,7 @@ function loadOrder(orderId: string) {
 }
 const cancelOrder = (orderId: string) => repository.cancel(orderId);
 
-trace([loadOrder, cancelOrder], { moduleId: 'ORDER', openMessage: 'parent.fn(args)' });
+trace.info([loadOrder, cancelOrder], { moduleId: 'ORDER', openMessage: 'parent.fn(args)' });
 ```
 
 Every listed binding is transformed exactly as its own marker would transform it, and each invocation
@@ -77,7 +77,7 @@ bodies, and removes the marker import when it is no longer used.
 
 ```mermaid
 flowchart LR
-  A["Application module\nimport trace from loxer/trace"] --> B["Standalone marker\ntrace(target, options)"]
+  A["Application module\nimport trace from loxer/trace"] --> B["Standalone marker\ntrace.info(target, options)"]
   B --> C["Babel plugin\nresolves marker and target bindings"]
   C --> D["Generated helper imports\nfrom loxer/trace"]
   D --> E["Traced target function\nin compiled module"]
@@ -96,7 +96,7 @@ sequenceDiagram
   participant Runtime as "loxer/trace runtime"
   participant Loxer
   Caller->>Generated: call with this and arguments
-  Generated->>Runtime: start trace(name, arguments, options)
+  Generated->>Runtime: start trace.info(name, arguments, options)
   Runtime->>Loxer: open box
   Generated->>Generated: run original body
   Generated->>Loxer: link direct Loxer calls to box
@@ -185,8 +185,8 @@ expression.
 
 These boundaries are intentional:
 
-- A marker must be a standalone statement beside its named bindings: `trace(target, options)` or
-  `trace([target, target], options)`. It cannot be used as an expression, target an anonymous value,
+- A marker must be a standalone statement beside its named bindings: `trace.info(target, options)` or
+  `trace.info([target, target], options)`. It cannot be used as an expression, target an anonymous value,
   or receive a spread options argument.
 - A target list must be an array literal of at least one identifier. A spread element, a member
   expression, or a variable holding an array is rejected, because the transform resolves every
@@ -200,7 +200,7 @@ These boundaries are intentional:
 - An object that merely looks like a thenable is not treated as a native Promise result. The
   function returns it unchanged and its trace completes synchronously.
 - The marker is a build-time contract. Keep this plugin in every Babel/Vite path that executes a
-  module containing `trace()`.
+  module containing `trace.info()`.
 
 ## Maintaining the package
 

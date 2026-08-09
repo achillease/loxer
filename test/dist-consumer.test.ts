@@ -230,13 +230,13 @@ describe('the built dist/ tree a consumer executes', () => {
     expect(devLogs[0].message).toBe(`retrying calculate(${content})`);
   });
 
-  test('code emitted by the built Babel plugin runs against both root dist entry points', async () => {
+  test('a direct module emitted by the built Babel plugin runs against both root dist entry points', async () => {
     const transformed = await loadBuiltTransformedModule(`
       export function calculate(price, quantity) {
         Loxer.info('inside calculate');
         return { total: 59.85 };
       }
-      trace.m('TRACE').h().props('argsResult').pp({ target: 'result', depth: 1 }).warn(calculate, {
+      trace.TRACE.h().props('argsResult').pp({ target: 'result', depth: 1 }).warn(calculate, {
         openMessage: 'fn(args)',
         closeMessage: 'fn(result)'
       });
@@ -256,6 +256,24 @@ describe('the built dist/ tree a consumer executes', () => {
       printProps: { depth: 1 },
       props: [{ total: 59.85 }],
     });
+  });
+
+  test('a computed module emitted by the built Babel plugin evaluates once and routes through dist', async () => {
+    const transformed = await loadBuiltTransformedModule(`
+      let selections = 0;
+      function selectModule() { selections += 1; return 'TRACE'; }
+      export function calculate(value) { return value * 2; }
+      trace[selectModule()].info(calculate);
+      export { selections };
+    `);
+
+    expect(transformed.selections).toBe(1);
+    expect(transformed.calculate(4)).toBe(8);
+    expect(transformed.selections).toBe(1);
+    expect(devLogs.map((lox) => [lox.type, lox.moduleId])).toEqual([
+      ['open', 'TRACE'],
+      ['close', 'TRACE'],
+    ]);
   });
 
   test('dist exports the trace printer type surface from both entry points', () => {

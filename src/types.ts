@@ -194,6 +194,9 @@ export type ModuleId = [keyof LoxerModuleRegistry] extends [never]
   ? string
   : Extract<keyof LoxerModuleRegistry, string> | DefaultModuleId;
 
+/** String keys registered by the consuming project, without the built-in module ids or `string` fallback. */
+export type RegisteredModuleId = Extract<keyof LoxerModuleRegistry, string>;
+
 /** The modules {@link Loxer.init} accepts, checked against the {@link LoxerModuleRegistry}.
  *
  * - it is {@link LoxerModules} as long as the registry is not augmented - any set of module ids is

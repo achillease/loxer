@@ -4,7 +4,7 @@
  * Vitest never executes this file. `test/tsconfig.json` includes it, so `pnpm typecheck:test`
  * verifies that the marker overloads preserve the callback argument and result types pinned below.
  */
-import { trace } from '../src/trace';
+import { trace, type TraceModuleId } from '../src/trace';
 
 type AssertFalse<Value extends false> = Value;
 type LegacyMarkerIsAbsent = 'loxed' extends keyof typeof import('../src/trace') ? true : false;
@@ -33,12 +33,20 @@ type Equals<Actual, Expected> =
       : false;
 type AssertTrue<Value extends true> = Value;
 
+type EmptyRegistryHasNoDirectModuleIds = AssertTrue<Equals<TraceModuleId, never>>;
+const emptyRegistryHasNoDirectModuleIds: EmptyRegistryHasNoDirectModuleIds = true;
+void emptyRegistryHasNoDirectModuleIds;
+// @ts-expect-error an empty registry does not create an arbitrary direct-module index signature
+trace.PROJECTS.info(() => undefined);
+// @ts-expect-error `trace` is a marker object; select a terminal such as `trace.info(...)`
+trace(() => undefined);
+
 function traceFormatterTypeFixture(): void {
   function calculateTotal(quantity: number, currency: string): Promise<{ amount: number }> {
     return Promise.resolve({ amount: quantity });
   }
 
-  trace(calculateTotal, {
+  trace.info(calculateTotal, {
     openMessage({ args }) {
       type ArgumentsAreExact = AssertTrue<
         Equals<typeof args, [quantity: number, currency: string]>
@@ -62,7 +70,7 @@ function traceListFormatterTypeFixture(): void {
     return Promise.resolve({ amount: 0 });
   }
 
-  trace([loadOrder, saveOrder], {
+  trace.info([loadOrder, saveOrder], {
     openMessage({ args }) {
       type ArgumentsAreExact = AssertTrue<Equals<typeof args, [id: string]>>;
       const pinned: ArgumentsAreExact = true;
@@ -85,7 +93,7 @@ function traceReadonlyListFormatterTypeFixture(): void {
   }
   const targets = [loadOrder, saveOrder] as const;
 
-  trace(targets, {
+  trace.info(targets, {
     openMessage({ args }) {
       type ArgumentsAreExact = AssertTrue<Equals<typeof args, [id: string]>>;
       const pinned: ArgumentsAreExact = true;
@@ -107,7 +115,7 @@ function traceMixedSignatureListFormatterTypeFixture(): void {
     return active ? 1 : 0;
   }
 
-  trace([loadOrder, countOrders], {
+  trace.info([loadOrder, countOrders], {
     openMessage({ args }) {
       type ArgumentsAreExactUnion = AssertTrue<
         Equals<typeof args, [id: string] | [active: boolean]>

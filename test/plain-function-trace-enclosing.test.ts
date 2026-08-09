@@ -10,6 +10,16 @@ import {
   transformOptions,
 } from './plain-function-trace.fixture';
 
+const directModuleSelectorCases = [
+  { name: 'direct dot', marker: 'trace.TRACE', moduleId: 'TRACE' },
+  { name: 'static bracket', marker: "trace['ORDER']", moduleId: 'ORDER' },
+  { name: 'computed', marker: 'trace[selected]', moduleId: 'TRACE' },
+  { name: '.m()', marker: "trace.m('ORDER')", moduleId: 'ORDER' },
+  { name: '.module()', marker: "trace.module('TRACE')", moduleId: 'TRACE' },
+] as const;
+
+const terminalLevels = ['error', 'warn', 'info', 'info'] as const;
+
 test('the enclosing form marks a declaration, a named recursive function expression, and a block-bodied arrow', async () => {
   const traced = await loadTracedModule(`
     function load(id) {
@@ -152,33 +162,32 @@ test('an accessor class field names its function the same way a plain or private
 // enclosing form reads its options off an object literal, so they cannot be hoisted into a shared
 // binding inside the traced module itself. `transformOptions()` transforms every module below under
 // the filename `src/orders/orderService.ts`.
-const parentStyle =
-  "{ moduleId: 'ORDER', openMessage: 'parent.fn', closeMessage: 'parent.fn' }";
+const parentStyle = "{ moduleId: 'ORDER', openMessage: 'parent.fn', closeMessage: 'parent.fn' }";
 
 test('parent.fn names the class of a marked method, private method, private field, getter, and static method', async () => {
   const traced = await loadTracedModule(`
     class Checkout {
       calculate(price) {
-        trace(${parentStyle});
+        trace.info(${parentStyle});
         return this.#tax(price);
       }
       #tax(price) {
-        trace(${parentStyle});
+        trace.info(${parentStyle});
         return price * 1.2;
       }
       #load = (id) => {
-        trace(${parentStyle});
+        trace.info(${parentStyle});
         return 'order:' + id;
       };
       invokeLoad(id) {
         return this.#load(id);
       }
       get total() {
-        trace(${parentStyle});
+        trace.info(${parentStyle});
         return 42;
       }
       static create() {
-        trace(${parentStyle});
+        trace.info(${parentStyle});
         return new Checkout();
       }
     }
@@ -209,7 +218,7 @@ test('parent.fn reports the file where no class member holds the function', asyn
     class Checkout {
       calculate(price) {
         const round = (value) => {
-          trace(${parentStyle});
+          trace.info(${parentStyle});
           return Math.round(value);
         };
 
@@ -218,12 +227,12 @@ test('parent.fn reports the file where no class member holds the function', asyn
     }
     const helper = {
       compute(value) {
-        trace(${parentStyle});
+        trace.info(${parentStyle});
         return value * 2;
       },
     };
     function standalone(value) {
-      trace(${parentStyle});
+      trace.info(${parentStyle});
       return value;
     }
     export { Checkout, helper, standalone };
@@ -252,9 +261,9 @@ test('parent.fn reports the file for a marker beside a binding, in either marker
     function load(id) {
       return 'order:' + id;
     }
-    trace(load, ${parentStyle});
+    trace.info(load, ${parentStyle});
 
-    const cancel = useCallback(trace((id) => 'cancelled:' + id, ${parentStyle}), []);
+    const cancel = useCallback(trace.info((id) => 'cancelled:' + id, ${parentStyle}), []);
     export { cancel, load };
   `);
 
@@ -273,7 +282,7 @@ test('parent.fn reports the bare function name when the build hands Babel no fil
   const traced = await loadTracedModule(
     `
     function standalone(value) {
-      trace(${parentStyle});
+      trace.info(${parentStyle});
       return value;
     }
     export { standalone };
@@ -289,13 +298,13 @@ test('parent.fn reads an unnamed class from its binding and drops a trailing Cla
   const traced = await loadTracedModule(`
     const Checkout = class {
       calculate(price) {
-        trace(${parentStyle});
+        trace.info(${parentStyle});
         return price;
       }
     };
     class OrderServiceClass {
       load(id) {
-        trace(${parentStyle});
+        trace.info(${parentStyle});
         return id;
       }
     }
@@ -323,7 +332,7 @@ test('parent.fn never drops a trailing Class from a file name', async () => {
   const traced = await loadTracedModule(
     `
     function load(id) {
-      trace(${parentStyle});
+      trace.info(${parentStyle});
       return id;
     }
     export { load };
@@ -343,7 +352,7 @@ test('parent.fn names the innermost class, and reads an unnamed class expression
     const Namespace = {};
     Namespace.Widget = class {
       render(id) {
-        trace(${parentStyle});
+        trace.info(${parentStyle});
         return 'widget:' + id;
       }
     };
@@ -351,7 +360,7 @@ test('parent.fn names the innermost class, and reads an unnamed class expression
       build() {
         class Inner {
           run(value) {
-            trace(${parentStyle});
+            trace.info(${parentStyle});
             return 'ran:' + value;
           }
         }
@@ -386,7 +395,7 @@ test('parent.fn reports the file for a function inside a class static block', as
       static loaded;
       static {
         function load() {
-          trace(${parentStyle});
+          trace.info(${parentStyle});
           return 'ready';
         }
         Config.loaded = load();
@@ -406,13 +415,13 @@ test('parent.fn survives the await of an async class method and an async file-le
   const traced = await loadTracedModule(`
     class Checkout {
       async calculate(price) {
-        trace(${parentStyle});
+        trace.info(${parentStyle});
         await Promise.resolve();
         return price * 2;
       }
     }
     async function submit(value) {
-      trace(${parentStyle});
+      trace.info(${parentStyle});
       await Promise.resolve();
       return value + 1;
     }
@@ -448,12 +457,12 @@ test('a failing traced function closes with the name form its close message sele
   const traced = await loadTracedModule(`
     class Checkout {
       calculate(price) {
-        trace(${parentStyle});
+        trace.info(${parentStyle});
         throw new Error('no price:' + price);
       }
     }
     function submit(value) {
-      trace(${parentStyle});
+      trace.info(${parentStyle});
       throw new Error('no value:' + value);
     }
     export { Checkout, submit };
@@ -560,7 +569,7 @@ test('the enclosing form marks a class-property arrow, an IIFE, and a derived-cl
 test('trace() with no arguments at all defaults its options and traces the enclosing function', async () => {
   const traced = await loadTracedModule(`
     function ping() {
-      trace();
+      trace.info();
       return 'pong';
     }
     export { ping };
@@ -640,70 +649,70 @@ test('the enclosing form raises the naming error when no name applies, across ev
     expect(transformLoxerTrace(`${imports()} ${source}`, options)).rejects;
 
   await rejects(
-    'function useEffect(effect) { effect(); } useEffect(() => { trace({ moduleId: "ORDER" }); });'
+    'function useEffect(effect) { effect(); } useEffect(() => { trace.info({ moduleId: "ORDER" }); });'
   ).toThrow('Cannot name the trace() target');
 
-  await rejects('const list = [() => { trace({ moduleId: "ORDER" }); }];').toThrow(
+  await rejects('const list = [() => { trace.info({ moduleId: "ORDER" }); }];').toThrow(
     'Cannot name the trace() target'
   );
 
   await rejects(
-    'const chosen = flag ? () => { trace({ moduleId: "ORDER" }); } : () => {};'
+    'const chosen = flag ? () => { trace.info({ moduleId: "ORDER" }); } : () => {};'
   ).toThrow('Cannot name the trace() target');
 
-  await rejects('const a = <button onClick={() => { trace({ moduleId: "ORDER" }); }} />;', {
+  await rejects('const a = <button onClick={() => { trace.info({ moduleId: "ORDER" }); }} />;', {
     ...transformOptions(),
     parserPlugins: ['jsx'],
   }).toThrow('Cannot name the trace() target');
 
   // logical-expression alternatives: the function is only conditionally the value produced
-  await rejects('const j = cond && (() => { trace({ moduleId: "ORDER" }); });').toThrow(
+  await rejects('const j = cond && (() => { trace.info({ moduleId: "ORDER" }); });').toThrow(
     'Cannot name the trace() target'
   );
-  await rejects('const k = cond || (() => { trace({ moduleId: "ORDER" }); });').toThrow(
+  await rejects('const k = cond || (() => { trace.info({ moduleId: "ORDER" }); });').toThrow(
     'Cannot name the trace() target'
   );
-  await rejects('const l = cond ?? (() => { trace({ moduleId: "ORDER" }); });').toThrow(
+  await rejects('const l = cond ?? (() => { trace.info({ moduleId: "ORDER" }); });').toThrow(
     'Cannot name the trace() target'
   );
 
   // sequence expression: the function is one of several evaluated operands
-  await rejects('const m = (0, (() => { trace({ moduleId: "ORDER" }); }));').toThrow(
+  await rejects('const m = (0, (() => { trace.info({ moduleId: "ORDER" }); }));').toThrow(
     'Cannot name the trace() target'
   );
 
   // destructuring default value: the name reachable past it is the destructured binding's own
   // name, which only applies when the property is missing - not a name for the function itself
-  await rejects('const { y = () => { trace({}) } } = obj;').toThrow(
+  await rejects('const { y = () => { trace.info({}) } } = obj;').toThrow(
     'Cannot name the trace() target'
   );
 
   // object spread: the name past it belongs to the object, exactly as for the array-element case.
   // The enclosing marker needs a block-bodied function literal to host it, here an IIFE.
-  await rejects('const o = {...(function () { trace({}); })()};').toThrow(
+  await rejects('const o = {...(function () { trace.info({}); })()};').toThrow(
     'Cannot name the trace() target'
   );
 
   // template interpolation: the function is coerced to a string
-  await rejects('const s = `${(function () { trace({}); })()}`;').toThrow(
+  await rejects('const s = `${(function () { trace.info({}); })()}`;').toThrow(
     'Cannot name the trace() target'
   );
 
   // yielded operand: `d` is whatever the generator's driver passes to the next `.next(value)`,
   // unrelated to the operand - the enclosing marker's own function is not the generator, so this
   // reaches the naming guard rather than the generator guard
-  await rejects('function* g() { const d = yield (function () { trace({}); })(); }').toThrow(
+  await rejects('function* g() { const d = yield (function () { trace.info({}); })(); }').toThrow(
     'Cannot name the trace() target'
   );
 
   // property read off the traced function: the name past it belongs to the property being read
-  await rejects('const d = (function () { trace({}); })().foo;').toThrow(
+  await rejects('const d = (function () { trace.info({}); })().foo;').toThrow(
     'Cannot name the trace() target'
   );
 
   // optional property read directly off the traced function: unlike the ordinary case above, this
   // reaches Babel's OptionalMemberExpression without an intervening call
-  await rejects('const e = (function () { trace({}); })?.foo;').toThrow(
+  await rejects('const e = (function () { trace.info({}); })?.foo;').toThrow(
     'Cannot name the trace() target'
   );
 });
@@ -728,7 +737,7 @@ test('the MemberExpression boundary and the call-is-not-a-boundary rule leave le
 
   resetTraceLogs();
   // guard 2: the flagship documented shape - a call is deliberately not a boundary, so the walk
-  // still reads through `useCallback(trace(fn, options), deps)` on its way to the declarator, deps
+  // still reads through `useCallback(trace.info(fn, options), deps)` on its way to the declarator, deps
   // array and all. A near-identical shape (without the deps array) is already pinned at
   // 'an inline literal is accepted as a call argument, ...' above; this asserts the exact
   // documented form.
@@ -806,18 +815,18 @@ test('the enclosing form rejects a marker that is not the first statement, in a 
     expect(transformLoxerTrace(`${imports()} ${source}`, transformOptions())).rejects;
 
   await rejects(
-    'function notFirst() { const a = 1; trace({ moduleId: "TRACE" }); return a; }'
+    'function notFirst() { const a = 1; trace.info({ moduleId: "TRACE" }); return a; }'
   ).toThrow('trace(options) marks the function it sits in');
 
   await rejects(
-    'function nestedBlock() { if (true) { trace({ moduleId: "TRACE" }); } return 1; }'
+    'function nestedBlock() { if (true) { trace.info({ moduleId: "TRACE" }); } return 1; }'
   ).toThrow('trace(options) marks the function it sits in');
 
-  await rejects('trace({ moduleId: "TRACE" });').toThrow(
+  await rejects('trace.info({ moduleId: "TRACE" });').toThrow(
     'trace(options) marks the function it sits in'
   );
 
-  await rejects('const arrow = () => trace({ moduleId: "TRACE" });').toThrow(
+  await rejects('const arrow = () => trace.info({ moduleId: "TRACE" });').toThrow(
     'trace(options) marks the function it sits in'
   );
 });
@@ -836,19 +845,19 @@ test('the enclosing form rejects a function marked twice, beside itself and from
     expect(transformLoxerTrace(`${imports()} ${source}`, transformOptions())).rejects;
 
   await rejects(
-    'function target() { trace({ moduleId: "TRACE" }); return 1; } trace(target, { moduleId: "ORDER" });'
+    'function target() { trace.info({ moduleId: "TRACE" }); return 1; } trace.info(target, { moduleId: "ORDER" });'
   ).toThrow('Function "target" has more than one trace() marker.');
 
   await rejects(
-    'function identity(fn) { return fn; } const load = identity(trace((id) => { ' +
-      'trace({ moduleId: "ORDER" }); return "x:" + id; }, { moduleId: "TRACE" }));'
+    'function identity(fn) { return fn; } const load = identity(trace.info((id) => { ' +
+      'trace.info({ moduleId: "ORDER" }); return "x:" + id; }, { moduleId: "TRACE" }));'
   ).toThrow('Function "load" has more than one trace() marker.');
 });
 
 test('the enclosing form rejects options that read a name the marked body declares, but a parameter stays readable', async () => {
   await expect(
     transformLoxerTrace(
-      `${imports()} function load() { trace({ openMessage: MOD }); const MOD = 'fn'; return MOD; }`,
+      `${imports()} function load() { trace.info({ openMessage: MOD }); const MOD = 'fn'; return MOD; }`,
       transformOptions()
     )
   ).rejects.toThrow(
@@ -868,17 +877,17 @@ test('the enclosing form rejects options that read a name the marked body declar
   ).toEqual([['load(ORDER)', 'ORDER']]);
 });
 
-test('trace(OPTS) and trace(makeOptions()) are read as the statement form and keep its own diagnostic', async () => {
+test('trace.info(OPTS) and trace.info(makeOptions()) are read as the statement form and keep its own diagnostic', async () => {
   const rejects = (source: string) =>
     expect(transformLoxerTrace(`${imports()} ${source}`, transformOptions())).rejects;
 
   await rejects(
-    "const OPTS = { moduleId: 'TRACE' }; function load() { trace(OPTS); return 1; }"
+    "const OPTS = { moduleId: 'TRACE' }; function load() { trace.info(OPTS); return 1; }"
   ).toThrow('trace() target "OPTS" is not initialized with a function.');
 
   await rejects(
     "function makeOptions() { return { moduleId: 'TRACE' }; } " +
-      'function load() { trace(makeOptions()); return 1; }'
+      'function load() { trace.info(makeOptions()); return 1; }'
   ).toThrow('trace() targets must be named function-binding identifiers.');
 });
 
@@ -1091,6 +1100,50 @@ test("an enclosing marker nested inside another traced function opens its own bo
   ]);
 });
 
+test.each(directModuleSelectorCases)(
+  'every terminal transforms a $name selector for an enclosing marker',
+  async ({ marker, moduleId }) => {
+    const traced = await loadTracedModule(`
+      const selected = 'TRACE';
+      function atError() {
+        ${marker}.error();
+        return 'error';
+      }
+      function atWarn() {
+        ${marker}.warn();
+        return 'warn';
+      }
+      function atLog() {
+        ${marker}.log();
+        return 'log';
+      }
+      function atInfo() {
+        ${marker}.info();
+        return 'info';
+      }
+      function atDebug() {
+        ${marker}.debug();
+        return 'debug';
+      }
+      export { atDebug, atError, atInfo, atLog, atWarn };
+    `);
+
+    expect([
+      traced.atError(),
+      traced.atWarn(),
+      traced.atLog(),
+      traced.atInfo(),
+      traced.atDebug(),
+    ]).toEqual(['error', 'warn', 'log', 'info', 'debug']);
+    expect(devLogs.map((log) => [log.level, log.moduleId])).toEqual(
+      terminalLevels.flatMap((level) => [
+        [level, moduleId],
+        [level, moduleId],
+      ])
+    );
+  }
+);
+
 test("the enclosing form evaluates its options once per invocation - three calls, three evaluations - unlike the other two forms' once-per-marker-evaluation timing", async () => {
   const traced = await loadTracedModule(`
     let optionsCalls = 0;
@@ -1131,14 +1184,32 @@ test('an enclosing marker evaluates fluent arguments in source order on each inv
 
   expect(traced.load('a')).toBe('a');
   expect(traced.load('b')).toBe('b');
+  expect(traced.order).toEqual(['module', 'props', 'options', 'module', 'props', 'options']);
+});
+
+test('an enclosing computed module evaluates once in modifier order on every invocation', async () => {
+  const traced = await loadTracedModule(`
+    const order = [];
+    function mark(name, value) { order.push(name); return value; }
+    function load(id) {
+      trace.h(mark('highlight', true))[mark('module', 'TRACE')]
+        .info({ openMessage: mark('options', 'fn(args)') });
+      return id;
+    }
+    export { load, order };
+  `);
+
+  expect(traced.load('a')).toBe('a');
+  expect(traced.load('b')).toBe('b');
   expect(traced.order).toEqual([
+    'highlight',
     'module',
-    'props',
     'options',
+    'highlight',
     'module',
-    'props',
     'options',
   ]);
+  expect(devLogs.map((log) => log.moduleId)).toEqual(['TRACE', 'TRACE', 'TRACE', 'TRACE']);
 });
 
 // The trailing-`Class` rule lives in two copies, one per package, because the packages cannot import
@@ -1152,7 +1223,7 @@ test.each(classParentNameCases)(
     const traced = await loadTracedModule(`
     class ${className} {
       run(id) {
-        trace(${parentStyle});
+        trace.info(${parentStyle});
         return id;
       }
     }

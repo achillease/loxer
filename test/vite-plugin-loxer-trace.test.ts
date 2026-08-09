@@ -23,7 +23,7 @@ test('runs before Vite and ignores virtual, dependency, non-source, and unmarked
 test('strips query IDs, parses TSX, and returns Babel source maps', async () => {
   const plugin = loxerTrace();
   const source =
-    "import { trace } from 'loxer/trace'; const View = () => <div />; function value(): number { return 1; } trace(value);";
+    "import { trace } from 'loxer/trace'; const View = () => <div />; function value(): number { return 1; } trace.info(value);";
 
   const result = await runTransform(plugin, source, '/repo/component.tsx?import');
   expect(result).not.toBeNull();
@@ -35,7 +35,7 @@ test('strips query IDs, parses TSX, and returns Babel source maps', async () => 
 test('supports JSX and custom include/exclude filters through the canonical transform', async () => {
   const plugin = loxerTrace({ include: /included\.jsx$/, exclude: /skip/ });
   const source =
-    "import { trace } from 'loxer/trace'; function view() { return <section />; } trace(view);";
+    "import { trace } from 'loxer/trace'; function view() { return <section />; } trace.info(view);";
 
   await expect(runTransform(plugin, source, '/repo/skip/included.jsx')).resolves.toBeNull();
   await expect(runTransform(plugin, source, '/repo/other.ts')).resolves.toBeNull();
@@ -48,7 +48,7 @@ test('passes the module id on as the filename, so a traced function reports that
   const plugin = loxerTrace();
   const source =
     "import { trace } from 'loxer/trace'; " +
-    "function value() { trace({ openMessage: 'parent.fn' }); return 1; }";
+    "function value() { trace.info({ openMessage: 'parent.fn' }); return 1; }";
 
   const result = await runTransform(plugin, source, '/repo/orders/orderService.ts?import');
 
@@ -58,20 +58,21 @@ test('passes the module id on as the filename, so a traced function reports that
   expect(result?.code).toContain('}, "orderService")');
 });
 
-test('transforms a target-list marker through the canonical transform', async () => {
+test('transforms a static-bracket module target-list marker through the canonical transform', async () => {
   const plugin = loxerTrace();
   const source =
-    "import { trace } from 'loxer/trace'; function first() { return 1; } function second() { return 2; } trace.m('TRACE').props('argsResult').pp('result').warn([first, second]);";
+    "import { trace } from 'loxer/trace'; function first() { return 1; } function second() { return 2; } trace['TRACE'].props('argsResult').pp('result').warn([first, second]);";
 
   const result = await runTransform(plugin, source, '/repo/list.ts');
   expect(result?.code).not.toContain(".warn([first, second])");
+  expect(result?.code).not.toContain("trace['TRACE']");
   expect(result?.code).toContain('__startTrace');
   expect(result?.code?.match(/_startTrace\d*\(/g)).toHaveLength(2);
 });
 
 test('global and sticky filter expressions are reusable across multiple Vite modules', async () => {
   const source =
-    "import { trace } from 'loxer/trace'; function value() { return 1; } trace(value);";
+    "import { trace } from 'loxer/trace'; function value() { return 1; } trace.info(value);";
   const plugin = loxerTrace({ include: /.*included\.ts$/gy, exclude: /.*skip.*/gy });
 
   await expect(runTransform(plugin, source, '/repo/included.ts')).resolves.not.toBeNull();
@@ -147,7 +148,7 @@ test('contributes nothing at all when the user already lists every entry', async
 test('respects the dedupe opt-out and leaves the transform untouched', async () => {
   const plugin = loxerTrace({ dedupe: false });
   const source =
-    "import { trace } from 'loxer/trace'; function value() { return 1; } trace(value);";
+    "import { trace } from 'loxer/trace'; function value() { return 1; } trace.info(value);";
 
   expect(await runConfig(plugin, {})).toBeNull();
   expect(await runConfig(plugin, { optimizeDeps: { include: ['react'] } })).toBeNull();

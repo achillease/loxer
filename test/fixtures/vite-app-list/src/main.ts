@@ -8,6 +8,6 @@ function fixtureSecond(): number {
   return 43;
 }
 
-trace([fixtureFirst, fixtureSecond]);
+trace.info([fixtureFirst, fixtureSecond]);
 
 document.body.textContent = String(fixtureFirst() + fixtureSecond());

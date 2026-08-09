@@ -104,7 +104,7 @@ function submitOrder(orderId: string) {
   return orderId;
 }
 
-trace(submitOrder, { moduleId: 'ORDER', openMessage: 'parent.fn(args)' });
+trace.info(submitOrder, { moduleId: 'ORDER', openMessage: 'parent.fn(args)' });
 ```
 
 `openMessage` defaults to `parent.fn`; `closeMessage` defaults to `fn`. The payload templates are
@@ -114,10 +114,10 @@ trace(submitOrder, { moduleId: 'ORDER', openMessage: 'parent.fn(args)' });
 To trace several functions the same way, pass an array literal of them and the options they share:
 
 ```ts
-trace([submitOrder, cancelOrder], { moduleId: 'ORDER', openMessage: 'parent.fn(args)' });
+trace.info([submitOrder, cancelOrder], { moduleId: 'ORDER', openMessage: 'parent.fn(args)' });
 ```
 
-`trace()` is a build-time marker, not a runtime wrapper. Every module that executes a marker must
+`trace.info()` is a build-time marker, not a runtime wrapper. Every module that executes a marker must
 pass through the Babel plugin; otherwise the marker throws to signal a missing build configuration.
 
 For Vite, add the adapter and register it as a normal Vite plugin:

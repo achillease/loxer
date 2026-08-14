@@ -12,7 +12,6 @@
     "lib": ["ESNext", "DOM"],
     "types": ["node"],
     "strict": true,
-    "experimentalDecorators": true,
     "skipLibCheck": true,
     "forceConsistentCasingInFileNames": true
   },

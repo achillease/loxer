@@ -7,7 +7,16 @@ import type {
   TracePointSelector,
 } from '../tracing-types.js';
 import { stringifyMessage } from './PropsPrinter.js';
-import { qualifiedFunctionName } from './TraceNames.js';
+
+/**
+ * Joins a traced function's parent to its name for the `parent.` message templates.
+ *
+ * The parent is the class a traced method belongs to, or the file a traced function is written in.
+ * A function neither of those reaches reports its own name alone.
+ */
+function qualifiedFunctionName(parentName: string | undefined, functionName: string): string {
+  return parentName ? parentName + '.' + functionName : functionName;
+}
 
 /** @internal What a marked region of a message is, which is what the built-in output colors it by.
  *
@@ -198,17 +207,14 @@ function callPrinter(
   };
 }
 
-/** @internal Builds the memoized parent-name resolver both trace runtimes hand the renderer.
+/** @internal Builds the lazy parent-name resolver the trace runtime hands the renderer.
  *
  * Resolution is deferred to the moment of use rather than gated on the options, because `parentFn`
- * reaches every callback and only the callback knows whether it prints one. Memoized because a
- * callback may print the parent more than once, while discovering it — reading the class off the
- * running instance — must happen at most once per call.
+ * reaches every callback and only the callback knows whether it prints one. A trace that names
+ * neither a `parent.` template nor a `parentFn` therefore sanitizes no parent at all.
  */
 export function parentNameResolver(resolveParentName: () => string): () => string {
-  let resolved: string | undefined;
-
-  return () => (resolved ??= stringifyMessage(resolveParentName()));
+  return () => stringifyMessage(resolveParentName());
 }
 
 /** @internal The call a trace message is rendered from.

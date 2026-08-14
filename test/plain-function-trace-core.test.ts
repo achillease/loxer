@@ -747,6 +747,45 @@ test('both highlight aliases apply their boolean decision to open and close', as
   expect(devLogs.map((log) => log.moduleId)).toEqual(['TRACE', 'TRACE', 'ORDER', 'ORDER']);
 });
 
+// A side is read on the open and again on the close, so both ends need a row here: an
+// implementation that reads the option on one end alone silently drops the feature for half the
+// callers who named it. `.h()` and `.h(true)` are covered by the boolean test above.
+test.each([
+  { side: 'open', expected: [true, false] },
+  { side: 'close', expected: [false, true] },
+  { side: 'all', expected: [true, true] },
+] as const)('h($side) highlights the messages that side names', async ({ side, expected }) => {
+  const traced = await loadTracedModule(`
+    function calculate(value) { return value; }
+    trace.m('TRACE').h('${side}').info(calculate);
+    export { calculate };
+  `);
+
+  expect(traced.calculate(3)).toBe(3);
+  expect(devLogs.map((log) => log.highlighted)).toEqual(expected);
+});
+
+// A failure is how the box closes, so it takes the close side - the open is still highlighted by
+// `'open'` alone, and only the failing close reads `'close'`.
+test.each([
+  { side: 'open', expected: [true, false] },
+  { side: 'close', expected: [false, true] },
+] as const)(
+  'h($side) reaches the closing message of a failed call too',
+  async ({ side, expected }) => {
+    const traced = await loadTracedModule(`
+    const original = new Error('boom');
+    function fail() { throw original; }
+    trace.m('TRACE').h('${side}').info(fail);
+    export { fail, original };
+  `);
+
+    expect(() => traced.fail()).toThrow(traced.original);
+    expect(devLogs.map((log) => log.highlighted)).toEqual(expected);
+    expect(devLogs[1].message).toBe('fail failed');
+  }
+);
+
 test('fluent marker arguments evaluate once in source order and the whole chain is removed', async () => {
   const source = `
     const order = [];

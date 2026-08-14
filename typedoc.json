@@ -2,7 +2,6 @@
   "entryPoints": [
     "src/index.ts",
     "src/types.ts",
-    "src/decorators/index.ts",
     "src/loxes/index.ts",
     "src/core/index.ts",
     "src/core/Error.ts"

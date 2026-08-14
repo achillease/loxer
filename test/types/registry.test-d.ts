@@ -13,12 +13,10 @@ import { outputFromCallbacks } from '../output-capture.js';
 // produced - if the narrowing regresses, the unused directives fail the check.
 import {
   ErrorLoxRenderer,
-  initLoxer,
   Loxer,
   NamedError,
   OutputLoxRenderer,
   PropsPrinter,
-  trace as traceDecorator,
   type ErrorLox,
   type ErrorLoxTemplate,
   type LogLevel,
@@ -34,44 +32,43 @@ import {
   type OutputLoxTemplateFields,
   type PropsPrinterOptions,
   type OutputLox,
-  type TraceCallPrinter,
-  type TraceCloseMessageContext,
-  type TraceOpenMessageContext,
 } from 'loxer';
 import {
   trace as traceMarker,
-  type TraceCallPrinter as TraceCallPrinterFromTrace,
-  type TraceCloseMessageContext as TraceCloseMessageContextFromTrace,
-  type ExtendedPropsPrinterOptions,
-  type TraceMarkerOptions,
+  type TraceCallPrinter,
+  type TraceCloseMessageContext,
+  type TraceHighlight,
   type TraceModuleId,
+  type TraceOptions,
   type TracePoint,
   type TracePointMessage,
   type TracePointMessageContext,
   type TracePointModuleId,
   type TracePointSelector,
-  type TraceOpenMessageContext as TraceOpenMessageContextFromTrace,
+  type TraceOpenMessageContext,
+  type TracePrintOptions,
   type TracePropsTarget,
 } from 'loxer/trace';
 
-// Both public entry points expose the callback contracts consumers name in formatter helpers.
-const rootCallPrinter: TraceCallPrinter = (content) => String(content);
-const traceCallPrinter: TraceCallPrinterFromTrace = rootCallPrinter;
-const rootOpenContext: TraceOpenMessageContext<[string]> = {
+// `loxer/trace` is where a marker callback author names the contracts their formatters take.
+const traceCallPrinter: TraceCallPrinter = (content) => String(content);
+const traceOpenContext: TraceOpenMessageContext<[string]> = {
   args: ['order'],
-  fn: rootCallPrinter,
-  parentFn: rootCallPrinter,
+  fn: traceCallPrinter,
+  parentFn: traceCallPrinter,
 };
-const traceOpenContext: TraceOpenMessageContextFromTrace<[string]> = rootOpenContext;
-const rootCloseContext: TraceCloseMessageContext<number> = {
+const traceCloseContext: TraceCloseMessageContext<number> = {
   result: 1,
-  fn: rootCallPrinter,
-  parentFn: rootCallPrinter,
+  fn: traceCallPrinter,
+  parentFn: traceCallPrinter,
 };
-const traceCloseContext: TraceCloseMessageContextFromTrace<number> = rootCloseContext;
-void traceCallPrinter;
 void traceOpenContext;
 void traceCloseContext;
+// the decorators are gone from the package root
+// @ts-expect-error `@trace` was removed in favor of the build-time marker
+type GoneTraceDecorator = typeof import('loxer').trace;
+// @ts-expect-error `@initLoxer` was removed in favor of `Loxer.init()`
+type GoneInitLoxer = typeof import('loxer').initLoxer;
 
 // `satisfies`, NOT `: LoxerModules` - an annotation widens the keys to `string` and silently
 // disables every assertion below.
@@ -149,7 +146,6 @@ Loxer.module('PRES').log('typo');
 const NONE = { fullName: '', color: '#fff', devLevel: 'info', prodLevel: 'error' } satisfies Module;
 // the built-in ids may be overwritten alongside the registered ones
 Loxer.init({ modules: { ...modules, NONE } });
-initLoxer({ modules });
 // @ts-expect-error 'DB' is registered, but this object does not define it
 Loxer.init({ modules: { PERS: modules.PERS } });
 // @ts-expect-error 'PRES' is not a registered module id
@@ -158,8 +154,6 @@ Loxer.init({ modules: { ...modules, PRES: modules.PERS } });
 const strayModules = { ...modules, PRES: modules.PERS } satisfies LoxerModules;
 // @ts-expect-error 'PRES' is not a registered module id
 Loxer.init({ modules: strayModules });
-// @ts-expect-error 'PRES' is not a registered module id
-initLoxer({ modules: strayModules });
 // an `: LoxerModules` annotation replaces the keys with an index signature, which proves nothing
 const annotatedModules: LoxerModules = modules;
 // @ts-expect-error an index signature can not be checked against the registry
@@ -199,10 +193,8 @@ Loxer.init({ modules: numericLevels });
 Loxer.init({ defaultLevels: { devLevel: 'off', prodLevel: 'off' } });
 // @ts-expect-error an error is not a box, so there is no `Loxer.error.open()`
 Loxer.error.open('gone');
-// A marker error terminal is an ordinary trace box; decorator options still use BoxLevel.
+// a marker error terminal is an ordinary trace box
 traceMarker.error(load);
-// @ts-expect-error a decorator trace opens a public BoxLevel box, so `'error'` is not accepted
-traceDecorator({ level: 'error' });
 
 // --- trace options (`loxer/trace` inherits the narrowing from one `loxer` augmentation) -------
 declare function load(id: string): Promise<string>;
@@ -286,30 +278,27 @@ traceMarker.props('args').props('result').info(load);
 traceMarker.warn.m('PERS')(load);
 
 const tracePropsTarget: TracePropsTarget = 'argsResult';
-const extendedPrinter: ExtendedPropsPrinterOptions = { target: tracePropsTarget, depth: 1 };
+const extendedPrinter: TracePrintOptions = { target: tracePropsTarget, depth: 1 };
 void extendedPrinter;
 // @ts-expect-error a configured trace printer must route to a lifecycle side
-const missingPrintTarget: ExtendedPropsPrinterOptions = { depth: 1 };
+const missingPrintTarget: TracePrintOptions = { depth: 1 };
 void missingPrintTarget;
 
-type MarkerKeysAreExact = Equals<keyof TraceMarkerOptions, 'name' | 'openMessage' | 'closeMessage'>;
+type MarkerKeysAreExact = Equals<keyof TraceOptions, 'name' | 'openMessage' | 'closeMessage'>;
 const markerKeysAreExact: MarkerKeysAreExact = true;
-type DecoratorKeysAreExact = Equals<
-  keyof import('loxer').TraceOptions,
-  | 'name'
-  | 'openMessage'
-  | 'closeMessage'
-  | 'moduleId'
-  | 'level'
-  | 'highlight'
-  | 'argsAsProps'
-  | 'resultAsProps'
-  | 'printArgs'
-  | 'printResult'
->;
-const decoratorKeysAreExact: DecoratorKeysAreExact = true;
 void markerKeysAreExact;
-void decoratorKeysAreExact;
+
+// --- highlighting selects a lifecycle side --------------------------------------------------
+const traceHighlight: TraceHighlight = 'open';
+traceMarker.h(traceHighlight).info(load);
+traceMarker.h('close').info(load);
+traceMarker.highlight('all').info(load);
+traceMarker.h(true).info(load);
+traceMarker.h().info(load);
+// @ts-expect-error a side is named exactly, so a near miss is a compile error
+traceMarker.h('opened').info(load);
+// @ts-expect-error a point is one log, so it has no side to select
+traceMarker.point.h('open').info('saved');
 
 // The seven operational settings are a clean cut from marker options.
 // @ts-expect-error module routing is fluent on the marker
@@ -326,14 +315,6 @@ traceMarker.info(load, { resultAsProps: true });
 traceMarker.info(load, { printArgs: true });
 // @ts-expect-error result rendering is fluent on the marker
 traceMarker.info(load, { printResult: true });
-
-// --- the `@trace('MOD')` decorator shorthand --------------------------------------------------
-traceDecorator('PERS');
-traceDecorator({ moduleId: 'DB', openMessage: 'fn(args)' });
-// @ts-expect-error 'PRES' is not a registered module id
-traceDecorator('PRES');
-// @ts-expect-error 'PRES' is not a registered module id
-traceDecorator({ moduleId: 'PRES' });
 
 // --- props: rest parameters, freely typed message ---------------------------------------------
 declare const payment: { id: string };
@@ -468,13 +449,7 @@ traceMarker.info(load, { argsAsItem: true });
 traceMarker.info(load, { resultAsItem: true });
 traceMarker.props('args').pp({ target: 'args', depth: 1 }).info(load);
 traceMarker.props('result').pp('result').info(load);
-traceDecorator({
-  argsAsProps: true,
-  printArgs: true,
-  resultAsProps: true,
-  printResult: { keys: [] },
-});
-// @ts-expect-error `prettyResult` was removed; use `resultAsProps` with `printResult` instead
+// @ts-expect-error `prettyResult` was removed; use `props('result')` with `pp('result')` instead
 traceMarker.info(load, { closeMessage: 'prettyResult' });
 // @ts-expect-error 'functionName' / 'parent.functionName' were replaced by 'fn' / 'parent.fn'
 traceMarker.info(load, { openMessage: 'functionName' });
@@ -483,7 +458,7 @@ traceMarker.info(load, { openMessage: 'types' });
 // @ts-expect-error 'args' was replaced by 'fn(args)' / 'parent.fn(args)'
 traceMarker.info(load, { openMessage: 'args' });
 // @ts-expect-error 'result' was replaced by 'fn(result)' / 'parent.fn(result)'
-traceDecorator({ closeMessage: 'result' });
-// the full new template set stays accepted, on both entry points
+traceMarker.info(load, { closeMessage: 'result' });
+// the full template set stays accepted
 traceMarker.info(load, { openMessage: 'parent.fn(args)', closeMessage: 'parent.fn(result)' });
-traceDecorator({ openMessage: 'fn(types)', closeMessage: 'parent.fn' });
+traceMarker.info(load, { openMessage: 'fn(types)', closeMessage: 'parent.fn' });

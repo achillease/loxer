@@ -181,7 +181,7 @@ export interface Module {
 export type DefaultModuleId = 'NONE' | 'DEFAULT' | 'INVALID';
 
 /** The type of a module id, as accepted by `.module(...)`, `.m(...)`, `Loxer.getModuleLevel(...)`
- * and the `moduleId` trace option.
+ * and the trace marker's `trace.module(...)` / `trace.m(...)`.
  *
  * - it is `string` as long as the {@link LoxerModuleRegistry} is not augmented - every existing
  *   usage keeps compiling untouched

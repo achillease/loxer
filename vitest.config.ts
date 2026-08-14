@@ -1,13 +1,6 @@
 import { defineConfig } from 'vitest/config';
 
 export default defineConfig({
-  // the @trace / @initLoxer decorators rely on TypeScript's legacy decorators
-  // (tsconfig `experimentalDecorators`); tell Vite's oxc transformer to emit them.
-  oxc: {
-    decorator: {
-      legacy: true,
-    },
-  },
   test: {
     // describe/test/expect and the lifecycle hooks stay global, matching the
     // previous Jest setup so the suites need no per-file imports.

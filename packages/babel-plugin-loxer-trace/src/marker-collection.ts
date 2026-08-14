@@ -1007,10 +1007,9 @@ function declaringClassName(
  * Renders a class as the parent of its methods, dropping a trailing `Class`. A class named exactly
  * `Class` keeps its name, because stripping the suffix would leave no parent at all.
  *
- * The `@trace` decorator reads its class at run time and applies the same rule from
- * `src/core/TraceNames.ts`, which this plugin cannot import: the two are separate packages, and the
- * emitted call carries a finished string. `test/plain-function-trace-enclosing.test.ts` and
- * `test/decorators.test.ts` pin them against each other.
+ * The rule runs while the build runs and the emitted call carries the finished string, so the
+ * runtime never sees a raw class name. `test/plain-function-trace-enclosing.test.ts` pins the rule
+ * through the messages that emitted code produces.
  */
 function classParentName(className: string): string {
   return className !== 'Class' && className.endsWith('Class') ? className.slice(0, -5) : className;

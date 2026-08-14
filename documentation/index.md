@@ -153,6 +153,9 @@ The adapter also contributes the Vite settings that keep the page on one copy of
 it injects cannot force a mid-session re-optimization. `loxerTrace({ dedupe: false })` leaves both to
 you.
 
+[Environments](./environments.md) lists what each bundler, meta-framework, runtime and test runner
+needs to run the transform, including the ones that require a transform hook of your own.
+
 `openMessage` accepts `fn`, `parent.fn`, `fn(types)`, `fn(args)`, `parent.fn(types)`,
 `parent.fn(args)`, or a formatter. It defaults to `parent.fn`, so its opening box names the class
 or source file that contains the traced function when that parent is known. `closeMessage` accepts

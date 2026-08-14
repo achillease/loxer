@@ -1,5 +1,4 @@
 import { fileParentName } from '../packages/babel-plugin-loxer-trace/src/marker-collection';
-import { classParentName } from '../src/core/TraceNames';
 import { classParentNameCases } from './class-parent-name-cases';
 import {
   devLogs,
@@ -314,7 +313,6 @@ test('parent.fn reads an unnamed class from its binding and drops a trailing Cla
   expect(new traced.Checkout().calculate(10)).toBe(10);
   expect(new traced.OrderServiceClass().load('9')).toBe('9');
 
-  // the suffix rule is the decorator's, and the same option renders the same way for both
   expect(devLogs.map((log) => log.message)).toEqual([
     'Checkout.calculate()',
     'Checkout.calculate done',
@@ -324,10 +322,9 @@ test('parent.fn reads an unnamed class from its binding and drops a trailing Cla
 });
 
 // The trailing-`Class` rule is deliberately applied where a class name is read, not inside the
-// joiner that both parents share - it exists in two copies (`classParentName` in
-// `src/core/TraceNames.ts` and its twin in `marker-collection.ts`) for exactly this reason. Moving
-// it back into the shared joiner would silently rename every file whose name happens to end in
-// `Class`, so a file parent is the case that catches that regression.
+// joiner both parent kinds share - `classParentName` in `marker-collection.ts` runs on a class name
+// only. Moving it into the shared joiner would silently rename every file whose name happens to end
+// in `Class`, so a file parent is the case that catches that regression.
 test('parent.fn never drops a trailing Class from a file name', async () => {
   const traced = await loadTracedModule(
     `
@@ -1212,13 +1209,11 @@ test('an enclosing computed module evaluates once in modifier order on every inv
   expect(devLogs.map((log) => log.moduleId)).toEqual(['TRACE', 'TRACE', 'TRACE', 'TRACE']);
 });
 
-// The trailing-`Class` rule lives in two copies, one per package, because the packages cannot import
-// each other - so nothing but a test holds them to the same answer. Each row checks both against the
-// same expectation: the transform's copy through the message its emitted code produces, and the
-// runtime's copy directly. `test/decorators.test.ts` drives the decorator from the same table. A row
-// each, so a class name that breaks one copy cannot be skipped by an earlier row throwing.
+// The trailing-`Class` rule lives in the transform, and the message its emitted code produces is the
+// only place a test can observe it. A row each, so a class name that breaks the rule cannot be
+// skipped by an earlier row throwing.
 test.each(classParentNameCases)(
-  'both copies of the trailing-Class rule render $parent for class $className',
+  'the trailing-Class rule renders $parent for class $className',
   async ({ className, parent }) => {
     const traced = await loadTracedModule(`
     class ${className} {
@@ -1232,7 +1227,6 @@ test.each(classParentNameCases)(
 
     expect(new traced[className]().run('9')).toBe('9');
     expect(devLogs.map((log) => log.message)).toEqual([`${parent}.run()`, `${parent}.run done`]);
-    expect(classParentName(className)).toBe(parent);
   }
 );
 

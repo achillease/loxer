@@ -1,12 +1,12 @@
 // ---------------------------------------------------------------------------------------------
-//  Loxer playground — a near real-life example (no decorators)
+//  Loxer playground — a near real-life example
 // ---------------------------------------------------------------------------------------------
 //  Simulates the checkout endpoint of a small web shop. Two HTTP requests are handled
 //  *concurrently*, so their log boxes interleave — which is exactly where Loxer's box-style
 //  dataflow visualization shines: you can follow one async flow down its own column while the
 //  other keeps running next to it.
 //
-//  Features showcased (all of the public API except the @initLoxer / @trace decorators):
+//  Features showcased (all of the public API except the build-time `loxer/trace` marker):
 //    - init() with modules (colors, per-module levels, per-module box layout styles) + config
 //    - log() / open() / of().add() / of().close() / of().error() / of().namedError() / error()
 //    - modifiers: .m()/.module(), .h()/.highlight(), .pp()/.printProps()  (chained in any order)

@@ -4,8 +4,6 @@ export { ErrorLoxRenderer, OutputLoxRenderer } from './core/OutputRenderer.js';
 export { PropsPrinter } from './core/PropsPrinter.js';
 export { BoxLayouts } from './core/BoxFormat.js';
 export type { BoxSymbols } from './core/BoxFormat.js';
-export * from './decorators/initLoxer.js';
-export * from './decorators/trace.js';
 export { Loxer, resetLoxer } from './Loxer.js';
 export { NamedError } from './core/Error.js';
 export type { ErrorLox } from './loxes/ErrorLox.js';
@@ -41,8 +39,8 @@ export type {
 
 /** ## Registry for type-safe module ids
  * #### Augment this interface to type `Loxer.init({ modules })`, `.module(...)`, `.m(...)`,
- * `Loxer.getModuleLevel(...)` and the `moduleId` trace option after the modules your project
- * declares.
+ * `Loxer.getModuleLevel(...)` and the trace marker's module selectors (`trace.m(...)` and
+ * `trace.<Module>`) after the modules your project declares.
  *
  * While this interface is empty — the default — a module id is an ordinary `string` and nothing
  * changes. Register your modules once and every module id becomes autocompleted and typo-checked:

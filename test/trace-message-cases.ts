@@ -1,17 +1,15 @@
-import type { TraceOptions } from '../src';
+import type { TraceOptions } from '../src/trace';
 
 /** the two option types, read off `TraceOptions` rather than imported directly - neither
- * `FunctionOpenMessage` nor `FunctionCloseMessage` is exported by `src/index.ts` or `src/trace.ts`,
- * only the fully-applied `TraceOptions` is */
+ * `FunctionOpenMessage` nor `FunctionCloseMessage` is exported by `src/trace.ts`, only the
+ * fully-applied `TraceOptions` is */
 type OpenMessage = TraceOptions<any, any>['openMessage'];
 type CloseMessage = TraceOptions<any, any>['closeMessage'];
 
 /**
- * One shared table of trace-message cases, driven against both trace runtimes -
- * `test/decorators-message-templates.test.ts` (the `@trace` decorator, through `installTraced`) and
- * `test/plain-function-trace-message-templates.test.ts` (the `trace()` marker runtime, through
- * `__startTrace`) - so neither runtime's copy of the shared renderer (`src/core/TraceMessage.ts`) can
- * render a template, a printer, or a fallback the other does not.
+ * One shared table of trace-message cases, driven against the trace runtime by
+ * `test/plain-function-trace-message-templates.test.ts` (through `__startTrace`), so every template,
+ * printer and fallback the shared renderer (`src/core/TraceMessage.ts`) offers has a row here.
  *
  * Every case names the traced call as the spec's own table does: a method `calculate(price,
  * quantity)` of a class `Checkout`, called `calculate(19.95, 3)` and resolving `{ total: 59.85 }` -
@@ -36,8 +34,8 @@ export const DEFAULT_ARGS: [number, number] = [19.95, 3];
 export const DEFAULT_RESULT = { total: 59.85 };
 /** the name both runtimes trace every case under */
 export const CALL_NAME = 'calculate';
-/** the parent both runtimes resolve for every case in {@link templateCases} - the decorator reads it
- * off a `class Checkout {}` instance, the marker is handed it as `__startTrace`'s `parentName` */
+/** the parent the runtime resolves for every case in {@link templateCases} - the marker is handed it
+ * as `__startTrace`'s `parentName` */
 export const PARENT_NAME = 'Checkout';
 
 /** The spec's own table (`documentation/specs/trace-message-templates.md`, "Templates"), one row per
@@ -219,8 +217,7 @@ export const nonSerializableResultCases: TemplateCase[] = [
 ];
 
 /** Every `parent.` template, run where no parent is known at all - a `qualifiedFunctionName` guard
- * keeps an absent parent absent rather than joining it to nothing. Both runtimes reach this the same
- * way: the decorator through a call whose `this` carries no reachable class, the marker through an
+ * keeps an absent parent absent rather than joining it to nothing. The marker reaches this through an
  * `undefined` `parentName`. */
 export const parentlessFallbackCases: TemplateCase[] = [
   {

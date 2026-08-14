@@ -1,14 +1,11 @@
 /**
- * The inputs to the trailing-`Class` rule, shared by every suite that checks a copy of it.
+ * The inputs to the trailing-`Class` rule, shared by every suite that checks it.
  *
- * The rule exists twice on purpose: `classParentName` in `src/core/TraceNames.ts` renders the class
- * the `@trace` decorator reads off a running instance, and a second copy in
- * `packages/babel-plugin-loxer-trace/src/marker-collection.ts` renders the class the transform reads
- * out of the source. The two are separate packages and cannot import each other, so nothing but a
- * test can hold them to the same answer — and each copy has now been hand-edited twice.
- *
- * One table drives all three consumers: the runtime helper directly, the transform through the code
- * it emits, and the decorator through the message it logs. Editing one copy alone fails here.
+ * The rule lives in `classParentName`
+ * (`packages/babel-plugin-loxer-trace/src/marker-collection.ts`), which renders the class the
+ * transform reads out of the source. It runs while the build runs, so the only place a test
+ * observes it is the message the emitted code produces — this table is what pins that message to
+ * an expectation per class name, and the rule has been hand-edited twice.
  *
  * Every `className` is written to be a legal identifier, so a suite can declare a class with it as
  * well as pass it as a string.

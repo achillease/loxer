@@ -50,54 +50,6 @@ const MAX_INDENT = 20;
 /** what a value renders as when reading it throws — see {@link PropsPrinter.safely} */
 const UNREADABLE = '[unreadable]';
 
-/** @internal Resolves the `boolean | PropsPrinterOptions` shorthand a trace option accepts into the
- * `PropsPrinterOptions | undefined` a log carries: `true` is a rendering request with default
- * configuration, `false` and an absent option are no request at all. */
-export function resolvePrintProps(
-  option: boolean | PropsPrinterOptions | undefined
-): PropsPrinterOptions | undefined {
-  if (option === undefined || option === false) {
-    return undefined;
-  }
-
-  return option === true ? {} : option;
-}
-
-/** @internal the configurations a trace's opening and closing log carry for rendering their props */
-export interface TracePrintProps {
-  readonly printArgs: PropsPrinterOptions | undefined;
-  readonly printResult: PropsPrinterOptions | undefined;
-}
-
-/** @internal the one answer for a trace that asked for no rendering, shared so the default path
- * allocates nothing — this is read on every traced call */
-const NO_TRACE_PRINT_PROPS: TracePrintProps = { printArgs: undefined, printResult: undefined };
-
-/** @internal Resolves the two rendering options a trace accepts into the configurations its opening
- * and closing log carry.
- *
- * One home for the pair, because the decorator runtime (`src/decorators/trace.ts`) and the marker
- * runtime (`src/trace.ts`) reach it from call sites that cannot be shared, and a second copy of a
- * gate reading two options is a second chance to drop one of them.
- */
-export function resolveTracePrintProps(options?: {
-  printArgs?: boolean | PropsPrinterOptions;
-  printResult?: boolean | PropsPrinterOptions;
-}): TracePrintProps {
-  // only a trace that asked for rendering resolves a configuration for it, the way only the
-  // `parent.` templates resolve a parent name — this runs on every traced call, ahead of the level
-  // that decides whether the log is written at all
-  if (options?.printArgs === undefined && options?.printResult === undefined) {
-    return NO_TRACE_PRINT_PROPS;
-  }
-
-  // both sides are read, so naming either one alone keeps working
-  return {
-    printArgs: resolvePrintProps(options.printArgs),
-    printResult: resolvePrintProps(options.printResult),
-  };
-}
-
 /** A helper class that renders the **props** of a `Lox` into a readable string.
  *
  * The built-in console output uses it for every log whose call chained

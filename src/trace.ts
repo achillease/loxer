@@ -10,21 +10,22 @@ import {
 import { sanitizeControlCharacters } from './Helpers.js';
 import { __openTrace, __writeTracePoint, Loxer } from './Loxer.js';
 import {
-  ExtendedPropsPrinterOptions,
-  TraceMarkerOptions,
-  TraceMarkerRuntimeOptions,
+  TraceHighlight,
+  TraceOptions,
   TracePointRuntimeOptions,
+  TracePrintOptions,
   TracePropsTarget,
+  TraceRuntimeOptions,
 } from './tracing-types.js';
 import { ModuleId, RegisteredModuleId } from './types.js';
 
 export type {
-  ExtendedPropsPrinterOptions,
   TraceCallPrinter,
   TraceCloseMessageContext,
-  TraceMarkerOptions,
+  TraceHighlight,
   TraceOpenMessageContext,
   TraceOptions,
+  TracePrintOptions,
   TracePropsTarget,
   TracePointSelector,
   TracePointMessage,
@@ -38,14 +39,14 @@ type PlainFunctionTraceTarget = (...args: any[]) => unknown;
 interface TraceMarkerCall {
   <T extends PlainFunctionTraceTarget>(
     target: T,
-    options?: TraceMarkerOptions<Parameters<T>, Awaited<ReturnType<T>>>
+    options?: TraceOptions<Parameters<T>, Awaited<ReturnType<T>>>
   ): T;
   <T extends PlainFunctionTraceTarget>(
     targets: readonly T[],
-    options?: TraceMarkerOptions<Parameters<T>, Awaited<ReturnType<T>>>
+    options?: TraceOptions<Parameters<T>, Awaited<ReturnType<T>>>
   ): void;
   <Args extends readonly unknown[] = readonly unknown[], Result = unknown>(
-    options?: TraceMarkerOptions<Args, Result>
+    options?: TraceOptions<Args, Result>
   ): void;
 }
 
@@ -91,10 +92,10 @@ type TraceMarkerModuleMembers<Delete extends string> = {
 interface TraceMarkerModifiers<Delete extends string> {
   m(moduleId?: ModuleId): TraceMarkerChain<Delete | 'm' | 'module'>;
   module(moduleId?: ModuleId): TraceMarkerChain<Delete | 'm' | 'module'>;
-  h(doit?: boolean): TraceMarkerChain<Delete | 'h' | 'highlight'>;
-  highlight(doit?: boolean): TraceMarkerChain<Delete | 'h' | 'highlight'>;
+  h(doit?: boolean | TraceHighlight): TraceMarkerChain<Delete | 'h' | 'highlight'>;
+  highlight(doit?: boolean | TraceHighlight): TraceMarkerChain<Delete | 'h' | 'highlight'>;
   props(target: TracePropsTarget): TraceMarkerChain<Delete | 'props'>;
-  pp(target: TracePropsTarget | ExtendedPropsPrinterOptions): TraceMarkerChain<Delete | 'pp'>;
+  pp(target: TracePropsTarget | TracePrintOptions): TraceMarkerChain<Delete | 'pp'>;
 }
 
 export type TraceMarker = TraceMarkerChain<never> & { readonly point: TracePoint };
@@ -287,7 +288,7 @@ export function __tracePoint(
 export function __startTrace(
   functionName: string,
   args: any[],
-  options: TraceMarkerRuntimeOptions = {},
+  options: TraceRuntimeOptions = {},
   parentName?: string
 ): FunctionTrace {
   const { moduleId } = options;
@@ -301,7 +302,7 @@ export function __startTrace(
   const openMessage = renderOpenMessage(markerOptions.openMessage, { ...call, args });
   const { printArgs, printResult } = resolveMarkerPrintProps(options.printProps);
   const openProps = targetsSide(options.propsTarget, 'args') ? args : [];
-  const highlightOpen = isHighlighted(options.highlight);
+  const highlightOpen = isHighlighted(options.highlight, 'open');
   if (printArgs !== undefined) {
     Loxer.pp(printArgs);
   }
@@ -315,13 +316,14 @@ export function __startTrace(
       const closeProps =
         targetsSide(options.propsTarget, 'result') && result !== undefined ? [result] : [];
       (printResult !== undefined
-        ? Loxer.pp(printResult).h(isHighlighted(options.highlight)).of(id)
-        : Loxer.h(isHighlighted(options.highlight)).of(id)
+        ? Loxer.pp(printResult).h(isHighlighted(options.highlight, 'close')).of(id)
+        : Loxer.h(isHighlighted(options.highlight, 'close')).of(id)
       ).close(closeMessage, ...closeProps);
     },
     failure(error: any): void {
       Loxer.of(id).error(error);
-      Loxer.h(isHighlighted(options.highlight))
+      // a failure is how the box closes, so it takes the close side's highlighting
+      Loxer.h(isHighlighted(options.highlight, 'close'))
         .of(id)
         .close(renderFailureMessage(markerOptions.closeMessage, call));
     },
@@ -332,11 +334,19 @@ function targetsSide(target: TracePropsTarget | undefined, side: 'args' | 'resul
   return target === side || target === 'argsResult';
 }
 
-function isHighlighted(highlight: TraceMarkerRuntimeOptions['highlight']): boolean {
-  return highlight === true;
+/** Whether one lifecycle side of a traced call is highlighted.
+ *
+ * A bare `.h()` and `.h(true)` reach here as `true` and highlight both sides, which is also what
+ * `'all'` selects; `'open'` and `'close'` name a single side.
+ */
+function isHighlighted(
+  highlight: TraceRuntimeOptions['highlight'],
+  side: 'open' | 'close'
+): boolean {
+  return highlight === true || highlight === 'all' || highlight === side;
 }
 
-function resolveMarkerPrintProps(printProps: TraceMarkerRuntimeOptions['printProps']): {
+function resolveMarkerPrintProps(printProps: TraceRuntimeOptions['printProps']): {
   printArgs: PropsPrinterOptions | undefined;
   printResult: PropsPrinterOptions | undefined;
 } {
@@ -359,7 +369,7 @@ function resolveMarkerPrintProps(printProps: TraceMarkerRuntimeOptions['printPro
 function withoutPrintTarget({
   target: _target,
   ...options
-}: ExtendedPropsPrinterOptions): PropsPrinterOptions {
+}: TracePrintOptions): PropsPrinterOptions {
   return options;
 }
 

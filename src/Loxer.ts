@@ -1,4 +1,4 @@
-import { BoxFactory } from './core/BoxFactory.js';
+import { BoxFactory } from './core/output/BoxFactory.js';
 import {
   castError,
   getErrorMessage,
@@ -6,14 +6,14 @@ import {
   NamedError,
   sanitizeErrorMessage,
 } from './core/Error.js';
-import { BoxLevel, LogLevel } from './core/Levels.js';
-import { Loxes } from './core/Loxes.js';
-import { LoxHistory } from './core/LoxHistory.js';
-import { Modules } from './core/Modules.js';
-import { OutputStreams } from './core/OutputStreams.js';
-import { PropsPrinterOptions, stringifyMessage } from './core/PropsPrinter.js';
-import { realmSlot } from './core/Realm.js';
-import { isTraceMessage, MessageSpan } from './core/TraceMessage.js';
+import { BoxLevel, LogLevel } from './core/runtime/Levels.js';
+import { Loxes } from './core/runtime/Loxes.js';
+import { LoxHistory } from './core/runtime/LoxHistory.js';
+import { Modules } from './core/runtime/Modules.js';
+import { OutputStreams } from './core/output/OutputStreams.js';
+import { PropsPrinterOptions, stringifyMessage } from './core/output/PropsPrinter.js';
+import { realmSlot } from './core/runtime/Realm.js';
+import { isTraceMessage, MessageSpan } from './tracing/TraceMessage.js';
 import { is, isNES, sanitizeControlCharacters } from './Helpers.js';
 import { ErrorLox } from './loxes/ErrorLox.js';
 import { Lox, LoxInit, LoxType } from './loxes/Lox.js';
@@ -27,7 +27,7 @@ import {
   OfLoxes,
   OpenedLox,
 } from './types.js';
-import type { TracePointRuntimeOptions } from './tracing-types.js';
+import type { TracePointRuntimeOptions } from './tracing/types.js';
 
 /** Deliberately non-exported so only the trace runtime can open error-level boxes. */
 const traceOpener: unique symbol = Symbol.for('loxer.traceOpener') as never;

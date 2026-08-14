@@ -1,5 +1,5 @@
-import { Box } from '../core/BoxFactory.js';
-import { DEFAULT_EXTENDED_MODULE, ExtendedModule } from '../core/Modules.js';
+import { Box } from '../core/output/BoxFactory.js';
+import { DEFAULT_EXTENDED_MODULE, ExtendedModule } from '../core/runtime/Modules.js';
 import { Lox } from './Lox.js';
 /** @module OutputLox */
 
@@ -13,7 +13,7 @@ export class OutputLox extends Lox {
   /** a string that represents the time consumption from the opening log's `timestamp` until this log appeared
    * - is `''` when the log is a single `Loxer.log()` or an opening log itself
    */
-  timeText: string | '' = '';
+  timeText: string = '';
   /** the time consumption (in `ms`) from the opening log's `timestamp` until this log appeared
    * - is `undefined` when the log is a single `Loxer.log()` or an opening log itself
    */

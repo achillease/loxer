@@ -1,10 +1,10 @@
-import { ErrorLox } from '../loxes/ErrorLox.js';
-import { OutputLox } from '../loxes/OutputLox.js';
+import { ErrorLox } from '../../loxes/ErrorLox.js';
+import { OutputLox } from '../../loxes/OutputLox.js';
 
 /** @internal */
 export class LoxHistory {
   private _history: (OutputLox | ErrorLox)[] = [];
-  private _size: number;
+  private readonly _size: number;
 
   constructor(size?: number) {
     this._size = size ?? 50;

@@ -8,10 +8,10 @@ import {
   renderPointCallbackMessage,
   type TraceCall,
   type TraceMessage,
-} from '../src/core/TraceMessage';
+} from '../src/tracing/TraceMessage';
 import { __tracePoint } from '../src/trace';
-import { ANSIFormat } from '../src/core/ANSIFormat';
-import { ColoredOutputLoxRenderer } from '../src/core/OutputRenderer';
+import { ANSIFormat } from '../src/core/output/ANSIFormat';
+import { ColoredOutputLoxRenderer } from '../src/core/output/OutputRenderer';
 import type { OutputLox } from '../src/loxes';
 
 /** the call every test in this file renders against, unless it needs its own parent or arguments */

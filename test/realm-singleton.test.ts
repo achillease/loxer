@@ -1,6 +1,6 @@
 import { outputFromCallbacks } from './output-capture';
 import { vi } from 'vitest';
-import { clearRealmSlot } from '../src/core/Realm';
+import { clearRealmSlot } from '../src/core/runtime/Realm';
 import type { ErrorLox, OutputLox } from '../src/loxes';
 
 // mock console: an instance without callbacks renders to the console fallback, and the pre-init

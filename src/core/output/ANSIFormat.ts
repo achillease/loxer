@@ -1,9 +1,9 @@
 import { Color } from './color/index.js';
-import { safeNumber } from '../Helpers.js';
-import { ErrorLox } from '../loxes/ErrorLox.js';
-import { OutputLox } from '../loxes/OutputLox.js';
-import type { MessageSpanKind } from './TraceMessage.js';
-import type { LoxColorOptions } from '../types.js';
+import { safeNumber } from '../../Helpers.js';
+import { ErrorLox } from '../../loxes/ErrorLox.js';
+import { OutputLox } from '../../loxes/OutputLox.js';
+import type { MessageSpanKind } from '../../tracing/TraceMessage.js';
+import type { LoxColorOptions } from '../../types.js';
 
 /** the yellow a `'warn'` log is rendered in where the configuration names no other */
 const DEFAULT_WARN_COLOR = '#ffa50f';

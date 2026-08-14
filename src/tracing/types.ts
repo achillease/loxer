@@ -1,5 +1,5 @@
-import { PropsPrinterOptions } from './core/PropsPrinter.js';
-import { LogLevel, ModuleId } from './types.js';
+import { PropsPrinterOptions } from '../core/output/PropsPrinter.js';
+import { LogLevel, ModuleId } from '../types.js';
 
 /**
  * Which side of a traced call the marker's `h()` / `highlight()` modifier highlights.

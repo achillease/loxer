@@ -1,5 +1,5 @@
 import { Loxer, resetLoxer } from '../src';
-import type { MessageSpanKind } from '../src/core/TraceMessage';
+import type { MessageSpanKind } from '../src/tracing/TraceMessage';
 
 /** The carrier's brand key. `Symbol.for` is deliberate — it is what lets two copies of Loxer's
  * modules in one realm recognize each other's carrier — and the cost of that choice is that a caller

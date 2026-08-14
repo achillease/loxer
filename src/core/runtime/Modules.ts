@@ -1,7 +1,7 @@
 import { isHidden, LogLevel, resolveThreshold } from './Levels.js';
-import { is } from '../Helpers.js';
-import { Lox } from '../loxes/Lox.js';
-import { LoxerModules, LoxerOptions, Module } from '../types.js';
+import { is } from '../../Helpers.js';
+import { Lox } from '../../loxes/Lox.js';
+import { LoxerModules, LoxerOptions, Module } from '../../types.js';
 
 interface ModulesProps {
   isDev: boolean;
@@ -84,6 +84,7 @@ export class Modules {
       slicedName += ' ';
     }
     const hidden = this.isHiddenAt(lox.level, lox.moduleId);
+
     return {
       loxModule: {
         ...mod,

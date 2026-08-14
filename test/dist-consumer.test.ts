@@ -2,7 +2,7 @@ import { existsSync } from 'node:fs';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { dirname, resolve } from 'node:path';
 import { vi } from 'vitest';
-import { clearRealmSlot, realmSlot } from '../src/core/Realm';
+import { clearRealmSlot, realmSlot } from '../src/core/runtime/Realm';
 import type { ErrorLox, OutputLox } from '../src/loxes';
 
 /** What a consumer imports: the emitted `dist/` tree, not `src/`.

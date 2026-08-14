@@ -1,5 +1,5 @@
-import { ErrorLox } from '../loxes/ErrorLox.js';
-import { OutputLox } from '../loxes/OutputLox.js';
+import { ErrorLox } from '../../loxes/ErrorLox.js';
+import { OutputLox } from '../../loxes/OutputLox.js';
 import { ANSIFormat } from './ANSIFormat.js';
 import { BoxFactory } from './BoxFactory.js';
 import { PropsPrinter } from './PropsPrinter.js';
@@ -8,7 +8,7 @@ import type {
   LoxerOutputRendererOptions,
   OutputLoxTemplate,
   OutputLoxTemplateFields,
-} from '../types.js';
+} from '../../types.js';
 
 function renderProps(lox: OutputLox, colored: boolean = false, boxIndentation: number = 0): string {
   if (!lox.printProps) {

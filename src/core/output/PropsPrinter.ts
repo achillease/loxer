@@ -1,5 +1,5 @@
-import { sanitizeControlCharacters, sanitizeTerminalControlCharacters } from '../Helpers.js';
-import { Lox } from '../loxes/Lox.js';
+import { sanitizeControlCharacters, sanitizeTerminalControlCharacters } from '../../Helpers.js';
+import { Lox } from '../../loxes/Lox.js';
 import { ANSIFormat } from './ANSIFormat.js';
 
 /** the options to configure the "default" output of a log's props */

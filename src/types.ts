@@ -1,13 +1,13 @@
 /** @module Loxer */
-import type { BoxLayoutStyle } from './core/BoxFormat.js';
-import type { LogLevel } from './core/Levels.js';
-import type { PropsPrinterOptions } from './core/PropsPrinter.js';
+import type { BoxLayoutStyle } from './core/output/BoxFormat.js';
+import type { LogLevel } from './core/runtime/Levels.js';
+import type { PropsPrinterOptions } from './core/output/PropsPrinter.js';
 // type-only, so it is erased on emit and no runtime import cycle exists
 import type { LoxerModuleRegistry } from './index.js';
 import type { ErrorLox } from './loxes/ErrorLox.js';
 import type { OutputLox } from './loxes/OutputLox.js';
 
-export type { BoxLevel, LogLevel } from './core/Levels.js';
+export type { BoxLevel, LogLevel } from './core/runtime/Levels.js';
 
 export type Loxer = LoxerCore & LogMethods & Modifiers<never>;
 /** this is the main type of {@link Loxer} */

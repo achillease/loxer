@@ -1,7 +1,7 @@
-import { OutputLox } from '../loxes/OutputLox.js';
+import { OutputLox } from '../../loxes/OutputLox.js';
 import { ANSIFormat } from './ANSIFormat.js';
 import { BoxLayouts, BoxLayoutStyle, BoxSymbols } from './BoxFormat.js';
-import { Loxes } from './Loxes.js';
+import { Loxes } from '../runtime/Loxes.js';
 
 export type Box = (BoxSegment | 'empty')[];
 
@@ -45,8 +45,10 @@ export class BoxFactory {
       );
     }
     // print the start of the box
-    box.push({ box: 'openEdge', color: lox.module.color, boxLayout: lox.module.boxLayoutStyle });
-    box.push({ box: 'openEnd', color: lox.module.color, boxLayout: lox.module.boxLayoutStyle });
+    box.push(
+      { box: 'openEdge', color: lox.module.color, boxLayout: lox.module.boxLayoutStyle },
+      { box: 'openEnd', color: lox.module.color, boxLayout: lox.module.boxLayoutStyle }
+    );
 
     return box;
   }

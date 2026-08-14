@@ -1,6 +1,6 @@
 import { Loxer, resetLoxer } from '../src';
 import { outputFromCallbacks } from './output-capture';
-import { Modules } from '../src/core/Modules';
+import { Modules } from '../src/core/runtime/Modules';
 import { ErrorLox, OutputLox } from '../src/loxes';
 import { Lox } from '../src/loxes/Lox';
 import type { Module } from '../src/types';

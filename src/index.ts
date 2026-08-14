@@ -1,17 +1,17 @@
-export * from './core/ANSIFormat.js';
-export * from './core/BoxFactory.js';
-export { ErrorLoxRenderer, OutputLoxRenderer } from './core/OutputRenderer.js';
-export { PropsPrinter } from './core/PropsPrinter.js';
-export { BoxLayouts } from './core/BoxFormat.js';
-export type { BoxSymbols } from './core/BoxFormat.js';
+export * from './core/output/ANSIFormat.js';
+export * from './core/output/BoxFactory.js';
+export { ErrorLoxRenderer, OutputLoxRenderer } from './core/output/OutputRenderer.js';
+export { PropsPrinter } from './core/output/PropsPrinter.js';
+export { BoxLayouts } from './core/output/BoxFormat.js';
+export type { BoxSymbols } from './core/output/BoxFormat.js';
 export { Loxer, resetLoxer } from './Loxer.js';
 export { NamedError } from './core/Error.js';
 export type { ErrorLox } from './loxes/ErrorLox.js';
 export type { OutputLox } from './loxes/OutputLox.js';
 // referenced by the option / lox types below, so a consumer can name every member's type
-export type { BoxLayoutStyle } from './core/BoxFormat.js';
-export type { PropsPrinterOptions } from './core/PropsPrinter.js';
-export type { ExtendedModule } from './core/Modules.js';
+export type { BoxLayoutStyle } from './core/output/BoxFormat.js';
+export type { PropsPrinterOptions } from './core/output/PropsPrinter.js';
+export type { ExtendedModule } from './core/runtime/Modules.js';
 export type { LoxType } from './loxes/Lox.js';
 export type {
   BoxLevel,

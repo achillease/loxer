@@ -1,4 +1,4 @@
-import { isHidden, LEVEL_ORDER, type LogLevel } from '../src/core/Levels';
+import { isHidden, LEVEL_ORDER, type LogLevel } from '../src/core/runtime/Levels';
 
 // The ordering direction is the one thing a whole-suite pass cannot prove: inverting it flips
 // individual visibility while the aggregate counts can still work out. So pin it directly.

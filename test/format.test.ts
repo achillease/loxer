@@ -1,6 +1,6 @@
 import { ANSIFormat, Box, BoxFactory, ErrorLoxRenderer, OutputLoxRenderer } from '../src';
-import { Loxes } from '../src/core/Loxes';
-import { renderOpenMessage } from '../src/core/TraceMessage';
+import { Loxes } from '../src/core/runtime/Loxes';
+import { renderOpenMessage } from '../src/tracing/TraceMessage';
 import { ErrorLox } from '../src/loxes/ErrorLox';
 import { OutputLox } from '../src/loxes/OutputLox';
 

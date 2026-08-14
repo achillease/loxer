@@ -1,5 +1,5 @@
-import { Color, parseColorToRgb } from '../src/core/color/parseColor';
-import { COLOR_NAMES } from '../src/core/color';
+import { Color, parseColorToRgb } from '../src/core/output/color/parseColor';
+import { COLOR_NAMES } from '../src/core/output/color';
 
 describe('parseColorToRgb - hex', () => {
   test('parses a 6-digit hex color', () => {

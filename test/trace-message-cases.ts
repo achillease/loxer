@@ -9,7 +9,7 @@ type CloseMessage = TraceOptions<any, any>['closeMessage'];
 /**
  * One shared table of trace-message cases, driven against the trace runtime by
  * `test/plain-function-trace-message-templates.test.ts` (through `__startTrace`), so every template,
- * printer and fallback the shared renderer (`src/core/TraceMessage.ts`) offers has a row here.
+ * printer and fallback the shared renderer (`src/tracing/TraceMessage.ts`) offers has a row here.
  *
  * Every case names the traced call as the spec's own table does: a method `calculate(price,
  * quantity)` of a class `Checkout`, called `calculate(19.95, 3)` and resolving `{ total: 59.85 }` -
@@ -268,8 +268,16 @@ export interface FailureCase {
  * failed` for the `'parent.fn'` forms and for a callback. */
 export const failureCases: FailureCase[] = [
   { name: "closeMessage 'fn' (the default)", expectedFailure: 'calculate failed' },
-  { name: "closeMessage 'parent.fn'", closeMessage: 'parent.fn', expectedFailure: 'Checkout.calculate failed' },
-  { name: "closeMessage 'fn(result)'", closeMessage: 'fn(result)', expectedFailure: 'calculate failed' },
+  {
+    name: "closeMessage 'parent.fn'",
+    closeMessage: 'parent.fn',
+    expectedFailure: 'Checkout.calculate failed',
+  },
+  {
+    name: "closeMessage 'fn(result)'",
+    closeMessage: 'fn(result)',
+    expectedFailure: 'calculate failed',
+  },
   {
     name: "closeMessage 'parent.fn(result)'",
     closeMessage: 'parent.fn(result)',

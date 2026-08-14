@@ -5,8 +5,8 @@ import type {
   TraceCallPrinter,
   TracePointMessage,
   TracePointSelector,
-} from '../tracing-types.js';
-import { stringifyMessage } from './PropsPrinter.js';
+} from './types.js';
+import { stringifyMessage } from '../core/output/PropsPrinter.js';
 
 /**
  * Joins a traced function's parent to its name for the `parent.` message templates.
@@ -155,8 +155,8 @@ function extractSpans(marked: string): TraceMessage {
   let depth = 0;
   let start = 0;
   let kind: MessageSpanKind = 'value';
-  for (let index = 0; index < marked.length; index++) {
-    const character = marked[index];
+  for (const element of marked) {
+    const character = element;
     const opened = openedKind(character);
     if (opened !== undefined) {
       if (depth === 0) {
@@ -265,7 +265,7 @@ function callbackMarkers(): {
    * the printer never wrote.
    */
   const issuedRegion = new RegExp(
-    `\\uE000${id}:(\\d+):start\\uE001([\\s\\S]*?)\\uE000${id}:\\1:end\\uE001`,
+    String.raw`\uE000${id}:(\d+):start\uE001([\s\S]*?)\uE000${id}:\1:end\uE001`,
     'g'
   );
   /** What is left of one of this invocation's tokens once a callback has cut into its nonce.
@@ -278,8 +278,8 @@ function callbackMarkers(): {
    * Once a cut removes the whole nonce, the remaining `:n:start` text is indistinguishable from text
    * the callback wrote itself and is therefore preserved rather than guessed at.
    */
-  const noncePrefixRemnant = `\\uE000${anyPrefixOf(id)}(?::\\d*(?::${EDGE_PREFIXES})?)?\\uE001?`;
-  const nonceSuffixRemnant = `${anySuffixOf(id)}:\\d+:(?:start|end)\\uE001?`;
+  const noncePrefixRemnant = String.raw`\uE000${anyPrefixOf(id)}(?::\d*(?::${EDGE_PREFIXES})?)?\uE001?`;
+  const nonceSuffixRemnant = String.raw`${anySuffixOf(id)}:\d+:(?:start|end)\uE001?`;
   const incompleteToken = new RegExp(`${noncePrefixRemnant}|${nonceSuffixRemnant}`, 'g');
   const markCallback = (kind: MessageSpanKind, text: string) => {
     const tokenId = ++nextTokenId;

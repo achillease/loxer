@@ -1,7 +1,7 @@
-import { ErrorLox } from '../loxes/ErrorLox.js';
-import { OutputLox } from '../loxes/OutputLox.js';
-import type { LoxerOutputStream } from '../types.js';
-import { LoxHistory } from './LoxHistory.js';
+import { ErrorLox } from '../../loxes/ErrorLox.js';
+import { OutputLox } from '../../loxes/OutputLox.js';
+import type { LoxerOutputStream } from '../../types.js';
+import { LoxHistory } from '../runtime/LoxHistory.js';
 import { ColoredErrorLoxRenderer, ColoredOutputLoxRenderer } from './OutputRenderer.js';
 
 interface OutputStreamsProps {

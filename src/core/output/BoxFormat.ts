@@ -1,5 +1,5 @@
 export interface BoxSymbols {
-  /** the litte (left) arrow at the end of the opening box */
+  /** the little (left) arrow at the end of the opening box */
   openEnd: string;
   /** the edge that goes from right to bottom */
   openEdge: string;
@@ -13,7 +13,7 @@ export interface BoxSymbols {
   cross: string;
   /** the edge that goes from top to right */
   closeEdge: string;
-  /** the litte (right) arrow at the end of a closing log */
+  /** the little (right) arrow at the end of a closing log */
   closeEnd: string;
 }
 /** @internal */

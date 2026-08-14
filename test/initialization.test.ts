@@ -7,12 +7,12 @@ import {
   resetLoxer,
   type LoxerOutputEvent,
 } from '../src';
-import { Loxes } from '../src/core/Loxes';
-import { Modules } from '../src/core/Modules';
+import { Loxes } from '../src/core/runtime/Loxes';
+import { Modules } from '../src/core/runtime/Modules';
 import { ErrorLox, OutputLox } from '../src/loxes';
-import { OutputStreams } from '../src/core/OutputStreams';
+import { OutputStreams } from '../src/core/output/OutputStreams';
 import { Lox } from '../src/loxes/Lox';
-import { LoxHistory } from '../src/core/LoxHistory';
+import { LoxHistory } from '../src/core/runtime/LoxHistory';
 
 // mock console
 global.console.log = vi.fn();
@@ -21,10 +21,10 @@ global.console.error = vi.fn();
 // init() registers any callback
 global.console.warn = vi.fn();
 
-/** mirrors `PENDING_QUEUE_CAP` in `src/core/Loxes.ts`, which is deliberately not exported: the
+/** mirrors `PENDING_QUEUE_CAP` in `src/core/runtime/Loxes.ts`, which is deliberately not exported: the
  * pre-init queue takes no configuration, because `init()`'s config is by construction too late */
 const PENDING_QUEUE_CAP = 1000;
-/** mirrors `PENDING_QUEUE_TIMEOUT_MS` in `src/core/Loxes.ts` */
+/** mirrors `PENDING_QUEUE_TIMEOUT_MS` in `src/core/runtime/Loxes.ts` */
 const PENDING_QUEUE_TIMEOUT_MS = 5000;
 
 /** the messages the queue reported, in call order */
@@ -117,7 +117,11 @@ test('default init', () => {
 });
 
 test('disabled init', () => {
-  Loxer.init({ dev: true, config: { disabled: true }, output: outputFromCallbacks({ devLog, devError }) });
+  Loxer.init({
+    dev: true,
+    config: { disabled: true },
+    output: outputFromCallbacks({ devLog, devError }),
+  });
   expect(devLogs.length).toBe(0);
   // expect(devLogs[0].message).toBe('Loxer initialized');
 });
@@ -514,7 +518,11 @@ test('an error event owns a history snapshot independent from later logs and con
   ]);
 });
 test('Rest', () => {
-  Loxer.init({ dev: false, config: { historyCacheSize: 1 }, output: outputFromCallbacks({ devLog, devError }) });
+  Loxer.init({
+    dev: false,
+    config: { historyCacheSize: 1 },
+    output: outputFromCallbacks({ devLog, devError }),
+  });
   const l = new Loxes();
   // an unfindable id (NaN) resolves to no open lox
   expect(l.findOpenLox(Number('wrong'))).toBeUndefined();

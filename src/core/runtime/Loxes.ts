@@ -1,6 +1,6 @@
-import { filterDef, isNumber } from '../Helpers.js';
-import { OutputLox } from '../loxes/OutputLox.js';
-import { Lox } from '../loxes/Lox.js';
+import { filterDef, isNumber } from '../../Helpers.js';
+import { OutputLox } from '../../loxes/OutputLox.js';
+import { Lox } from '../../loxes/Lox.js';
 import { ExtendedModule } from './Modules.js';
 
 type OpenBoxType = { id: number; module: ExtendedModule };
@@ -61,7 +61,7 @@ export class Loxes {
   private trimOpenLogBuffer() {
     let done = false;
     while (!done) {
-      if (this._openLogBuffer.length > 0 && !this._openLogBuffer[this._openLogBuffer.length - 1]) {
+      if (this._openLogBuffer.length > 0 && !this._openLogBuffer.at(-1)) {
         this._openLogBuffer.pop();
       } else {
         done = true;

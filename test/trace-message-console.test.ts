@@ -3,7 +3,7 @@ import { Loxer, resetLoxer } from '../src';
 import { __startTrace } from '../src/trace';
 
 // the built-in development console is only reached when no `devLog`/`devError` callback is
-// registered (`src/core/OutputStreams.ts`) - registering one bypasses the console fallback
+// registered (`src/core/output/OutputStreams.ts`) - registering one bypasses the console fallback
 // entirely, per `rules/testing.md`
 global.console.log = vi.fn();
 
@@ -71,7 +71,9 @@ test('the built-in development console colors the parent and function name with 
 
   const calls = (console.log as Mock).mock.calls.map((call) => call[0] as string);
   // the default parent.fn template colors both the parent and the function name...
-  expect(calls[0]).toContain('\x1b[38;2;78;201;176mCheckout\x1b[0m.\x1b[38;2;144;237;32mcalculate\x1b[0m()');
+  expect(calls[0]).toContain(
+    '\x1b[38;2;78;201;176mCheckout\x1b[0m.\x1b[38;2;144;237;32mcalculate\x1b[0m()'
+  );
   // ...but never an omitted payload (fgString)
   expect(calls[0]).not.toContain('\x1b[38;2;18;129;14m');
 });

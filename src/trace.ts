@@ -1,12 +1,14 @@
-import { resolveThreshold } from './core/Levels.js';
-import { PropsPrinterOptions } from './core/PropsPrinter.js';
+import { resolveThreshold } from './core/runtime/Levels.js';
+import { PropsPrinterOptions } from './core/output/PropsPrinter.js';
 import {
   parentNameResolver,
   renderCloseMessage,
   renderFailureMessage,
   renderOpenMessage,
   TraceCall,
-} from './core/TraceMessage.js';
+  renderPointCallbackMessage,
+  renderPointMessage,
+} from './tracing/TraceMessage.js';
 import { sanitizeControlCharacters } from './Helpers.js';
 import { __openTrace, __writeTracePoint, Loxer } from './Loxer.js';
 import {
@@ -16,7 +18,7 @@ import {
   TracePrintOptions,
   TracePropsTarget,
   TraceRuntimeOptions,
-} from './tracing-types.js';
+} from './tracing/types.js';
 import { ModuleId, RegisteredModuleId } from './types.js';
 
 export type {
@@ -30,9 +32,8 @@ export type {
   TracePointSelector,
   TracePointMessage,
   TracePointMessageContext,
-} from './tracing-types.js';
-import type { TracePointMessage, TracePointSelector } from './tracing-types.js';
-import { renderPointCallbackMessage, renderPointMessage } from './core/TraceMessage.js';
+} from './tracing/types.js';
+import type { TracePointMessage, TracePointSelector } from './tracing/types.js';
 
 type PlainFunctionTraceTarget = (...args: any[]) => unknown;
 
@@ -81,19 +82,22 @@ type TraceMarkerReservedMember =
 /** A registered module id that is safe to select directly on {@link trace}. */
 export type TraceModuleId = Exclude<RegisteredModuleId, TraceMarkerReservedMember>;
 
+type DeleteModule<Delete extends string> = Delete | 'm' | 'module';
+type DeleteHighlight<Delete extends string> = Delete | 'h' | 'highlight';
+
 type TraceMarkerChain<Delete extends string> = TraceMarkerTerminals &
   Omit<TraceMarkerModifiers<Delete>, Delete> &
   ('module' extends Delete ? Record<never, never> : TraceMarkerModuleMembers<Delete>);
 
 type TraceMarkerModuleMembers<Delete extends string> = {
-  readonly [ModuleId in TraceModuleId]: TraceMarkerChain<Delete | 'm' | 'module'>;
+  readonly [ModuleId in TraceModuleId]: TraceMarkerChain<DeleteModule<Delete>>;
 };
 
 interface TraceMarkerModifiers<Delete extends string> {
-  m(moduleId?: ModuleId): TraceMarkerChain<Delete | 'm' | 'module'>;
-  module(moduleId?: ModuleId): TraceMarkerChain<Delete | 'm' | 'module'>;
-  h(doit?: boolean | TraceHighlight): TraceMarkerChain<Delete | 'h' | 'highlight'>;
-  highlight(doit?: boolean | TraceHighlight): TraceMarkerChain<Delete | 'h' | 'highlight'>;
+  m(moduleId?: ModuleId): TraceMarkerChain<DeleteModule<Delete>>;
+  module(moduleId?: ModuleId): TraceMarkerChain<DeleteModule<Delete>>;
+  h(doit?: boolean | TraceHighlight): TraceMarkerChain<DeleteHighlight<Delete>>;
+  highlight(doit?: boolean | TraceHighlight): TraceMarkerChain<DeleteHighlight<Delete>>;
   props(target: TracePropsTarget): TraceMarkerChain<Delete | 'props'>;
   pp(target: TracePropsTarget | TracePrintOptions): TraceMarkerChain<Delete | 'pp'>;
 }
@@ -137,13 +141,13 @@ type TracePointChain<Delete extends string> = TracePointTerminals &
   Omit<TracePointModifiers<Delete>, Delete> &
   ('module' extends Delete ? Record<never, never> : TracePointModuleMembers<Delete>);
 type TracePointModuleMembers<Delete extends string> = {
-  readonly [ModuleId in TracePointModuleId]: TracePointChain<Delete | 'm' | 'module'>;
+  readonly [ModuleId in TracePointModuleId]: TracePointChain<DeleteModule<Delete>>;
 };
 interface TracePointModifiers<Delete extends string> {
-  m(moduleId?: ModuleId): TracePointChain<Delete | 'm' | 'module'>;
-  module(moduleId?: ModuleId): TracePointChain<Delete | 'm' | 'module'>;
-  h(doit?: boolean): TracePointChain<Delete | 'h' | 'highlight'>;
-  highlight(doit?: boolean): TracePointChain<Delete | 'h' | 'highlight'>;
+  m(moduleId?: ModuleId): TracePointChain<DeleteModule<Delete>>;
+  module(moduleId?: ModuleId): TracePointChain<DeleteModule<Delete>>;
+  h(doit?: boolean): TracePointChain<DeleteHighlight<Delete>>;
+  highlight(doit?: boolean): TracePointChain<DeleteHighlight<Delete>>;
   pp(options?: PropsPrinterOptions): TracePointChain<Delete | 'pp' | 'printProps'>;
   printProps(options?: PropsPrinterOptions): TracePointChain<Delete | 'pp' | 'printProps'>;
 }
@@ -177,17 +181,18 @@ export function __withTraceFunctionLength<T extends PlainFunctionTraceTarget>(
 
 /** @internal */
 export function __observeTraceResult(traceState: FunctionTrace, result: any): boolean {
-  try {
-    Promise.prototype.then.call(
-      result,
-      (value) => traceState.success(value),
-      (error) => traceState.failure(error)
-    );
-
-    return true;
-  } catch {
+  // Real Promises only; use the prototype `.then` so a hijacked own method is ignored.
+  if (!(result instanceof Promise)) {
     return false;
   }
+
+  Promise.prototype.then.call(
+    result,
+    (value) => traceState.success(value),
+    (error) => traceState.failure(error)
+  );
+
+  return true;
 }
 
 const missingTransform = (): never => {

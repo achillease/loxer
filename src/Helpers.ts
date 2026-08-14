@@ -15,7 +15,7 @@ export function isNES(arg: unknown): arg is string {
 
 /** @internal is a valid defined number */
 export function isNumber(arg: unknown): arg is number {
-  return is(arg) && typeof arg === 'number' && !isNaN(arg);
+  return is(arg) && typeof arg === 'number' && !Number.isNaN(arg);
 }
 /** @internal filters a list after it's defined values (typed) */
 export function filterDef<T>(list: (T | undefined)[]): T[] {
@@ -45,7 +45,7 @@ const TERMINAL_CONTROL_CHARACTERS = /[\u0000-\u0008\u000B-\u001F\u007F-\u009F]/g
 
 /** @internal Escapes one control character as its `\uXXXX` form. */
 function escapeControlCharacter(character: string): string {
-  return String.raw`\u${character.charCodeAt(0).toString(16).padStart(4, '0')}`;
+  return String.raw`\u${character.codePointAt(0)!.toString(16).padStart(4, '0')}`;
 }
 
 /** @internal Escapes every control character in `text` as its `\uXXXX` form.
@@ -87,8 +87,7 @@ export function safeNumber(
   range: [number, number],
   integer: boolean = false
 ): number {
-  let ranged = value < range[0] ? range[0] : value;
-  ranged = value > range[1] ? range[1] : ranged;
+  const ranged = Math.min(Math.max(value, range[0]), range[1]);
 
   return integer ? Math.floor(ranged) : ranged;
 }

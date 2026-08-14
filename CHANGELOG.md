@@ -96,6 +96,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/), and this
 
 ### Changed
 
+- Reorganize internal runtime, output, and tracing modules while preserving the public package API.
+
 - **Breaking:** Replace `Loxer.init({ callbacks: { devLog, prodLog, devError, prodError } })` with
   one `output(event)` stream on the options root. Narrow the event's `environment` (`'dev'` /
   `'prod'`) and `kind` (`'log'` / `'error'`) fields to handle it — an error event also carries its

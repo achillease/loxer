@@ -1,7 +1,7 @@
-import type { LogLevel } from '../core/Levels.js';
+import type { LogLevel } from '../core/runtime/Levels.js';
 // type-only, so the specifier is erased on emit and no runtime cycle is closed
-import type { PropsPrinterOptions } from '../core/PropsPrinter.js';
-import type { MessageSpan } from '../core/TraceMessage.js';
+import type { PropsPrinterOptions } from '../core/output/PropsPrinter.js';
+import type { MessageSpan } from '../tracing/TraceMessage.js';
 import { is } from '../Helpers.js';
 /** @module Lox */
 

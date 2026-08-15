@@ -1,6 +1,7 @@
 {
   "entryPoints": [
     "src/index.ts",
+    "src/trace.ts",
     "src/types.ts",
     "src/loxes/index.ts",
     "src/core/index.ts",
@@ -9,6 +10,16 @@
   "name": "Loxer",
   "includeVersion": true,
   "disableSources": true,
+  "intentionallyNotExported": [
+    "h",
+    "Lox",
+    "m",
+    "pp",
+    "TraceMarkerChain",
+    "TraceMarkerReservedMember",
+    "TracePointChain",
+    "TracePointReservedMember"
+  ],
   "out": "docs",
   "sort": ["instance-first", "source-order"],
   "excludeInternal": true

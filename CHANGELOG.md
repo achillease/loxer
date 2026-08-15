@@ -31,7 +31,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/), and this
   Loxer calls written inside a traced body are linked to that function's box automatically. The Vite
   plugin also contributes `optimizeDeps.include` and `resolve.dedupe` entries for `loxer` and
   `loxer/trace`, so the import it injects cannot trigger a mid-session dependency re-optimization;
-  set its `dedupe: false` to own that configuration yourself.
+  set its `dedupe: false` to own that configuration yourself. Start with the verified Vite quick
+  start, then use the tracing, logging/output, integration, and reference guides for full setup and
+  operational details.
 - Add fluent configuration for the plain-function marker: `.m()` / `.module()` select the module,
   `.h()` / `.highlight()` highlight both the open and the close message — or one side with
   `.h('open')` / `.h('close')`, where a failed call highlights as a close — `.props(target)` attaches

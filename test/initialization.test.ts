@@ -361,7 +361,7 @@ test('public structured renderers reproduce the default development console outp
   expect(outputTemplate.props).not.toContain('\x1b[');
   expect(outputTemplate.colored.props).toContain('\x1b[');
   expect((console.log as Mock).mock.calls[0][0]).toBe(
-    `${outputTemplate.colored.time} ${outputTemplate.colored.module}${outputTemplate.colored.box}${outputTemplate.colored.message}\t${outputTemplate.colored.timeConsumption}${outputTemplate.colored.props}`
+    `${outputTemplate.colored.time} ${outputTemplate.colored.module}${outputTemplate.colored.box}${outputTemplate.colored.message}  ${outputTemplate.colored.timeConsumption}${outputTemplate.colored.props}`
   );
 
   Loxer.h().error(new Error('errorText'));

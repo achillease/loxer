@@ -41,9 +41,13 @@ pre-commit hook (`.husky/pre-commit`) runs `pnpm lint`.
 - `src/decorators/` contains the `@initLoxer` and `@trace` decorators.
 - `test/` covers observable logger behavior and low-level formatting helpers; excluded from the
   tsconfig build and from lint.
-- `documentation/` is the authored user guide and the home for workflow artifacts: specs live in
-  `documentation/specs/`; each plan and its worklog live together in
-  `documentation/plans/<date>-<slug>/`.
+- `README.md` is the public package page and the rendered TypeDoc landing page. Keep it a
+  capability-rich entry point with a representative working example and task links into the
+  authored guide; do not duplicate exhaustive guides or API reference there.
+- `documentation/index.md` is the authored guide landing page, and `documentation/quick-start.md`
+  is the golden Vite setup path. Keep the remaining authored guide as a small set of substantial,
+  task-oriented pages; specs live in `documentation/specs/`, and each plan and its worklog live
+  together in `documentation/plans/<date>-<slug>/`.
 - `docs/` is generated TypeDoc HTML and may be wiped entirely by `pnpm docs` (`cleanOutputDir`);
   never put hand-written files there. Steering docs live in `rules/` instead, indexed below.
 - `___src/` is outside `tsconfig.json`'s `include` and is not part of the package build.

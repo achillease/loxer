@@ -42,6 +42,7 @@
     "lint": "eslint .",
     "prepare": "husky && pnpm build",
     "docs": "typedoc --options typedoc.json",
+    "docs:images": "pnpm build && powershell.exe -ExecutionPolicy Bypass -File scripts/render-powershell-docs-images.ps1",
     "demo": "pnpm --filter loxer-vite-trace-demo dev",
     "demo:build": "pnpm --filter loxer-vite-trace-demo build"
   },

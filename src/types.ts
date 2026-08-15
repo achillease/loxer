@@ -245,7 +245,7 @@ export type LoxerOutputEvent =
 /** Receives every visible log and error emitted by Loxer. */
 export type LoxerOutputStream = (event: LoxerOutputEvent) => void;
 
-/** Colors used by {@link ANSIFormat.colorLox} and the public output renderers. */
+/** Colors used by `ANSIFormat.colorLox` and the public output renderers. */
 export interface LoxerColorOptions {
   /** Background color for highlighted ordinary log messages. Omit it to invert foreground/background. */
   highlightColor?: string;
@@ -302,7 +302,7 @@ export interface ErrorLoxTemplate extends OutputLoxTemplate {
   };
 }
 
-/** Options accepted by {@link ANSIFormat.colorLox}. */
+/** Options accepted by `ANSIFormat.colorLox`. */
 export interface LoxColorOptions {
   /** Opacity for the module title. Defaults to `1`. */
   moduleOpacity?: number;
@@ -578,7 +578,7 @@ export interface LogMethods {
 /** Any possible type that a `catch` could return */
 export type ErrorType = Error | string | number | boolean | Record<string | number, unknown>;
 
-/** Methods returned from the {@link LogMethods.of} method */
+/** Methods returned from `Loxer.of()` */
 export interface OfLoxes {
   /** assigns a single log to a log box and imitates the behavior of {@link LogMethods.log}
    * - it takes the level of the opening log. To name a level, use {@link OfLoxes.warn},

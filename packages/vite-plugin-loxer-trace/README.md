@@ -1,22 +1,21 @@
 # vite-plugin-loxer-trace
 
-Vite adapter for Loxer's plain-function tracing. It rewrites every `trace.info(...)` marker in your
-source into the instrumentation Loxer needs, so a traced function opens and closes its own box on
-each invocation without you writing a single log call.
+Vite adapter for Loxer's build-time function markers and contextual trace points. It delegates the
+transform to `babel-plugin-loxer-trace` and supplies Vite filtering, parser selection, source maps,
+and single-copy configuration.
 
-The transform itself lives in `babel-plugin-loxer-trace`; this package is the Vite wiring around it.
+The package requires Node 20.19 or newer, `loxer` 3, `@babel/core` 7.26.10 or Babel 8, and Vite 5–8.
 
 ## Install
 
 ```sh
-npm install --save-dev vite-plugin-loxer-trace
+pnpm add loxer
+pnpm add -D @babel/core vite-plugin-loxer-trace
 ```
 
-`loxer`, `vite` and `@babel/core` are peer dependencies.
+## Configure and verify
 
-## Usage
-
-```typescript
+```ts
 // vite.config.ts
 import { defineConfig } from 'vite';
 import loxerTrace from 'vite-plugin-loxer-trace';
@@ -26,39 +25,25 @@ export default defineConfig({
 });
 ```
 
-The plugin runs with `enforce: 'pre'`, ahead of Vite's own transforms. Then mark the functions you
-want traced:
-
-```typescript
+```ts
 import { trace } from 'loxer/trace';
 
 function placeOrder(id: string) {
-  /* ... */
+  trace.point.ORDER.info('fn', 'Placing order', id);
 }
 
-trace.info(placeOrder, { moduleId: 'ORDER' });
+trace.ORDER.info(placeOrder, { openMessage: 'fn(args)' });
 ```
 
-A file is transformed only when it mentions `loxer/trace`, so files without a marker cost nothing.
+Run the normal Vite build. The emitted module contains runtime helper calls and no `trace` marker.
+An executing marker throws a missing-transform error.
 
-### Context-aware trace points
-
-The Vite adapter transforms `trace.point` in the same pre-transform pass as function markers. Use it
-inside a named function for one contextual log without opening a new box:
-
-```ts
-function placeOrder(id: string) {
-  trace.point.info('parent.fn', 'Placing order', id);
-}
-```
-
-The terminal accepts an ordinary message, an `fn` or `parent.fn` selector, or a callback receiving
-`{ fn, parentFn }`. Values after the message are props. A point in a traced function joins that
-invocation's box.
+Read the [Vite integration guide](../../documentation/integrations.md#vite) for the full setup and
+the [tracing handbook](../../documentation/tracing.md) for marker syntax.
 
 ## Options
 
-```typescript
+```ts
 loxerTrace({
   include: /\.[cm]?[jt]sx?$/,
   exclude: /(?:^|[/\\])node_modules(?:[/\\]|$)/,
@@ -66,48 +51,50 @@ loxerTrace({
 });
 ```
 
-| Option    | Type      | Default                       | Meaning                                          |
-| --------- | --------- | ----------------------------- | ------------------------------------------------ |
-| `include` | `RegExp`  | any `.js`/`.jsx`/`.ts`/`.tsx` | which module ids may be transformed              |
-| `exclude` | `RegExp`  | anything under `node_modules` | which module ids are skipped, checked first      |
-| `dedupe`  | `boolean` | `true`                        | contribute the single-copy Vite config (below)  |
+| Option | Default | Meaning |
+| --- | --- | --- |
+| `include` | JavaScript/TypeScript and JSX/TSX extensions | Module ids eligible for transform |
+| `exclude` | `node_modules` | Module ids skipped before `include` |
+| `dedupe` | `true` | Contribute the single-copy Vite config |
 
-Both patterns are matched against the module id with its query string stripped, and a global or
-sticky expression is safe to reuse — the plugin resets `lastIndex` around every test.
+Patterns receive the module id with its query string removed. Global and sticky expressions are safe;
+the adapter resets `lastIndex` for each test.
 
-TypeScript and JSX are detected from the file extension, and Babel source maps are passed back to
-Vite, so breakpoints and stack traces stay on your own source.
+The plugin runs with `enforce: 'pre'`, derives Babel parser plugins from the filename, and returns
+source maps for composition with later Vite transforms. A file without `loxer/trace` is returned
+without a Babel pass.
 
-## The single-copy config
+## Single-copy config
 
-With `dedupe` left on, the plugin contributes through Vite's `config` hook:
+With `dedupe` enabled, the `config` hook contributes missing entries to:
 
-- `resolve.dedupe: ['loxer']` — resolves to one copy of the package when several installs exist in
-  the tree.
-- `optimizeDeps.include: ['loxer', 'loxer/trace']` — both entry points enter the **same**
-  dependency-optimization run at startup. This matters because the plugin injects `loxer/trace`
-  imports into files you never edited: without it, Vite discovers that entry only once such a file is
-  first requested, re-optimizes mid-session, and reloads the page.
+- `resolve.dedupe: ['loxer']`;
+- `optimizeDeps.include: ['loxer', 'loxer/trace']`.
 
-Your own values are kept: the plugin contributes only the entries you have not already listed, so
-nothing is clobbered and nothing is duplicated. Set `dedupe: false` to manage both settings
-yourself.
+Putting both entry points into one dependency-optimization run avoids a reload when generated helper
+imports reveal `loxer/trace` later in development. Existing user values remain intact. Loxer's
+realm-scoped singleton shares state across loaded copies; this configuration keeps the module graph
+and optimizer stable.
 
-Loxer's logger instance is realm-scoped, so several loaded copies share one instance and one
-history regardless of this setting — the config keeps the module graph tidy and the dev server from
-reloading, not the logger correct.
+## Linked working copies
 
-### Pre-bundling and a working copy of Loxer
+Vite's dependency cache does not use edits inside a linked package as a cache key. For a Loxer
+working copy, manage optimization explicitly:
 
-`optimizeDeps.include` pre-bundles Loxer, and Vite keys that cache on the lockfile and the resolved
-config — never on a package's own files. If you point the dependency at a working copy you edit
-(`link:`, `pnpm link`, `file:`, a workspace path), rebuilding it changes nothing the cache hash reads,
-so the page keeps running the build that was current when the cache was written. This is a
-development-setup concern rather than something the plugin decides for you: keep that copy out of the
-optimizer from your own config, with `optimizeDeps.exclude: ['loxer', 'loxer/trace']` alongside
-`loxerTrace({ dedupe: false })`, and let Vite resolve it through its real path so the dev server
-watches it and a rebuild reaches the page.
+```ts
+export default defineConfig({
+  plugins: [loxerTrace({ dedupe: false })],
+  optimizeDeps: { exclude: ['loxer', 'loxer/trace'] },
+  resolve: { dedupe: ['loxer'] },
+});
+```
 
-## License
+This keeps Vite resolving the working copy by real path so rebuilds reach the page.
 
-MIT © Christian Prinz
+## Boundaries
+
+The default filter handles `.js`, `.cjs`, `.mjs`, `.jsx`, `.ts`, `.cts`, `.mts`, and `.tsx`. It does
+not transform script blocks embedded in `.vue`, `.svelte`, or `.astro` files. Put traced functions in
+an imported module or supply a host-specific transform for the extracted block.
+
+MIT © Christian Prinz.

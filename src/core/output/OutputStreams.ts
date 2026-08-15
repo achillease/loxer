@@ -50,7 +50,7 @@ export class OutputStreams {
     } else {
       const lox = ColoredOutputLoxRenderer(outputLox, this.getPropsIndentation(outputLox));
       console.log(
-        `${lox.time} ${lox.module}${lox.box}${lox.message}\t${lox.timeConsumption}${lox.props}`
+        `${lox.time} ${lox.module}${lox.box}${lox.message}  ${lox.timeConsumption}${lox.props}`
       );
     }
   }

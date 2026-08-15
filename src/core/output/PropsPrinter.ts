@@ -111,7 +111,7 @@ export class PropsPrinter {
    * PropsPrinter.of(outputLox)
    * ```
    *
-   * The printer is configured from the lox' own {@link Lox.printProps} - the configuration the call
+   * The printer is configured from the lox' own `printProps` field - the configuration the call
    * chained onto `Loxer.printProps(...)`. Whether to render at all stays the caller's decision:
    * `lox.printProps` is `undefined` for a log that did not ask for it.
    *

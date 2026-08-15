@@ -8,11 +8,26 @@
 
 ## Always
 
-- Keep `documentation/` examples aligned with the public API exported by `src/index.ts`.
+- Keep `documentation/` examples aligned with the public entry point that owns the API:
+  `src/index.ts` for logging and `src/trace.ts` for tracing.
 - Keep JSDoc in `src/` aligned with actual behavior before regenerating `docs/` — TypeDoc reads
   JSDoc, not `documentation/`.
 - When a feature adds a concept or option a user must learn, update the relevant guide in
   `documentation/` in the same change.
+- Keep `documentation/index.md` a navigation hub. Put authored teaching content in the canonical
+  section that owns it: `learn/`, `tracing/`, `logging/`, `integrations/`, `output/`, `recipes/`,
+  or `reference/`.
+- Keep `documentation/quick-start.md` as the golden five-minute Vite path. It must remain a
+  complete, runnable route from installation through observed browser-console output; route Babel,
+  Node, and test-runner setup to their integration guides instead of branching the quick start.
+- Keep `documentation/props.md`, `documentation/environments.md`, and
+  `documentation/Performance.md` as compatibility routes only. Their canonical destinations are
+  `documentation/logging/props.md`, `documentation/integrations/`, and
+  `documentation/reference/performance.md`; add or revise teaching content at those destinations.
+- Keep conceptual and task guidance in `documentation/`. Adapter package READMEs own exhaustive
+  package-local installation, configuration, transform behavior, options, and maintenance
+  details. A task guide may show the minimum setup needed to complete its path, then link to the
+  package README instead of maintaining a second exhaustive explanation.
 - Write every guide as if the current design had always been the design. State what a thing is
   and does, not what it used to be or why it changed. Ban the diff-narrating register — "now",
   "no longer", "instead of", "was removed", "still", "also" — and rationale that argues against a
@@ -30,9 +45,9 @@
   `getModuleLevel`), which stay as they are.
 - Confine upgrade/migration content (version-to-version tables, before/after mappings) to a
   dedicated appendix after the guide's last teaching section, opening with a line telling readers
-  on the current major that it's safe to skip — see `documentation/index.md`'s
-  "Appendix: Migrating from Loxer 2". A numbered/teaching section must never reference a previous
-  major version.
+  on the current major that it's safe to skip — see
+  `documentation/reference/migrating-from-2.md`. A numbered/teaching section must never reference a
+  previous major version.
 - When an example's code changes, re-read every comment adjacent to it — a stale comment (e.g.
   one that names an action the code no longer performs) teaches the old model and is worse than
   no comment.
@@ -75,18 +90,26 @@
 - Never copy generated API reference content (member lists, generated signatures) into
   `documentation/`; link to the TypeDoc output for exhaustive members and keep `documentation/`
   task-oriented.
+- Never turn a compatibility route into a second guide, or copy exhaustive adapter-owned package
+  details into a canonical guide. Link to the owner so one page remains authoritative.
 - Never duplicate content owned by `rules/coding-conventions.md` or `rules/testing.md` — this
   file covers documentation only.
 
 ## Files
 
-- `documentation/index.md` — main usage guide.
-- `documentation/props.md` — rich props printing.
-- `documentation/Performance.md` — benchmark methodology and results.
+- `documentation/index.md` — hub for the authored guide.
+- `documentation/quick-start.md` — golden Vite quick start.
+- `documentation/{learn,tracing,logging,integrations,output,recipes,reference}/` — canonical
+  authored sections.
+- `documentation/{props.md,environments.md,Performance.md}` — compatibility routes; keep their
+  content limited to links to canonical guides.
+- `packages/{babel-plugin-loxer-trace,vite-plugin-loxer-trace}/README.md` — package-local adapter
+  installation, configuration, transform, options, and maintenance details.
 - `documentation/debt.md` — standing register of known-but-unfixed defects. Append; don't re-create.
   A maintainer document, not a guide — the "describe the current design" rules above govern the
   guides and do not apply to it.
 
 ## Reference
 
-- TypeDoc entry points and output dir: `typedoc.json`.
+- TypeDoc entry points and output dir: `typedoc.json`; `src/trace.ts` is a public entry point and
+  must remain represented in generated API navigation.

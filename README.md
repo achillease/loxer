@@ -1,129 +1,28 @@
-![Loxer_Logo](https://raw.githubusercontent.com/pcprinz/loxer/master/assets/Logo.png)
+# Loxer
 
-# Loxer ![GitHub release (latest by date)](https://img.shields.io/github/v/release/pcprinz/loxer) ![GitHub Release Date](https://img.shields.io/github/release-date/pcprinz/loxer) ![GitHub branch checks state](https://img.shields.io/github/checks-status/pcprinz/loxer/master?label=build) ![npm bundle size](https://img.shields.io/bundlephobia/min/loxer) ![GitHub](https://img.shields.io/github/license/pcprinz/loxer)
+[![GitHub release](https://img.shields.io/github/v/release/pcprinz/loxer)](https://github.com/pcprinz/loxer/releases)
+[![Build](https://img.shields.io/github/checks-status/pcprinz/loxer/master?label=build)](https://github.com/pcprinz/loxer/actions)
+[![npm bundle size](https://img.shields.io/bundlephobia/min/loxer)](https://bundlephobia.com/package/loxer)
+[![License](https://img.shields.io/github/license/pcprinz/loxer)](https://github.com/pcprinz/loxer/blob/master/LICENSE)
 
-<!-- ![Coverage Badge](https://img.shields.io/endpoint?url=https://gist.githubusercontent.com/pcprinz/329161dbcfd07c60d90c29cc887130fb/raw/loxer__heads_master.json) -->
+**See an operation as it unfolds.** Loxer turns ordinary TypeScript and JavaScript functions into
+timed, nested execution traces. Each call gets a lifecycle box; contextual logs, props, and failures
+stay with the work that produced them.
 
-<!-- https://shields.io/ -->
+| Build time                                               | Runtime                                         | Destination                     |
+| -------------------------------------------------------- | ----------------------------------------------- | ------------------------------- |
+| Your function → `trace` marker → Vite or Babel transform | Timed lifecycle box → contextual logs and props | Console output or your callback |
 
-**Loxer** is a middleware logger that allows you to:
+The marker is removed at build time. The function keeps its arguments, `this`, return value, thrown
+error, and native Promise identity. Loxer observes the lifecycle around it.
 
-- distribute logs to different output streams (dev / prod / log / error)
-- write logs at a level (`error` / `warn` / `info` / `debug`)
-- categorize logs in modules (each logging up to its own threshold)
-- connect logs to each other to "boxes"
-- improve error logs (with more information)
-- get significantly better visualization of the logs
-- visualize the data flow (including time measurement)
-- full Typescript support
-- rich output of values (props) for debugging purposes
+## What it looks like in code
 
-With Loxer, logs never have to be deleted again, as they hardly use any resources when switched off. Logs and error records can easily be forwarded to crash reporting systems such as Firebase. This makes it possible to get error reports that are just as good in the production environment as in the development environment. Furthermore, errors in concurrent functional processes can be detected more easily.
-
-## Documentation
-
-The **[API Reference](https://pcprinz.github.io/loxer/index.html)** provides a complete overview of all the features of the package. Furthermore, the complete source code is documented with js-doc and typed with typscript, which guarantees full IDE support.
-
-The **[Documentation](https://github.com/pcprinz/loxer/blob/master/documentation/index.md)** contains detailed instructions on how to use the package.
-
-The **[Performance Tests](https://github.com/pcprinz/loxer/blob/master/documentation/Performance.md)** documents how small the influence of the package is on the performance of an application.
-
-## Usage
-
-Write logs in an intuitive way:
-
-```typescript
-// initialize it somewhere (once) -> singleton
-Loxer.init();
-
-// simple log
-Loxer.log('my message');
-
-// highlight logs
-Loxer.highlight().log('my message');
-
-// use different levels
-Loxer.error('that is serious');
-Loxer.warn('still working, but something is wrong');
-Loxer.info('an alias for .log(...)');
-Loxer.debug('just informative');
-
-// set modules
-Loxer.module('AUTH').log('user logged in');
-
-// use boxes
-const lox = Loxer.open('opening log');
-Loxer.of(lox).add('appended log');
-Loxer.of(lox).error('appended error');
-Loxer.of(lox).close('closing log');
-
-// combine everything like you want
-Loxer.module('AUTH').highlight().debug('highlighted debug log for module Authentication');
-
-// use shortcuts for the methods - every level opens a box too
-const lox2 = Loxer.h().m('AUTH').debug.open('highlighted debug box for module Authentication');
-```
-
-For a complete guide on how to use everything, definitely take a look at the **[Documentation](https://github.com/pcprinz/loxer/blob/master/documentation/index.md)**
-
-## Plain-function tracing
-
-Loxer can open and close a trace box automatically around a named plain function during the build.
-This requires Loxer 3, Babel 8, and Node 22.18 or newer for the tracing plugin.
+Install the runtime and the Vite adapter:
 
 ```sh
 pnpm add loxer
-pnpm add -D @babel/core @babel/preset-typescript babel-plugin-loxer-trace
-```
-
-Register the plugin in the Babel configuration that transforms the marked TypeScript files:
-
-```js
-// babel.config.mjs
-export default {
-  presets: ['@babel/preset-typescript'],
-  plugins: ['babel-plugin-loxer-trace'],
-};
-```
-
-Initialize Loxer with every module that a trace or log uses, then import `trace` from
-`loxer/trace` and put its marker immediately after the named function binding:
-
-```ts
-import { Loxer } from 'loxer';
-import { trace } from 'loxer/trace';
-
-Loxer.init({
-  modules: {
-    ORDER: { color: '#00ff99', fullName: 'Order', devLevel: 'info', prodLevel: 'error' },
-  },
-});
-
-function submitOrder(orderId: string) {
-  Loxer.m('ORDER').log(`Submitting ${orderId}`);
-  return orderId;
-}
-
-trace.info(submitOrder, { moduleId: 'ORDER', openMessage: 'parent.fn(args)' });
-```
-
-`openMessage` defaults to `parent.fn`; `closeMessage` defaults to `fn`. The payload templates are
-`fn(args)`, `parent.fn(args)`, `fn(types)`, `parent.fn(types)`, `fn(result)`, and
-`parent.fn(result)`.
-
-To trace several functions the same way, pass an array literal of them and the options they share:
-
-```ts
-trace.info([submitOrder, cancelOrder], { moduleId: 'ORDER', openMessage: 'parent.fn(args)' });
-```
-
-`trace.info()` is a build-time marker, not a runtime wrapper. Every module that executes a marker must
-pass through the Babel plugin; otherwise the marker throws to signal a missing build configuration.
-
-For Vite, add the adapter and register it as a normal Vite plugin:
-
-```sh
-pnpm add -D vite-plugin-loxer-trace
+pnpm add -D @babel/core vite-plugin-loxer-trace
 ```
 
 ```ts
@@ -131,54 +30,222 @@ pnpm add -D vite-plugin-loxer-trace
 import { defineConfig } from 'vite';
 import loxerTrace from 'vite-plugin-loxer-trace';
 
-export default defineConfig({
-  plugins: [loxerTrace()],
+export default defineConfig({ plugins: [loxerTrace()] });
+```
+Configure Loxer:
+```ts
+import { Loxer, type LoxerModules } from 'loxer';
+
+const modules = {
+  ORDER: { color: '#73e2a7', fullName: 'Order', devLevel: 'debug', prodLevel: 'error' },
+} satisfies LoxerModules;
+
+declare module 'loxer' {
+  interface LoxerModuleRegistry extends Record<keyof typeof modules, true> {}
+}
+
+Loxer.init({ dev: true, modules });
+```
+
+Mark a function, then write events that belong inside it:
+
+```ts
+import { trace } from 'loxer/trace';
+
+async function submitOrder(orderId: string) {
+  trace.point.ORDER.info('Persisting the submitted order', { orderId });
+  await new Promise((resolve) => setTimeout(resolve, 16));
+  return { orderId, status: 'submitted' };
+}
+
+trace.ORDER.props('result').info(submitOrder);
+```
+
+Calling `submitOrder('A-42')` produces one coherent trace. This is the default development stream
+in a 120-column terminal:
+
+![Default Loxer development output for submitOrder](https://raw.githubusercontent.com/pcprinz/loxer/master/assets/docs_images/submit-order-default.png)
+
+The first record opens the lifecycle. `trace.point` writes a milestone inside it. The result attaches
+to the closing record. A throw or rejected Promise records the error in the same box, closes it as
+failed, and preserves the original failure for the caller.
+
+## Why Loxer
+
+Traditional logs make concurrent work hard to read. Loxer gives every meaningful operation a visual
+home, making it practical to answer questions such as:
+
+- Which request caused this warning?
+- Which stage failed, and what happened before it?
+- Are several asynchronous operations overlapping?
+- Which domain owns this record?
+- What data is safe and useful to forward to production observability?
+
+It fits service calls, checkout flows, data pipelines, browser interactions, background work, and
+any workflow where the sequence matters as much as the individual message.
+
+## A small API with a broad reach
+
+### Trace functions
+
+Trace named functions, arrow-function bindings, function-valued variables, inline functions, and
+first-statement markers. Each invocation has its own box, including overlapping async calls.
+
+```ts
+trace.ORDER
+  .h('open')
+  .props('argsResult')
+  .pp({ target: 'args', depth: 1 })
+  .info(submitOrder, {
+    openMessage: 'parent.fn(args)',
+    closeMessage: 'fn(result)',
+  });
+```
+
+Choose a module, highlight a lifecycle side, capture arguments/results, control printed props, and
+use templates or callbacks for names and messages. The [tracing guide](https://github.com/pcprinz/loxer/blob/master/documentation/tracing.md)
+covers the complete set of marker forms and behavior.
+
+### Add contextual trace points
+
+`trace.point` adds a record to the surrounding traced function without opening a nested box.
+
+```ts
+trace.point.ORDER.info('fn', 'Inventory reserved', { orderId });
+trace.point.ORDER.warn('fn', 'Retrying payment provider', { attempt: 2 });
+```
+
+It is ideal for validation, cache decisions, retries, remote calls, and transitions between stages.
+
+### Keep ordinary logs connected
+
+Use the `Loxer` singleton for standalone records, errors, and events inside traced functions. Direct
+calls through the imported binding inside a transformed function join that invocation automatically.
+
+```ts
+Loxer.m('ORDER').h().info('Order accepted', { orderId });
+Loxer.m('PAYMENT').debug('Provider response', response);
+Loxer.error(new Error('Payment failed'));
+```
+
+![Default Loxer development output for standalone logs](https://raw.githubusercontent.com/pcprinz/loxer/master/assets/docs_images/standalone-logs-default.png)
+
+Logs have the levels `error`, `warn`, `info`, and `debug`. Modules log up to an environment-specific
+threshold, so a verbose development trace can become an error-focused production signal without
+rewriting the caller's chosen level.
+
+### Group work by domain
+
+Modules give records a typed id, a visible name, a color, and development/production thresholds.
+
+```ts
+const modules = {
+  ORDER: { color: '#73e2a7', fullName: 'Order', devLevel: 'debug', prodLevel: 'info' },
+  PAYMENT: { color: '#e68cff', fullName: 'Payment', devLevel: 'info', prodLevel: 'error' },
+} satisfies LoxerModules;
+```
+
+The declaration merge in the first example gives `trace.ORDER`, `Loxer.m('ORDER')`, and level lookups
+completion and typo checking.
+
+### Build manual flows
+
+Use an explicit box for work a transform cannot reach: event emitters, callbacks from another
+library, or flows created from several entry points.
+
+```ts
+const box = Loxer.m('ORDER').info.open('Submit order');
+
+Loxer.of(box).add('Basket validated');
+Loxer.of(box).warn('Inventory is low');
+Loxer.of(box).close('Order complete');
+```
+
+![Default Loxer development output for a manual box](https://raw.githubusercontent.com/pcprinz/loxer/master/assets/docs_images/manual-box-default.png)
+
+Manual and automatic boxes share the same history, levels, modules, props, and output pipeline.
+
+### Send structured production output
+
+Development uses console rendering by default. Production is silent until you provide an `output`
+callback. That callback receives structured events, so a destination never has to parse console text.
+
+```ts
+Loxer.init({
+  output(event) {
+    if (event.kind === 'error') {
+      reportError(event.lox, event.history);
+      return;
+    }
+
+    publish({
+      level: event.lox.level,
+      message: event.lox.message,
+      moduleId: event.lox.moduleId,
+      props: event.lox.props,
+    });
+  },
 });
 ```
 
-See the [plain-function tracing guide](https://github.com/pcprinz/loxer/blob/master/documentation/index.md#plain-function-tracing)
-and the [Babel plugin README](https://github.com/pcprinz/loxer/blob/master/packages/babel-plugin-loxer-trace/README.md)
-for supported function shapes, options, and transform details.
+`OutputLoxRenderer`, `ErrorLoxRenderer`, and `PropsPrinter` let a custom destination use Loxer's
+plain or ANSI rendering where text is useful. Raw props remain available for structured forwarding.
 
-### Context-aware trace points
+## Follow one operation through nested work
 
-`trace.point` writes one contextual log inside a named function without opening another box. It is a
-build-time marker, so its module must pass through the same Babel or Vite plugin as `trace.info()`.
+Automatic traces nest naturally. This order workflow produces an order box, a nested payment box,
+and a contextual order milestone. A direct logger call belongs to the payment box.
 
 ```ts
-function submitOrder(orderId: string) {
-  trace.point.ORDER.info('fn', 'Submitting order', orderId);
-  trace.point.info(({ parentFn }) => `${parentFn('saved')}`, orderId);
+async function chargePayment(orderId: string) {
+  Loxer.m('PAYMENT').debug('Calling payment provider', { orderId });
+  return { orderId, authorized: true };
 }
+trace.PAYMENT.info(chargePayment, { closeMessage: 'fn(result)' });
+
+async function submitOrder(orderId: string) {
+  trace.point.ORDER.info('fn', 'Order accepted', { orderId });
+  const payment = await chargePayment(orderId);
+  return { orderId, payment };
+}
+trace.ORDER.props('result').info(submitOrder, { openMessage: 'parent.fn(args)' });
 ```
 
-Point terminals are `error`, `warn`, `log`, `info`, and `debug`. Use `fn` or `parent.fn` as the first
-argument to prefix a message with the inferred name; a callback receives `fn` and `parentFn` printers.
-Values after the message are props. Point errors are normal error-level logs on the log stream; use
-`Loxer.error()` for an error event. An untransformed point throws a missing-transform error.
+This pattern works for any operation with meaningful internal stages: a request that calls several
+services, a job that processes a batch, a browser action that coordinates UI and network state, or a
+server operation that needs a clear failure trail.
 
-## Preview Example
+![Default Loxer development output for nested order and payment work](https://raw.githubusercontent.com/pcprinz/loxer/master/assets/docs_images/nested-order-default.png)
 
-Consider the following log output (without the log date):
-<!-- ![plain_console](/assets/docs_images/plainOutput.png) -->
+## Start where you are
 
-![plain_console](https://raw.githubusercontent.com/pcprinz/loxer/master/assets/docs_images/plainOutput.png)
+| Goal                                                        | Recommended path                                                                                          |
+| ----------------------------------------------------------- | --------------------------------------------------------------------------------------------------------- |
+| See a working trace in minutes                              | [Five-minute Vite quick start](https://github.com/pcprinz/loxer/blob/master/documentation/quick-start.md) |
+| Add tracing to an existing Vite, Babel, test, or Node build | [Integration guide](https://github.com/pcprinz/loxer/blob/master/documentation/integrations.md)           |
+| Learn markers, messages, props, and async behavior          | [Tracing guide](https://github.com/pcprinz/loxer/blob/master/documentation/tracing.md)                    |
+| Configure modules, logs, manual boxes, history, and output  | [Logging and output guide](https://github.com/pcprinz/loxer/blob/master/documentation/logging.md)         |
+| Diagnose a missing transform or missing output              | [Reference and troubleshooting](https://github.com/pcprinz/loxer/blob/master/documentation/reference.md)  |
+| Inspect every exported type and option                      | [Generated API reference](https://pcprinz.github.io/loxer/index.html)                                     |
 
-As you can see the logs might tell something considering you know where they come from and what they do, but obviously they seem to be pretty uninformative.
+## Important operating facts
 
-Let's see what Loxer can do about this:
-<!-- ![plain_console](/assets/docs_images/goodOutput.png) -->
+- Initialize Loxer early in each JavaScript realm. Logs produced beforehand wait in a bounded queue
+  containing the oldest 1,000 records; an undrained queue reports a one-time warning after five
+  seconds.
+- Every loaded copy in one realm shares a `globalThis`-backed instance. A worker, iframe, and server
+  process are separate realms and each need initialization.
+- Every value after a message is a prop. Render props with `pp()` when people need to inspect them;
+  bound broad values with `depth` or `keys`.
+- Messages, arguments, results, errors, and props are caller data. Loxer does not redact them. Apply
+  filtering, retention, access, encryption, and deletion policy at the output destination.
+- A `trace` marker must pass through the Vite or Babel transform. An untransformed marker throws a
+  configuration error, making a missing build step visible.
 
-![plain_console](https://raw.githubusercontent.com/pcprinz/loxer/master/assets/docs_images/goodOutput.png)
+## Package facts
 
-The log messages are exactly the same, but with a litte configuration you can see what is happening in the application. Even if you are not familiar with the code you can follow the implemented data flow by just one sight.
-
-> Watch this [comparison with a slider](https://cdn.knightlab.com/libs/juxtapose/latest/embed/index.html?uid=9e14a828-2f7d-11ec-abb7-b9a7ff2ee17c)
-
-## Installation
-
-`npm i --save loxer`, `pnpm add loxer`, or `yarn add loxer` thats it.
-
-## Deps
-
-none - Loxer ships with zero runtime dependencies.
+- ESM-only package with TypeScript declarations.
+- Node 20 or newer for `loxer`; Node 20.19 or newer for the Babel and Vite trace plugins.
+- Vite 5–8 and Babel 7.26.10 or Babel 8 are accepted by the shipped adapters.
+- Zero runtime dependencies.
+- MIT © Christian Prinz.

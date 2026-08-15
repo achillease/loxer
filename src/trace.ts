@@ -24,6 +24,8 @@ import { ModuleId, RegisteredModuleId } from './types.js';
 export type {
   TraceCallPrinter,
   TraceCloseMessageContext,
+  FunctionCloseMessage,
+  FunctionOpenMessage,
   TraceHighlight,
   TraceOpenMessageContext,
   TraceOptions,
@@ -102,6 +104,9 @@ interface TraceMarkerModifiers<Delete extends string> {
   pp(target: TracePropsTarget | TracePrintOptions): TraceMarkerChain<Delete | 'pp'>;
 }
 
+/** Fluent build-time function marker. See the
+ * [tracing guide](https://github.com/pcprinz/loxer/blob/master/documentation/tracing.md).
+ */
 export type TraceMarker = TraceMarkerChain<never> & { readonly point: TracePoint };
 
 interface TracePointTerminal {
@@ -152,7 +157,9 @@ interface TracePointModifiers<Delete extends string> {
   printProps(options?: PropsPrinterOptions): TracePointChain<Delete | 'pp' | 'printProps'>;
 }
 
-/** A build-time marker for one contextual log within the surrounding function. */
+/** A build-time marker for one contextual log within the surrounding function. See the
+ * [tracing guide](https://github.com/pcprinz/loxer/blob/master/documentation/tracing.md).
+ */
 export type TracePoint = TracePointChain<never>;
 
 export interface FunctionTrace {
@@ -250,7 +257,10 @@ function createMarkerProxy(targetMarker: object): object {
   });
 }
 
-/** Marks plain functions for `babel-plugin-loxer-trace`; direct properties select registered modules. */
+/** Marks plain functions for `babel-plugin-loxer-trace`; direct properties select registered
+ * modules. Start with the
+ * [tracing guide](https://github.com/pcprinz/loxer/blob/master/documentation/tracing.md).
+ */
 export const trace: TraceMarker = traceMarker as TraceMarker;
 
 /** @internal Runtime target of a transformed `trace.point` terminal. */

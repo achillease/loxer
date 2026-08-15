@@ -8,83 +8,182 @@
 <div class="col-content">
 <div class="tsd-page-title">
 <h1>Loxer - v3.0.0</h1></div>
-<div class="tsd-panel tsd-typography"><p><img src="https://raw.githubusercontent.com/pcprinz/loxer/master/assets/Logo.png" alt="Loxer_Logo"></p>
-<h1 id="loxer-github-release-latest-by-date-github-release-date-github-branch-checks-state-npm-bundle-size-github" class="tsd-anchor-link">Loxer <img src="https://img.shields.io/github/v/release/pcprinz/loxer" alt="GitHub release (latest by date)"> <img src="https://img.shields.io/github/release-date/pcprinz/loxer" alt="GitHub Release Date"> <img src="https://img.shields.io/github/checks-status/pcprinz/loxer/master?label=build" alt="GitHub branch checks state"> <img src="https://img.shields.io/bundlephobia/min/loxer" alt="npm bundle size"> <img src="https://img.shields.io/github/license/pcprinz/loxer" alt="GitHub"><a href="#loxer-github-release-latest-by-date-github-release-date-github-branch-checks-state-npm-bundle-size-github" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="assets/icons.svg#icon-anchor"></use></svg></a></h1>
-<!-- ![Coverage Badge](https://img.shields.io/endpoint?url=https://gist.githubusercontent.com/pcprinz/329161dbcfd07c60d90c29cc887130fb/raw/loxer__heads_master.json) -->
-<!-- https://shields.io/ -->
-<p><strong>Loxer</strong> is a middleware logger that allows you to:</p>
+<div class="tsd-panel tsd-typography"><h1 id="loxer" class="tsd-anchor-link">Loxer<a href="#loxer" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="assets/icons.svg#icon-anchor"></use></svg></a></h1>
+<p><a href="https://github.com/pcprinz/loxer/releases"><img src="https://img.shields.io/github/v/release/pcprinz/loxer" alt="GitHub release"></a>
+<a href="https://github.com/pcprinz/loxer/actions"><img src="https://img.shields.io/github/checks-status/pcprinz/loxer/master?label=build" alt="Build"></a>
+<a href="https://bundlephobia.com/package/loxer"><img src="https://img.shields.io/bundlephobia/min/loxer" alt="npm bundle size"></a>
+<a href="https://github.com/pcprinz/loxer/blob/master/LICENSE"><img src="https://img.shields.io/github/license/pcprinz/loxer" alt="License"></a></p>
+<p><strong>See an operation as it unfolds.</strong> Loxer turns ordinary TypeScript and JavaScript functions into
+timed, nested execution traces. Each call gets a lifecycle box; contextual logs, props, and failures
+stay with the work that produced them.</p>
+<table>
+<thead>
+<tr>
+<th>Build time</th>
+<th>Runtime</th>
+<th>Destination</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Your function → <code>trace</code> marker → Vite or Babel transform</td>
+<td>Timed lifecycle box → contextual logs and props</td>
+<td>Console output or your callback</td>
+</tr>
+</tbody>
+</table>
+<p>The marker is removed at build time. The function keeps its arguments, <code>this</code>, return value, thrown
+error, and native Promise identity. Loxer observes the lifecycle around it.</p>
+<h2 id="what-it-looks-like-in-code" class="tsd-anchor-link">What it looks like in code<a href="#what-it-looks-like-in-code" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="assets/icons.svg#icon-anchor"></use></svg></a></h2>
+<p>Install the runtime and the Vite adapter:</p>
+<pre><code class="sh"><span class="hl-0">pnpm</span><span class="hl-1"> </span><span class="hl-2">add</span><span class="hl-1"> </span><span class="hl-2">loxer</span><br/><span class="hl-0">pnpm</span><span class="hl-1"> </span><span class="hl-2">add</span><span class="hl-1"> </span><span class="hl-3">-D</span><span class="hl-1"> </span><span class="hl-2">@babel/core</span><span class="hl-1"> </span><span class="hl-2">vite-plugin-loxer-trace</span>
+</code><button type="button">Copy</button></pre>
+
+<pre><code class="ts"><span class="hl-4">// vite.config.ts</span><br/><span class="hl-5">import</span><span class="hl-1"> { </span><span class="hl-6">defineConfig</span><span class="hl-1"> } </span><span class="hl-5">from</span><span class="hl-1"> </span><span class="hl-2">&#39;vite&#39;</span><span class="hl-1">;</span><br/><span class="hl-5">import</span><span class="hl-1"> </span><span class="hl-6">loxerTrace</span><span class="hl-1"> </span><span class="hl-5">from</span><span class="hl-1"> </span><span class="hl-2">&#39;vite-plugin-loxer-trace&#39;</span><span class="hl-1">;</span><br/><br/><span class="hl-5">export</span><span class="hl-1"> </span><span class="hl-5">default</span><span class="hl-1"> </span><span class="hl-0">defineConfig</span><span class="hl-1">({ </span><span class="hl-6">plugins:</span><span class="hl-1"> [</span><span class="hl-0">loxerTrace</span><span class="hl-1">()] });</span>
+</code><button type="button">Copy</button></pre>
+
+<p>Configure Loxer:</p>
+<pre><code class="ts"><span class="hl-5">import</span><span class="hl-1"> { </span><span class="hl-6">Loxer</span><span class="hl-1">, </span><span class="hl-5">type</span><span class="hl-1"> </span><span class="hl-6">LoxerModules</span><span class="hl-1"> } </span><span class="hl-5">from</span><span class="hl-1"> </span><span class="hl-2">&#39;loxer&#39;</span><span class="hl-1">;</span><br/><br/><span class="hl-3">const</span><span class="hl-1"> </span><span class="hl-7">modules</span><span class="hl-1"> = {</span><br/><span class="hl-1">  </span><span class="hl-6">ORDER:</span><span class="hl-1"> { </span><span class="hl-6">color:</span><span class="hl-1"> </span><span class="hl-2">&#39;#73e2a7&#39;</span><span class="hl-1">, </span><span class="hl-6">fullName:</span><span class="hl-1"> </span><span class="hl-2">&#39;Order&#39;</span><span class="hl-1">, </span><span class="hl-6">devLevel:</span><span class="hl-1"> </span><span class="hl-2">&#39;debug&#39;</span><span class="hl-1">, </span><span class="hl-6">prodLevel:</span><span class="hl-1"> </span><span class="hl-2">&#39;error&#39;</span><span class="hl-1"> },</span><br/><span class="hl-1">} </span><span class="hl-5">satisfies</span><span class="hl-1"> </span><span class="hl-8">LoxerModules</span><span class="hl-1">;</span><br/><br/><span class="hl-3">declare</span><span class="hl-1"> </span><span class="hl-3">module</span><span class="hl-1"> </span><span class="hl-2">&#39;loxer&#39;</span><span class="hl-1"> {</span><br/><span class="hl-1">  </span><span class="hl-3">interface</span><span class="hl-1"> </span><span class="hl-8">LoxerModuleRegistry</span><span class="hl-1"> </span><span class="hl-3">extends</span><span class="hl-1"> </span><span class="hl-8">Record</span><span class="hl-1">&lt;</span><span class="hl-3">keyof</span><span class="hl-1"> </span><span class="hl-3">typeof</span><span class="hl-1"> </span><span class="hl-6">modules</span><span class="hl-1">, </span><span class="hl-8">true</span><span class="hl-1">&gt; {}</span><br/><span class="hl-1">}</span><br/><br/><span class="hl-6">Loxer</span><span class="hl-1">.</span><span class="hl-0">init</span><span class="hl-1">({ </span><span class="hl-6">dev:</span><span class="hl-1"> </span><span class="hl-3">true</span><span class="hl-1">, </span><span class="hl-6">modules</span><span class="hl-1"> });</span>
+</code><button type="button">Copy</button></pre>
+
+<p>Mark a function, then write events that belong inside it:</p>
+<pre><code class="ts"><span class="hl-5">import</span><span class="hl-1"> { </span><span class="hl-6">trace</span><span class="hl-1"> } </span><span class="hl-5">from</span><span class="hl-1"> </span><span class="hl-2">&#39;loxer/trace&#39;</span><span class="hl-1">;</span><br/><br/><span class="hl-3">async</span><span class="hl-1"> </span><span class="hl-3">function</span><span class="hl-1"> </span><span class="hl-0">submitOrder</span><span class="hl-1">(</span><span class="hl-6">orderId</span><span class="hl-1">: </span><span class="hl-8">string</span><span class="hl-1">) {</span><br/><span class="hl-1">  </span><span class="hl-6">trace</span><span class="hl-1">.</span><span class="hl-6">point</span><span class="hl-1">.</span><span class="hl-7">ORDER</span><span class="hl-1">.</span><span class="hl-0">info</span><span class="hl-1">(</span><span class="hl-2">&#39;Persisting the submitted order&#39;</span><span class="hl-1">, { </span><span class="hl-6">orderId</span><span class="hl-1"> });</span><br/><span class="hl-1">  </span><span class="hl-5">await</span><span class="hl-1"> </span><span class="hl-3">new</span><span class="hl-1"> </span><span class="hl-8">Promise</span><span class="hl-1">((</span><span class="hl-6">resolve</span><span class="hl-1">) </span><span class="hl-3">=&gt;</span><span class="hl-1"> </span><span class="hl-0">setTimeout</span><span class="hl-1">(</span><span class="hl-6">resolve</span><span class="hl-1">, </span><span class="hl-9">16</span><span class="hl-1">));</span><br/><span class="hl-1">  </span><span class="hl-5">return</span><span class="hl-1"> { </span><span class="hl-6">orderId</span><span class="hl-1">, </span><span class="hl-6">status:</span><span class="hl-1"> </span><span class="hl-2">&#39;submitted&#39;</span><span class="hl-1"> };</span><br/><span class="hl-1">}</span><br/><br/><span class="hl-6">trace</span><span class="hl-1">.</span><span class="hl-7">ORDER</span><span class="hl-1">.</span><span class="hl-0">props</span><span class="hl-1">(</span><span class="hl-2">&#39;result&#39;</span><span class="hl-1">).</span><span class="hl-0">info</span><span class="hl-1">(</span><span class="hl-6">submitOrder</span><span class="hl-1">);</span>
+</code><button type="button">Copy</button></pre>
+
+<p>Calling <code>submitOrder('A-42')</code> produces one coherent trace. This is the default development stream
+in a 120-column terminal:</p>
+<p><img src="https://raw.githubusercontent.com/pcprinz/loxer/master/assets/docs_images/submit-order-default.png" alt="Default Loxer development output for submitOrder"></p>
+<p>The first record opens the lifecycle. <code>trace.point</code> writes a milestone inside it. The result attaches
+to the closing record. A throw or rejected Promise records the error in the same box, closes it as
+failed, and preserves the original failure for the caller.</p>
+<h2 id="why-loxer" class="tsd-anchor-link">Why Loxer<a href="#why-loxer" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="assets/icons.svg#icon-anchor"></use></svg></a></h2>
+<p>Traditional logs make concurrent work hard to read. Loxer gives every meaningful operation a visual
+home, making it practical to answer questions such as:</p>
 <ul>
-<li>distribute logs to different output streams (dev / prod / log / error)</li>
-<li>write logs at a level (<code>error</code> / <code>warn</code> / <code>info</code> / <code>debug</code>)</li>
-<li>categorize logs in modules (each logging up to its own threshold)</li>
-<li>connect logs to each other to &quot;boxes&quot;</li>
-<li>improve error logs (with more information)</li>
-<li>get significantly better visualization of the logs</li>
-<li>visualize the data flow (including time measurement)</li>
-<li>full Typescript support</li>
-<li>rich output of values (props) for debugging purposes</li>
+<li>Which request caused this warning?</li>
+<li>Which stage failed, and what happened before it?</li>
+<li>Are several asynchronous operations overlapping?</li>
+<li>Which domain owns this record?</li>
+<li>What data is safe and useful to forward to production observability?</li>
 </ul>
-<p>With Loxer, logs never have to be deleted again, as they hardly use any resources when switched off. Logs and error records can easily be forwarded to crash reporting systems such as Firebase. This makes it possible to get error reports that are just as good in the production environment as in the development environment. Furthermore, errors in concurrent functional processes can be detected more easily.</p>
-<h2 id="documentation" class="tsd-anchor-link">Documentation<a href="#documentation" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="assets/icons.svg#icon-anchor"></use></svg></a></h2>
-<p>The <strong><a href="https://pcprinz.github.io/loxer/index.html">API Reference</a></strong> provides a complete overview of all the features of the package. Furthermore, the complete source code is documented with js-doc and typed with typscript, which guarantees full IDE support.</p>
-<p>The <strong><a href="https://github.com/pcprinz/loxer/blob/master/documentation/index.md">Documentation</a></strong> contains detailed instructions on how to use the package.</p>
-<p>The <strong><a href="https://github.com/pcprinz/loxer/blob/master/documentation/Performance.md">Performance Tests</a></strong> documents how small the influence of the package is on the performance of an application.</p>
-<h2 id="usage" class="tsd-anchor-link">Usage<a href="#usage" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="assets/icons.svg#icon-anchor"></use></svg></a></h2>
-<p>Write logs in an intuitive way:</p>
-<pre><code class="typescript"><span class="hl-0">// initialize it somewhere (once) -&gt; singleton</span><br/><span class="hl-1">Loxer</span><span class="hl-2">.</span><span class="hl-3">init</span><span class="hl-2">();</span><br/><br/><span class="hl-0">// simple log</span><br/><span class="hl-1">Loxer</span><span class="hl-2">.</span><span class="hl-3">log</span><span class="hl-2">(</span><span class="hl-4">&#39;my message&#39;</span><span class="hl-2">);</span><br/><br/><span class="hl-0">// highlight logs</span><br/><span class="hl-1">Loxer</span><span class="hl-2">.</span><span class="hl-3">highlight</span><span class="hl-2">().</span><span class="hl-3">log</span><span class="hl-2">(</span><span class="hl-4">&#39;my message&#39;</span><span class="hl-2">);</span><br/><br/><span class="hl-0">// use different levels</span><br/><span class="hl-1">Loxer</span><span class="hl-2">.</span><span class="hl-3">error</span><span class="hl-2">(</span><span class="hl-4">&#39;that is serious&#39;</span><span class="hl-2">);</span><br/><span class="hl-1">Loxer</span><span class="hl-2">.</span><span class="hl-3">warn</span><span class="hl-2">(</span><span class="hl-4">&#39;still working, but something is wrong&#39;</span><span class="hl-2">);</span><br/><span class="hl-1">Loxer</span><span class="hl-2">.</span><span class="hl-3">info</span><span class="hl-2">(</span><span class="hl-4">&#39;an alias for .log(...)&#39;</span><span class="hl-2">);</span><br/><span class="hl-1">Loxer</span><span class="hl-2">.</span><span class="hl-3">debug</span><span class="hl-2">(</span><span class="hl-4">&#39;just informative&#39;</span><span class="hl-2">);</span><br/><br/><span class="hl-0">// set modules</span><br/><span class="hl-1">Loxer</span><span class="hl-2">.</span><span class="hl-3">module</span><span class="hl-2">(</span><span class="hl-4">&#39;AUTH&#39;</span><span class="hl-2">).</span><span class="hl-3">log</span><span class="hl-2">(</span><span class="hl-4">&#39;user logged in&#39;</span><span class="hl-2">);</span><br/><br/><span class="hl-0">// use boxes</span><br/><span class="hl-5">const</span><span class="hl-2"> </span><span class="hl-6">lox</span><span class="hl-2"> = </span><span class="hl-1">Loxer</span><span class="hl-2">.</span><span class="hl-3">open</span><span class="hl-2">(</span><span class="hl-4">&#39;opening log&#39;</span><span class="hl-2">);</span><br/><span class="hl-1">Loxer</span><span class="hl-2">.</span><span class="hl-3">of</span><span class="hl-2">(</span><span class="hl-1">lox</span><span class="hl-2">).</span><span class="hl-3">add</span><span class="hl-2">(</span><span class="hl-4">&#39;appended log&#39;</span><span class="hl-2">);</span><br/><span class="hl-1">Loxer</span><span class="hl-2">.</span><span class="hl-3">of</span><span class="hl-2">(</span><span class="hl-1">lox</span><span class="hl-2">).</span><span class="hl-3">error</span><span class="hl-2">(</span><span class="hl-4">&#39;appended error&#39;</span><span class="hl-2">);</span><br/><span class="hl-1">Loxer</span><span class="hl-2">.</span><span class="hl-3">of</span><span class="hl-2">(</span><span class="hl-1">lox</span><span class="hl-2">).</span><span class="hl-3">close</span><span class="hl-2">(</span><span class="hl-4">&#39;closing log&#39;</span><span class="hl-2">);</span><br/><br/><span class="hl-0">// combine everything like you want</span><br/><span class="hl-1">Loxer</span><span class="hl-2">.</span><span class="hl-3">module</span><span class="hl-2">(</span><span class="hl-4">&#39;AUTH&#39;</span><span class="hl-2">).</span><span class="hl-3">highlight</span><span class="hl-2">().</span><span class="hl-3">debug</span><span class="hl-2">(</span><span class="hl-4">&#39;highlighted debug log for module Authentication&#39;</span><span class="hl-2">);</span><br/><br/><span class="hl-0">// use shortcuts for the methods - every level opens a box too</span><br/><span class="hl-5">const</span><span class="hl-2"> </span><span class="hl-6">lox2</span><span class="hl-2"> = </span><span class="hl-1">Loxer</span><span class="hl-2">.</span><span class="hl-3">h</span><span class="hl-2">().</span><span class="hl-3">m</span><span class="hl-2">(</span><span class="hl-4">&#39;AUTH&#39;</span><span class="hl-2">).</span><span class="hl-1">debug</span><span class="hl-2">.</span><span class="hl-3">open</span><span class="hl-2">(</span><span class="hl-4">&#39;highlighted debug box for module Authentication&#39;</span><span class="hl-2">);</span>
+<p>It fits service calls, checkout flows, data pipelines, browser interactions, background work, and
+any workflow where the sequence matters as much as the individual message.</p>
+<h2 id="a-small-api-with-a-broad-reach" class="tsd-anchor-link">A small API with a broad reach<a href="#a-small-api-with-a-broad-reach" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="assets/icons.svg#icon-anchor"></use></svg></a></h2>
+<h3 id="trace-functions" class="tsd-anchor-link">Trace functions<a href="#trace-functions" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="assets/icons.svg#icon-anchor"></use></svg></a></h3>
+<p>Trace named functions, arrow-function bindings, function-valued variables, inline functions, and
+first-statement markers. Each invocation has its own box, including overlapping async calls.</p>
+<pre><code class="ts"><span class="hl-6">trace</span><span class="hl-1">.</span><span class="hl-7">ORDER</span><br/><span class="hl-1">  .</span><span class="hl-0">h</span><span class="hl-1">(</span><span class="hl-2">&#39;open&#39;</span><span class="hl-1">)</span><br/><span class="hl-1">  .</span><span class="hl-0">props</span><span class="hl-1">(</span><span class="hl-2">&#39;argsResult&#39;</span><span class="hl-1">)</span><br/><span class="hl-1">  .</span><span class="hl-0">pp</span><span class="hl-1">({ </span><span class="hl-6">target:</span><span class="hl-1"> </span><span class="hl-2">&#39;args&#39;</span><span class="hl-1">, </span><span class="hl-6">depth:</span><span class="hl-1"> </span><span class="hl-9">1</span><span class="hl-1"> })</span><br/><span class="hl-1">  .</span><span class="hl-0">info</span><span class="hl-1">(</span><span class="hl-6">submitOrder</span><span class="hl-1">, {</span><br/><span class="hl-1">    </span><span class="hl-6">openMessage:</span><span class="hl-1"> </span><span class="hl-2">&#39;parent.fn(args)&#39;</span><span class="hl-1">,</span><br/><span class="hl-1">    </span><span class="hl-6">closeMessage:</span><span class="hl-1"> </span><span class="hl-2">&#39;fn(result)&#39;</span><span class="hl-1">,</span><br/><span class="hl-1">  });</span>
 </code><button type="button">Copy</button></pre>
 
-<p>For a complete guide on how to use everything, definitely take a look at the <strong><a href="https://github.com/pcprinz/loxer/blob/master/documentation/index.md">Documentation</a></strong></p>
-<h2 id="plain-function-tracing" class="tsd-anchor-link">Plain-function tracing<a href="#plain-function-tracing" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="assets/icons.svg#icon-anchor"></use></svg></a></h2>
-<p>Loxer can open and close a trace box automatically around a named plain function during the build.
-This requires Loxer 3, Babel 8, and Node 22.18 or newer for the tracing plugin.</p>
-<pre><code class="sh"><span class="hl-3">pnpm</span><span class="hl-2"> </span><span class="hl-4">add</span><span class="hl-2"> </span><span class="hl-4">loxer</span><br/><span class="hl-3">pnpm</span><span class="hl-2"> </span><span class="hl-4">add</span><span class="hl-2"> </span><span class="hl-5">-D</span><span class="hl-2"> </span><span class="hl-4">@babel/core</span><span class="hl-2"> </span><span class="hl-4">@babel/preset-typescript</span><span class="hl-2"> </span><span class="hl-4">babel-plugin-loxer-trace</span>
+<p>Choose a module, highlight a lifecycle side, capture arguments/results, control printed props, and
+use templates or callbacks for names and messages. The <a href="https://github.com/pcprinz/loxer/blob/master/documentation/tracing.md">tracing guide</a>
+covers the complete set of marker forms and behavior.</p>
+<h3 id="add-contextual-trace-points" class="tsd-anchor-link">Add contextual trace points<a href="#add-contextual-trace-points" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="assets/icons.svg#icon-anchor"></use></svg></a></h3>
+<p><code>trace.point</code> adds a record to the surrounding traced function without opening a nested box.</p>
+<pre><code class="ts"><span class="hl-6">trace</span><span class="hl-1">.</span><span class="hl-6">point</span><span class="hl-1">.</span><span class="hl-7">ORDER</span><span class="hl-1">.</span><span class="hl-0">info</span><span class="hl-1">(</span><span class="hl-2">&#39;fn&#39;</span><span class="hl-1">, </span><span class="hl-2">&#39;Inventory reserved&#39;</span><span class="hl-1">, { </span><span class="hl-6">orderId</span><span class="hl-1"> });</span><br/><span class="hl-6">trace</span><span class="hl-1">.</span><span class="hl-6">point</span><span class="hl-1">.</span><span class="hl-7">ORDER</span><span class="hl-1">.</span><span class="hl-0">warn</span><span class="hl-1">(</span><span class="hl-2">&#39;fn&#39;</span><span class="hl-1">, </span><span class="hl-2">&#39;Retrying payment provider&#39;</span><span class="hl-1">, { </span><span class="hl-6">attempt:</span><span class="hl-1"> </span><span class="hl-9">2</span><span class="hl-1"> });</span>
 </code><button type="button">Copy</button></pre>
 
-<p>Register the plugin in the Babel configuration that transforms the marked TypeScript files:</p>
-<pre><code class="js"><span class="hl-0">// babel.config.mjs</span><br/><span class="hl-7">export</span><span class="hl-2"> </span><span class="hl-7">default</span><span class="hl-2"> {</span><br/><span class="hl-2">  </span><span class="hl-1">presets:</span><span class="hl-2"> [</span><span class="hl-4">&#39;@babel/preset-typescript&#39;</span><span class="hl-2">],</span><br/><span class="hl-2">  </span><span class="hl-1">plugins:</span><span class="hl-2"> [</span><span class="hl-4">&#39;babel-plugin-loxer-trace&#39;</span><span class="hl-2">],</span><br/><span class="hl-2">};</span>
+<p>It is ideal for validation, cache decisions, retries, remote calls, and transitions between stages.</p>
+<h3 id="keep-ordinary-logs-connected" class="tsd-anchor-link">Keep ordinary logs connected<a href="#keep-ordinary-logs-connected" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="assets/icons.svg#icon-anchor"></use></svg></a></h3>
+<p>Use the <code>Loxer</code> singleton for standalone records, errors, and events inside traced functions. Direct
+calls through the imported binding inside a transformed function join that invocation automatically.</p>
+<pre><code class="ts"><span class="hl-6">Loxer</span><span class="hl-1">.</span><span class="hl-0">m</span><span class="hl-1">(</span><span class="hl-2">&#39;ORDER&#39;</span><span class="hl-1">).</span><span class="hl-0">h</span><span class="hl-1">().</span><span class="hl-0">info</span><span class="hl-1">(</span><span class="hl-2">&#39;Order accepted&#39;</span><span class="hl-1">, { </span><span class="hl-6">orderId</span><span class="hl-1"> });</span><br/><span class="hl-6">Loxer</span><span class="hl-1">.</span><span class="hl-0">m</span><span class="hl-1">(</span><span class="hl-2">&#39;PAYMENT&#39;</span><span class="hl-1">).</span><span class="hl-0">debug</span><span class="hl-1">(</span><span class="hl-2">&#39;Provider response&#39;</span><span class="hl-1">, </span><span class="hl-6">response</span><span class="hl-1">);</span><br/><span class="hl-6">Loxer</span><span class="hl-1">.</span><span class="hl-0">error</span><span class="hl-1">(</span><span class="hl-3">new</span><span class="hl-1"> </span><span class="hl-0">Error</span><span class="hl-1">(</span><span class="hl-2">&#39;Payment failed&#39;</span><span class="hl-1">));</span>
 </code><button type="button">Copy</button></pre>
 
-<p>Initialize Loxer with every module that a trace or log uses, then import <code>trace</code> from
-<code>loxer/trace</code> and put its marker immediately after the named function binding:</p>
-<pre><code class="ts"><span class="hl-7">import</span><span class="hl-2"> { </span><span class="hl-1">Loxer</span><span class="hl-2"> } </span><span class="hl-7">from</span><span class="hl-2"> </span><span class="hl-4">&#39;loxer&#39;</span><span class="hl-2">;</span><br/><span class="hl-7">import</span><span class="hl-2"> { </span><span class="hl-1">trace</span><span class="hl-2"> } </span><span class="hl-7">from</span><span class="hl-2"> </span><span class="hl-4">&#39;loxer/trace&#39;</span><span class="hl-2">;</span><br/><br/><span class="hl-1">Loxer</span><span class="hl-2">.</span><span class="hl-3">init</span><span class="hl-2">({</span><br/><span class="hl-2">  </span><span class="hl-1">modules:</span><span class="hl-2"> {</span><br/><span class="hl-2">    </span><span class="hl-1">ORDER:</span><span class="hl-2"> { </span><span class="hl-1">color:</span><span class="hl-2"> </span><span class="hl-4">&#39;#00ff99&#39;</span><span class="hl-2">, </span><span class="hl-1">fullName:</span><span class="hl-2"> </span><span class="hl-4">&#39;Order&#39;</span><span class="hl-2">, </span><span class="hl-1">devLevel:</span><span class="hl-2"> </span><span class="hl-4">&#39;info&#39;</span><span class="hl-2">, </span><span class="hl-1">prodLevel:</span><span class="hl-2"> </span><span class="hl-4">&#39;error&#39;</span><span class="hl-2"> },</span><br/><span class="hl-2">  },</span><br/><span class="hl-2">});</span><br/><br/><span class="hl-5">function</span><span class="hl-2"> </span><span class="hl-3">submitOrder</span><span class="hl-2">(</span><span class="hl-1">orderId</span><span class="hl-2">: </span><span class="hl-8">string</span><span class="hl-2">) {</span><br/><span class="hl-2">  </span><span class="hl-1">Loxer</span><span class="hl-2">.</span><span class="hl-3">m</span><span class="hl-2">(</span><span class="hl-4">&#39;ORDER&#39;</span><span class="hl-2">).</span><span class="hl-3">log</span><span class="hl-2">(</span><span class="hl-4">`Submitting </span><span class="hl-5">${</span><span class="hl-1">orderId</span><span class="hl-5">}</span><span class="hl-4">`</span><span class="hl-2">);</span><br/><span class="hl-2">  </span><span class="hl-7">return</span><span class="hl-2"> </span><span class="hl-1">orderId</span><span class="hl-2">;</span><br/><span class="hl-2">}</span><br/><br/><span class="hl-1">trace</span><span class="hl-2">.</span><span class="hl-3">info</span><span class="hl-2">(</span><span class="hl-1">submitOrder</span><span class="hl-2">, { </span><span class="hl-1">moduleId:</span><span class="hl-2"> </span><span class="hl-4">&#39;ORDER&#39;</span><span class="hl-2">, </span><span class="hl-1">openMessage:</span><span class="hl-2"> </span><span class="hl-4">&#39;parent.fn(args)&#39;</span><span class="hl-2"> });</span>
+<p><img src="https://raw.githubusercontent.com/pcprinz/loxer/master/assets/docs_images/standalone-logs-default.png" alt="Default Loxer development output for standalone logs"></p>
+<p>Logs have the levels <code>error</code>, <code>warn</code>, <code>info</code>, and <code>debug</code>. Modules log up to an environment-specific
+threshold, so a verbose development trace can become an error-focused production signal without
+rewriting the caller's chosen level.</p>
+<h3 id="group-work-by-domain" class="tsd-anchor-link">Group work by domain<a href="#group-work-by-domain" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="assets/icons.svg#icon-anchor"></use></svg></a></h3>
+<p>Modules give records a typed id, a visible name, a color, and development/production thresholds.</p>
+<pre><code class="ts"><span class="hl-3">const</span><span class="hl-1"> </span><span class="hl-7">modules</span><span class="hl-1"> = {</span><br/><span class="hl-1">  </span><span class="hl-6">ORDER:</span><span class="hl-1"> { </span><span class="hl-6">color:</span><span class="hl-1"> </span><span class="hl-2">&#39;#73e2a7&#39;</span><span class="hl-1">, </span><span class="hl-6">fullName:</span><span class="hl-1"> </span><span class="hl-2">&#39;Order&#39;</span><span class="hl-1">, </span><span class="hl-6">devLevel:</span><span class="hl-1"> </span><span class="hl-2">&#39;debug&#39;</span><span class="hl-1">, </span><span class="hl-6">prodLevel:</span><span class="hl-1"> </span><span class="hl-2">&#39;info&#39;</span><span class="hl-1"> },</span><br/><span class="hl-1">  </span><span class="hl-6">PAYMENT:</span><span class="hl-1"> { </span><span class="hl-6">color:</span><span class="hl-1"> </span><span class="hl-2">&#39;#e68cff&#39;</span><span class="hl-1">, </span><span class="hl-6">fullName:</span><span class="hl-1"> </span><span class="hl-2">&#39;Payment&#39;</span><span class="hl-1">, </span><span class="hl-6">devLevel:</span><span class="hl-1"> </span><span class="hl-2">&#39;info&#39;</span><span class="hl-1">, </span><span class="hl-6">prodLevel:</span><span class="hl-1"> </span><span class="hl-2">&#39;error&#39;</span><span class="hl-1"> },</span><br/><span class="hl-1">} </span><span class="hl-5">satisfies</span><span class="hl-1"> </span><span class="hl-8">LoxerModules</span><span class="hl-1">;</span>
 </code><button type="button">Copy</button></pre>
 
-<p><code>openMessage</code> defaults to <code>parent.fn</code>; <code>closeMessage</code> defaults to <code>fn</code>. The payload templates are
-<code>fn(args)</code>, <code>parent.fn(args)</code>, <code>fn(types)</code>, <code>parent.fn(types)</code>, <code>fn(result)</code>, and
-<code>parent.fn(result)</code>.</p>
-<p>To trace several functions the same way, pass an array literal of them and the options they share:</p>
-<pre><code class="ts"><span class="hl-1">trace</span><span class="hl-2">.</span><span class="hl-3">info</span><span class="hl-2">([</span><span class="hl-1">submitOrder</span><span class="hl-2">, </span><span class="hl-1">cancelOrder</span><span class="hl-2">], { </span><span class="hl-1">moduleId:</span><span class="hl-2"> </span><span class="hl-4">&#39;ORDER&#39;</span><span class="hl-2">, </span><span class="hl-1">openMessage:</span><span class="hl-2"> </span><span class="hl-4">&#39;parent.fn(args)&#39;</span><span class="hl-2"> });</span>
+<p>The declaration merge in the first example gives <code>trace.ORDER</code>, <code>Loxer.m('ORDER')</code>, and level lookups
+completion and typo checking.</p>
+<h3 id="build-manual-flows" class="tsd-anchor-link">Build manual flows<a href="#build-manual-flows" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="assets/icons.svg#icon-anchor"></use></svg></a></h3>
+<p>Use an explicit box for work a transform cannot reach: event emitters, callbacks from another
+library, or flows created from several entry points.</p>
+<pre><code class="ts"><span class="hl-3">const</span><span class="hl-1"> </span><span class="hl-7">box</span><span class="hl-1"> = </span><span class="hl-6">Loxer</span><span class="hl-1">.</span><span class="hl-0">m</span><span class="hl-1">(</span><span class="hl-2">&#39;ORDER&#39;</span><span class="hl-1">).</span><span class="hl-6">info</span><span class="hl-1">.</span><span class="hl-0">open</span><span class="hl-1">(</span><span class="hl-2">&#39;Submit order&#39;</span><span class="hl-1">);</span><br/><br/><span class="hl-6">Loxer</span><span class="hl-1">.</span><span class="hl-0">of</span><span class="hl-1">(</span><span class="hl-6">box</span><span class="hl-1">).</span><span class="hl-0">add</span><span class="hl-1">(</span><span class="hl-2">&#39;Basket validated&#39;</span><span class="hl-1">);</span><br/><span class="hl-6">Loxer</span><span class="hl-1">.</span><span class="hl-0">of</span><span class="hl-1">(</span><span class="hl-6">box</span><span class="hl-1">).</span><span class="hl-0">warn</span><span class="hl-1">(</span><span class="hl-2">&#39;Inventory is low&#39;</span><span class="hl-1">);</span><br/><span class="hl-6">Loxer</span><span class="hl-1">.</span><span class="hl-0">of</span><span class="hl-1">(</span><span class="hl-6">box</span><span class="hl-1">).</span><span class="hl-0">close</span><span class="hl-1">(</span><span class="hl-2">&#39;Order complete&#39;</span><span class="hl-1">);</span>
 </code><button type="button">Copy</button></pre>
 
-<p><code>trace.info()</code> is a build-time marker, not a runtime wrapper. Every module that executes a marker must
-pass through the Babel plugin; otherwise the marker throws to signal a missing build configuration.</p>
-<p>For Vite, add the adapter and register it as a normal Vite plugin:</p>
-<pre><code class="sh"><span class="hl-3">pnpm</span><span class="hl-2"> </span><span class="hl-4">add</span><span class="hl-2"> </span><span class="hl-5">-D</span><span class="hl-2"> </span><span class="hl-4">vite-plugin-loxer-trace</span>
+<p><img src="https://raw.githubusercontent.com/pcprinz/loxer/master/assets/docs_images/manual-box-default.png" alt="Default Loxer development output for a manual box"></p>
+<p>Manual and automatic boxes share the same history, levels, modules, props, and output pipeline.</p>
+<h3 id="send-structured-production-output" class="tsd-anchor-link">Send structured production output<a href="#send-structured-production-output" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="assets/icons.svg#icon-anchor"></use></svg></a></h3>
+<p>Development uses console rendering by default. Production is silent until you provide an <code>output</code>
+callback. That callback receives structured events, so a destination never has to parse console text.</p>
+<pre><code class="ts"><span class="hl-6">Loxer</span><span class="hl-1">.</span><span class="hl-0">init</span><span class="hl-1">({</span><br/><span class="hl-1">  </span><span class="hl-0">output</span><span class="hl-1">(</span><span class="hl-6">event</span><span class="hl-1">) {</span><br/><span class="hl-1">    </span><span class="hl-5">if</span><span class="hl-1"> (</span><span class="hl-6">event</span><span class="hl-1">.</span><span class="hl-6">kind</span><span class="hl-1"> === </span><span class="hl-2">&#39;error&#39;</span><span class="hl-1">) {</span><br/><span class="hl-1">      </span><span class="hl-0">reportError</span><span class="hl-1">(</span><span class="hl-6">event</span><span class="hl-1">.</span><span class="hl-6">lox</span><span class="hl-1">, </span><span class="hl-6">event</span><span class="hl-1">.</span><span class="hl-6">history</span><span class="hl-1">);</span><br/><span class="hl-1">      </span><span class="hl-5">return</span><span class="hl-1">;</span><br/><span class="hl-1">    }</span><br/><br/><span class="hl-1">    </span><span class="hl-0">publish</span><span class="hl-1">({</span><br/><span class="hl-1">      </span><span class="hl-6">level:</span><span class="hl-1"> </span><span class="hl-6">event</span><span class="hl-1">.</span><span class="hl-6">lox</span><span class="hl-1">.</span><span class="hl-6">level</span><span class="hl-1">,</span><br/><span class="hl-1">      </span><span class="hl-6">message:</span><span class="hl-1"> </span><span class="hl-6">event</span><span class="hl-1">.</span><span class="hl-6">lox</span><span class="hl-1">.</span><span class="hl-6">message</span><span class="hl-1">,</span><br/><span class="hl-1">      </span><span class="hl-6">moduleId:</span><span class="hl-1"> </span><span class="hl-6">event</span><span class="hl-1">.</span><span class="hl-6">lox</span><span class="hl-1">.</span><span class="hl-6">moduleId</span><span class="hl-1">,</span><br/><span class="hl-1">      </span><span class="hl-6">props:</span><span class="hl-1"> </span><span class="hl-6">event</span><span class="hl-1">.</span><span class="hl-6">lox</span><span class="hl-1">.</span><span class="hl-6">props</span><span class="hl-1">,</span><br/><span class="hl-1">    });</span><br/><span class="hl-1">  },</span><br/><span class="hl-1">});</span>
 </code><button type="button">Copy</button></pre>
 
-<pre><code class="ts"><span class="hl-0">// vite.config.ts</span><br/><span class="hl-7">import</span><span class="hl-2"> { </span><span class="hl-1">defineConfig</span><span class="hl-2"> } </span><span class="hl-7">from</span><span class="hl-2"> </span><span class="hl-4">&#39;vite&#39;</span><span class="hl-2">;</span><br/><span class="hl-7">import</span><span class="hl-2"> </span><span class="hl-1">loxerTrace</span><span class="hl-2"> </span><span class="hl-7">from</span><span class="hl-2"> </span><span class="hl-4">&#39;vite-plugin-loxer-trace&#39;</span><span class="hl-2">;</span><br/><br/><span class="hl-7">export</span><span class="hl-2"> </span><span class="hl-7">default</span><span class="hl-2"> </span><span class="hl-3">defineConfig</span><span class="hl-2">({</span><br/><span class="hl-2">  </span><span class="hl-1">plugins:</span><span class="hl-2"> [</span><span class="hl-3">loxerTrace</span><span class="hl-2">()],</span><br/><span class="hl-2">});</span>
+<p><code>OutputLoxRenderer</code>, <code>ErrorLoxRenderer</code>, and <code>PropsPrinter</code> let a custom destination use Loxer's
+plain or ANSI rendering where text is useful. Raw props remain available for structured forwarding.</p>
+<h2 id="follow-one-operation-through-nested-work" class="tsd-anchor-link">Follow one operation through nested work<a href="#follow-one-operation-through-nested-work" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="assets/icons.svg#icon-anchor"></use></svg></a></h2>
+<p>Automatic traces nest naturally. This order workflow produces an order box, a nested payment box,
+and a contextual order milestone. A direct logger call belongs to the payment box.</p>
+<pre><code class="ts"><span class="hl-3">async</span><span class="hl-1"> </span><span class="hl-3">function</span><span class="hl-1"> </span><span class="hl-0">chargePayment</span><span class="hl-1">(</span><span class="hl-6">orderId</span><span class="hl-1">: </span><span class="hl-8">string</span><span class="hl-1">) {</span><br/><span class="hl-1">  </span><span class="hl-6">Loxer</span><span class="hl-1">.</span><span class="hl-0">m</span><span class="hl-1">(</span><span class="hl-2">&#39;PAYMENT&#39;</span><span class="hl-1">).</span><span class="hl-0">debug</span><span class="hl-1">(</span><span class="hl-2">&#39;Calling payment provider&#39;</span><span class="hl-1">, { </span><span class="hl-6">orderId</span><span class="hl-1"> });</span><br/><span class="hl-1">  </span><span class="hl-5">return</span><span class="hl-1"> { </span><span class="hl-6">orderId</span><span class="hl-1">, </span><span class="hl-6">authorized:</span><span class="hl-1"> </span><span class="hl-3">true</span><span class="hl-1"> };</span><br/><span class="hl-1">}</span><br/><span class="hl-6">trace</span><span class="hl-1">.</span><span class="hl-7">PAYMENT</span><span class="hl-1">.</span><span class="hl-0">info</span><span class="hl-1">(</span><span class="hl-6">chargePayment</span><span class="hl-1">, { </span><span class="hl-6">closeMessage:</span><span class="hl-1"> </span><span class="hl-2">&#39;fn(result)&#39;</span><span class="hl-1"> });</span><br/><br/><span class="hl-3">async</span><span class="hl-1"> </span><span class="hl-3">function</span><span class="hl-1"> </span><span class="hl-0">submitOrder</span><span class="hl-1">(</span><span class="hl-6">orderId</span><span class="hl-1">: </span><span class="hl-8">string</span><span class="hl-1">) {</span><br/><span class="hl-1">  </span><span class="hl-6">trace</span><span class="hl-1">.</span><span class="hl-6">point</span><span class="hl-1">.</span><span class="hl-7">ORDER</span><span class="hl-1">.</span><span class="hl-0">info</span><span class="hl-1">(</span><span class="hl-2">&#39;fn&#39;</span><span class="hl-1">, </span><span class="hl-2">&#39;Order accepted&#39;</span><span class="hl-1">, { </span><span class="hl-6">orderId</span><span class="hl-1"> });</span><br/><span class="hl-1">  </span><span class="hl-3">const</span><span class="hl-1"> </span><span class="hl-7">payment</span><span class="hl-1"> = </span><span class="hl-5">await</span><span class="hl-1"> </span><span class="hl-0">chargePayment</span><span class="hl-1">(</span><span class="hl-6">orderId</span><span class="hl-1">);</span><br/><span class="hl-1">  </span><span class="hl-5">return</span><span class="hl-1"> { </span><span class="hl-6">orderId</span><span class="hl-1">, </span><span class="hl-6">payment</span><span class="hl-1"> };</span><br/><span class="hl-1">}</span><br/><span class="hl-6">trace</span><span class="hl-1">.</span><span class="hl-7">ORDER</span><span class="hl-1">.</span><span class="hl-0">props</span><span class="hl-1">(</span><span class="hl-2">&#39;result&#39;</span><span class="hl-1">).</span><span class="hl-0">info</span><span class="hl-1">(</span><span class="hl-6">submitOrder</span><span class="hl-1">, { </span><span class="hl-6">openMessage:</span><span class="hl-1"> </span><span class="hl-2">&#39;parent.fn(args)&#39;</span><span class="hl-1"> });</span>
 </code><button type="button">Copy</button></pre>
 
-<p>See the <a href="https://github.com/pcprinz/loxer/blob/master/documentation/index.md#plain-function-tracing">plain-function tracing guide</a>
-and the <a href="https://github.com/pcprinz/loxer/blob/master/packages/babel-plugin-loxer-trace/README.md">Babel plugin README</a>
-for supported function shapes, options, and transform details.</p>
-<h2 id="preview-example" class="tsd-anchor-link">Preview Example<a href="#preview-example" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="assets/icons.svg#icon-anchor"></use></svg></a></h2>
-<p>Consider the following log output (without the log date):</p>
-<!-- ![plain_console](/assets/docs_images/plainOutput.png) -->
-<p><img src="https://raw.githubusercontent.com/pcprinz/loxer/master/assets/docs_images/plainOutput.png" alt="plain_console"></p>
-<p>As you can see the logs might tell something considering you know where they come from and what they do, but obviously they seem to be pretty uninformative.</p>
-<p>Let's see what Loxer can do about this:</p>
-<!-- ![plain_console](/assets/docs_images/goodOutput.png) -->
-<p><img src="https://raw.githubusercontent.com/pcprinz/loxer/master/assets/docs_images/goodOutput.png" alt="plain_console"></p>
-<p>The log messages are exactly the same, but with a litte configuration you can see what is happening in the application. Even if you are not familiar with the code you can follow the implemented data flow by just one sight.</p>
-<blockquote>
-<p>Watch this <a href="https://cdn.knightlab.com/libs/juxtapose/latest/embed/index.html?uid=9e14a828-2f7d-11ec-abb7-b9a7ff2ee17c">comparison with a slider</a></p>
-</blockquote>
-<h2 id="installation" class="tsd-anchor-link">Installation<a href="#installation" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="assets/icons.svg#icon-anchor"></use></svg></a></h2>
-<p><code>npm i --save loxer</code>, <code>pnpm add loxer</code>, or <code>yarn add loxer</code> thats it.</p>
-<h2 id="deps" class="tsd-anchor-link">Deps<a href="#deps" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="assets/icons.svg#icon-anchor"></use></svg></a></h2>
-<p>none - Loxer ships with zero runtime dependencies.</p>
+<p>This pattern works for any operation with meaningful internal stages: a request that calls several
+services, a job that processes a batch, a browser action that coordinates UI and network state, or a
+server operation that needs a clear failure trail.</p>
+<p><img src="https://raw.githubusercontent.com/pcprinz/loxer/master/assets/docs_images/nested-order-default.png" alt="Default Loxer development output for nested order and payment work"></p>
+<h2 id="start-where-you-are" class="tsd-anchor-link">Start where you are<a href="#start-where-you-are" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="assets/icons.svg#icon-anchor"></use></svg></a></h2>
+<table>
+<thead>
+<tr>
+<th>Goal</th>
+<th>Recommended path</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>See a working trace in minutes</td>
+<td><a href="https://github.com/pcprinz/loxer/blob/master/documentation/quick-start.md">Five-minute Vite quick start</a></td>
+</tr>
+<tr>
+<td>Add tracing to an existing Vite, Babel, test, or Node build</td>
+<td><a href="https://github.com/pcprinz/loxer/blob/master/documentation/integrations.md">Integration guide</a></td>
+</tr>
+<tr>
+<td>Learn markers, messages, props, and async behavior</td>
+<td><a href="https://github.com/pcprinz/loxer/blob/master/documentation/tracing.md">Tracing guide</a></td>
+</tr>
+<tr>
+<td>Configure modules, logs, manual boxes, history, and output</td>
+<td><a href="https://github.com/pcprinz/loxer/blob/master/documentation/logging.md">Logging and output guide</a></td>
+</tr>
+<tr>
+<td>Diagnose a missing transform or missing output</td>
+<td><a href="https://github.com/pcprinz/loxer/blob/master/documentation/reference.md">Reference and troubleshooting</a></td>
+</tr>
+<tr>
+<td>Inspect every exported type and option</td>
+<td><a href="https://pcprinz.github.io/loxer/index.html">Generated API reference</a></td>
+</tr>
+</tbody>
+</table>
+<h2 id="important-operating-facts" class="tsd-anchor-link">Important operating facts<a href="#important-operating-facts" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="assets/icons.svg#icon-anchor"></use></svg></a></h2>
+<ul>
+<li>Initialize Loxer early in each JavaScript realm. Logs produced beforehand wait in a bounded queue
+containing the oldest 1,000 records; an undrained queue reports a one-time warning after five
+seconds.</li>
+<li>Every loaded copy in one realm shares a <code>globalThis</code>-backed instance. A worker, iframe, and server
+process are separate realms and each need initialization.</li>
+<li>Every value after a message is a prop. Render props with <code>pp()</code> when people need to inspect them;
+bound broad values with <code>depth</code> or <code>keys</code>.</li>
+<li>Messages, arguments, results, errors, and props are caller data. Loxer does not redact them. Apply
+filtering, retention, access, encryption, and deletion policy at the output destination.</li>
+<li>A <code>trace</code> marker must pass through the Vite or Babel transform. An untransformed marker throws a
+configuration error, making a missing build step visible.</li>
+</ul>
+<h2 id="package-facts" class="tsd-anchor-link">Package facts<a href="#package-facts" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="assets/icons.svg#icon-anchor"></use></svg></a></h2>
+<ul>
+<li>ESM-only package with TypeScript declarations.</li>
+<li>Node 20 or newer for <code>loxer</code>; Node 20.19 or newer for the Babel and Vite trace plugins.</li>
+<li>Vite 5–8 and Babel 7.26.10 or Babel 8 are accepted by the shipped adapters.</li>
+<li>Zero runtime dependencies.</li>
+<li>MIT © Christian Prinz.</li>
+</ul>
 </div></div>
 <div class="col-sidebar">
 <div class="page-menu">
@@ -100,14 +199,23 @@ for supported function shapes, options, and transform details.</p>
 <div class="tsd-theme-toggle"><label class="settings-label" for="tsd-theme">Theme</label><select id="tsd-theme"><option value="os">OS</option><option value="light">Light</option><option value="dark">Dark</option></select></div></div></details></div>
 <details open class="tsd-accordion tsd-page-navigation"><summary class="tsd-accordion-summary"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true"><use href="assets/icons.svg#icon-chevronDown"></use></svg>
 <h3>On This Page</h3></summary>
-<div class="tsd-accordion-details"><a href="#loxer-github-release-latest-by-date-github-release-date-github-branch-checks-state-npm-bundle-size-github"><span>Loxer <wbr/>Git<wbr/>Hub release (latest by date) <wbr/>Git<wbr/>Hub <wbr/>Release <wbr/>Date <wbr/>Git<wbr/>Hub branch checks state npm bundle size <wbr/>Git<wbr/>Hub</span></a>
+<div class="tsd-accordion-details"><a href="#loxer"><span>Loxer</span></a>
 <ul>
-<li><a href="#documentation"><span>Documentation</span></a></li>
-<li><a href="#usage"><span>Usage</span></a></li>
-<li><a href="#plain-function-tracing"><span>Plain-<wbr/>function tracing</span></a></li>
-<li><a href="#preview-example"><span>Preview <wbr/>Example</span></a></li>
-<li><a href="#installation"><span>Installation</span></a></li>
-<li><a href="#deps"><span>Deps</span></a></li></ul></div></details></div>
+<li><a href="#what-it-looks-like-in-code"><span>What it looks like in code</span></a></li>
+<li><a href="#why-loxer"><span>Why <wbr/>Loxer</span></a></li>
+<li><a href="#a-small-api-with-a-broad-reach"><span>A small <wbr/>API with a broad reach</span></a></li>
+<li>
+<ul>
+<li><a href="#trace-functions"><span>Trace functions</span></a></li>
+<li><a href="#add-contextual-trace-points"><span>Add contextual trace points</span></a></li>
+<li><a href="#keep-ordinary-logs-connected"><span>Keep ordinary logs connected</span></a></li>
+<li><a href="#group-work-by-domain"><span>Group work by domain</span></a></li>
+<li><a href="#build-manual-flows"><span>Build manual flows</span></a></li>
+<li><a href="#send-structured-production-output"><span>Send structured production output</span></a></li></ul></li>
+<li><a href="#follow-one-operation-through-nested-work"><span>Follow one operation through nested work</span></a></li>
+<li><a href="#start-where-you-are"><span>Start where you are</span></a></li>
+<li><a href="#important-operating-facts"><span>Important operating facts</span></a></li>
+<li><a href="#package-facts"><span>Package facts</span></a></li></ul></div></details></div>
 <div class="site-menu">
 <nav class="tsd-navigation"><a href="modules.html">Loxer - v3.0.0</a>
 <ul class="tsd-small-nested-navigation" id="tsd-nav-container">

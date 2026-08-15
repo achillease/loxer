@@ -46,10 +46,10 @@ export class Lox {
   printProps: PropsPrinterOptions | undefined;
   /** the {@link LoxType type} of the log */
   type: LoxType;
-  /** the corresponding key of a module from {@link LoxerOptions.modules}
+  /** the corresponding key of a module from `Loxer.init({ modules })`
    * - will be `DEFAULT` if logged with empty module `Loxer.module()` or `Loxer.m()`
    * - will be `NONE` if logged without a module
-   * - will be `INVALID` if logged with a module that was not defined at {@link LoxerOptions.modules}
+   * - will be `INVALID` if logged with a module that was not defined at initialization
    */
   moduleId: string;
   /** the {@link LogLevel} of the log
@@ -60,7 +60,7 @@ export class Lox {
    * - the opening log's level for `Loxer.of(...).add()` / `.close()`
    */
   level: LogLevel;
-  /** the {@link Date} the log was declared */
+  /** the `Date` the log was declared */
   timestamp: Date;
   /** @internal the regions of {@link Lox.message} the built-in output colors — the name, the parent,
    * and the arguments, types, or result a traced call renders into its box message.

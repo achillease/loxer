@@ -102,7 +102,10 @@ function disabledOfLoxes(): OfLoxes {
  * This is the main class of Loxer. It works "static" because it's a singleton instance though you
  * don't need to call ~`new Loxer()`~. Instead you use it with **`Loxer.log()`** (or any other method).
  *
- * ### For an overview of all methods and a guide on how to use it, take a look at the [Documentation](https://github.com/pcprinz/loxer/blob/master/documentation/index.md).
+ * ### Start with the
+ * [logging guide](https://github.com/pcprinz/loxer/blob/master/documentation/logging.md), or
+ * open the
+ * [documentation hub](https://github.com/pcprinz/loxer/blob/master/documentation/index.md).
  */
 class LoxerInstance implements LoxerType {
   private _loxes = new Loxes();
@@ -602,7 +605,10 @@ const instance = realmSlot('instance', () => new LoxerInstance());
  * This is the main class of Loxer. It works "static" because it's a singleton instance though you
  * don't need to call ~`new Loxer()`~. Instead you use it with **`Loxer.log()`** (or any other method).
  *
- * ### For an overview of all methods and a guide on how to use it, take a look at the [Documentation](https://github.com/pcprinz/loxer/blob/master/documentation/index.md).
+ * ### Start with the
+ * [logging guide](https://github.com/pcprinz/loxer/blob/master/documentation/logging.md), or
+ * open the
+ * [documentation hub](https://github.com/pcprinz/loxer/blob/master/documentation/index.md).
  */
 export const Loxer: LoxerType = instance;
 

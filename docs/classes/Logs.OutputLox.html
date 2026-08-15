@@ -14,7 +14,7 @@
 <section class="tsd-panel tsd-comment">
 <div class="tsd-comment tsd-typography"><p>A visible ordinary log emitted to the configured output stream as an event with <code>kind: 'log'</code>.</p>
 </div></section>
-<section class="tsd-panel tsd-hierarchy" data-refl="486">
+<section class="tsd-panel tsd-hierarchy" data-refl="483">
 <h4>Hierarchy (<a href="../hierarchy.html#Logs.OutputLox">View Summary</a>)</h4>
 <ul class="tsd-hierarchy">
 <li class="tsd-hierarchy-item"><span class="tsd-signature-type">Lox</span>
@@ -108,11 +108,11 @@
 <section class="tsd-panel tsd-member tsd-is-inherited">
 <h3 class="tsd-anchor-link" id="moduleid"><span>module<wbr/>Id</span><a href="#moduleid" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
 <div class="tsd-signature"><span class="tsd-kind-property">moduleId</span><span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">string</span></div>
-<div class="tsd-comment tsd-typography"><p>the corresponding key of a module from LoxerOptions.modules</p>
+<div class="tsd-comment tsd-typography"><p>the corresponding key of a module from <code>Loxer.init({ modules })</code></p>
 <ul>
 <li>will be <code>DEFAULT</code> if logged with empty module <code>Loxer.module()</code> or <code>Loxer.m()</code></li>
 <li>will be <code>NONE</code> if logged without a module</li>
-<li>will be <code>INVALID</code> if logged with a module that was not defined at LoxerOptions.modules</li>
+<li>will be <code>INVALID</code> if logged with a module that was not defined at initialization</li>
 </ul>
 </div><aside class="tsd-sources">
 <p>Inherited from Lox.moduleId</p></aside></section>
@@ -132,7 +132,7 @@
 <section class="tsd-panel tsd-member tsd-is-inherited">
 <h3 class="tsd-anchor-link" id="timestamp"><span>timestamp</span><a href="#timestamp" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
 <div class="tsd-signature"><span class="tsd-kind-property">timestamp</span><span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">Date</span></div>
-<div class="tsd-comment tsd-typography"><p>the Date the log was declared</p>
+<div class="tsd-comment tsd-typography"><p>the <code>Date</code> the log was declared</p>
 </div><aside class="tsd-sources">
 <p>Inherited from Lox.timestamp</p></aside></section>
 <section class="tsd-panel tsd-member">

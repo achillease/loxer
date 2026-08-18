@@ -67,13 +67,13 @@ test('transforms point terminals, selector routing, direct modules, and empty pr
     ['info', 'PROJECTS', 'save(): saved'],
     ['warn', 'props', 'orderService.save(): retrying'],
     ['info', 'props', 'save(): computed'],
-    ['debug', 'ORDER', ''],
+    ['debug', 'ORDER', 'orderService.save()'],
     ['error', 'NONE', 'save(): failed'],
   ]);
   expect(devLogs[0]).toMatchObject({ highlighted: true, printProps: {}, props: [order] });
   expect(devLogs[0].messageSpans.map((span) => span.kind)).toEqual(['fn']);
   expect(devLogs[1].messageSpans.map((span) => span.kind)).toEqual(['parent', 'fn']);
-  expect(devLogs[3].messageSpans).toEqual([]);
+  expect(devLogs[3].messageSpans.map((span) => span.kind)).toEqual(['parent', 'fn']);
   expect(devErrors).toEqual([]);
 });
 

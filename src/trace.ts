@@ -109,6 +109,9 @@ interface TraceMarkerModifiers<Delete extends string> {
  */
 export type TraceMarker = TraceMarkerChain<never> & { readonly point: TracePoint };
 
+/** One `trace.point` terminal: a message callback, a `'fn'` / `'parent.fn'` selector ahead of the
+ * message, or the message itself. Called with nothing, it reports the surrounding call the way
+ * `'parent.fn'` does. Every form takes props after the message. */
 interface TracePointTerminal {
   (message: TracePointMessage, ...props: unknown[]): void;
   (selector: TracePointSelector, message?: unknown, ...props: unknown[]): void;
@@ -273,8 +276,10 @@ export function __tracePoint(
 ): void {
   const [first, second] = args;
   const level = resolveThreshold(options.level, 'info');
+  // a terminal called with nothing at all has only its surroundings to report, so it takes the
+  // template that names them: `trace.point.debug()` reads as `Checkout.calculate()`
   const selector: TracePointSelector | undefined =
-    first === 'fn' || first === 'parent.fn' ? first : undefined;
+    args.length === 0 ? 'parent.fn' : first === 'fn' || first === 'parent.fn' ? first : undefined;
   const callback = typeof first === 'function' ? (first as TracePointMessage) : undefined;
   __writeTracePoint(
     level,

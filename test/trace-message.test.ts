@@ -119,11 +119,7 @@ describe('empty point messages', () => {
     resetLoxer();
   });
 
-  test.each([
-    { terminal: 'log', level: 'info' },
-    { terminal: 'info', level: 'info' },
-    { terminal: 'debug', level: 'debug' },
-  ] as const)('$terminal() forwards no message through the ordinary log funnel', ({ level }) => {
+  function capturedLogs(): OutputLox[] {
     const logs: OutputLox[] = [];
     Loxer.init({
       dev: true,
@@ -136,7 +132,34 @@ describe('empty point messages', () => {
     });
     logs.length = 0;
 
+    return logs;
+  }
+
+  test.each([
+    { terminal: 'log', level: 'info' },
+    { terminal: 'info', level: 'info' },
+    { terminal: 'debug', level: 'debug' },
+  ] as const)('$terminal() called with nothing names its surroundings', ({ level }) => {
+    const logs = capturedLogs();
+
     __tracePoint({ level }, 'save', 'Orders', undefined);
+
+    expect(logs).toHaveLength(1);
+    expect(logs[0].message).toBe('Orders.save()');
+    expect(logs[0].messageSpans).toEqual([
+      { start: 0, end: 6, kind: 'parent' },
+      { start: 7, end: 11, kind: 'fn' },
+    ]);
+  });
+
+  test.each([
+    { terminal: 'log', level: 'info' },
+    { terminal: 'info', level: 'info' },
+    { terminal: 'debug', level: 'debug' },
+  ] as const)('$terminal() forwards an empty message as it was given', ({ level }) => {
+    const logs = capturedLogs();
+
+    __tracePoint({ level }, 'save', 'Orders', undefined, '');
 
     expect(logs).toHaveLength(1);
     expect(logs[0].message).toBe('');

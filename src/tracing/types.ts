@@ -218,7 +218,11 @@ export interface TraceRuntimeOptions {
   printProps?: TracePropsTarget | TracePrintOptions;
 }
 
-/** A contextual selector accepted by a {@link TracePoint} terminal call. */
+/** A contextual selector accepted by a {@link TracePoint} terminal call.
+ *
+ * `'fn'` prefixes the message with the surrounding function, `'parent.fn'` with the class or file it
+ * belongs to as well. A terminal called with no arguments reports `'parent.fn'` alone.
+ */
 export type TracePointSelector = 'fn' | 'parent.fn';
 
 /** Runtime configuration emitted for one build-time {@link trace.point} call. @internal */

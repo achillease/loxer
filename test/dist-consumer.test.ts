@@ -292,6 +292,7 @@ describe('the built dist/ tree a consumer executes', () => {
     const { code, module: transformed } = await loadBuiltTransformedModule(`
       export function save(order) {
         trace.point.TRACE.pp().warn('parent.fn', 'retrying', order);
+        trace.point.TRACE.debug();
         return order.id;
       }
     `);
@@ -303,7 +304,7 @@ describe('the built dist/ tree a consumer executes', () => {
     expect(code).not.toContain('trace.point');
     expect(code).not.toMatch(/import\s*\{[^}]*\btrace\b[^}]*\}\s*from/);
     expect(transformed.save({ id: 7 })).toBe(7);
-    expect(devLogs).toHaveLength(1);
+    expect(devLogs).toHaveLength(2);
     expect(devLogs[0]).toMatchObject({
       level: 'warn',
       message: 'checkout.save(): retrying',
@@ -312,6 +313,14 @@ describe('the built dist/ tree a consumer executes', () => {
       props: [{ id: 7 }],
       type: 'single',
     });
+    expect(devLogs[1]).toMatchObject({
+      level: 'debug',
+      message: 'checkout.save()',
+      moduleId: 'TRACE',
+      props: [],
+      type: 'single',
+    });
+    expect(devLogs[1].messageSpans.map((span) => span.kind)).toEqual(['parent', 'fn']);
   });
 
   test('a mixed built module cleans markers, preserves spread and callback routes, and links points', async () => {

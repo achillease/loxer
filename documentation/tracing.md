@@ -102,6 +102,13 @@ trace.point.info(({ parentFn }) => parentFn('cache hit'), cacheKey);
 trace.point.ORDER.h().pp({ depth: 2 }).debug('fn', 'Loaded basket', basket);
 ```
 
+A terminal called with nothing at all reports the surrounding call, the way `'parent.fn'` does — a
+point inside `Checkout.calculate` reads as `Checkout.calculate()`:
+
+```ts
+trace.point.debug();
+```
+
 Multiple trace points stay on the surrounding lifecycle rather than opening more boxes:
 
 ![Default Loxer development output for contextual trace points](https://raw.githubusercontent.com/pcprinz/loxer/master/assets/docs_images/trace-points-default.png)

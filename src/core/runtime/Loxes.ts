@@ -49,7 +49,11 @@ export class Loxes {
   }
 
   private removeCorrespondingOpenLox(lox: OutputLox) {
-    this._loxes[lox.id] = undefined;
+    // the key goes, not just its value: `getOpenLoxes` walks this map, so a closed box left behind as
+    // an `undefined` tombstone would make that walk cost every id the instance ever issued instead of
+    // the boxes actually open. Nothing reads the key's presence - `findOpenLox` gets `undefined`
+    // either way, and `filterDef` drops what is absent.
+    delete this._loxes[lox.id];
     const openLogIndex = this._openLogBuffer.findIndex((buff) => buff?.id === lox.id);
     if (openLogIndex > -1) {
       this._openLogBuffer[openLogIndex] = undefined;
@@ -70,8 +74,12 @@ export class Loxes {
   }
 
   private addOpenLox(lox: OutputLox) {
+    // box identity and box column are separable: the id map is what `.of(id)` resolves against, so
+    // it is filled whatever the box's column costs. A level-hidden box and a column-free one both
+    // stay out of the buffer that the box layout reads, which is what makes their members render the
+    // prefix they would render had the box never opened. Hidden wins for free - it is the same `&&`.
     this._loxes[lox.id] = lox;
-    if (!lox.hidden) {
+    if (!lox.hidden && !lox.columnFree) {
       this._openLogBuffer.push({ id: lox.id, module: lox.module });
     }
   }
@@ -88,11 +96,17 @@ export class Loxes {
     return undefined;
   }
 
-  /** @internal returns all defined open loxes. used for appending to ErrorLoxes */
+  /** @internal returns all defined open loxes. used for appending to ErrorLoxes
+   *
+   * Derived from the id map rather than from the column buffer, because this list is diagnostic and
+   * not layout: a column-free box is genuinely in flight when the error fires, and it holds no
+   * buffer slot. Hidden boxes stay excluded - a log the level gate dropped is not context. The id
+   * map is id-indexed and ids ascend, so the order stays chronological.
+   */
   getOpenLoxes(): OutputLox[] {
-    const openLoxes = filterDef(this._openLogBuffer).map((buff) => this._loxes[buff.id]);
-
-    return filterDef(openLoxes);
+    return filterDef(Object.values(this._loxes)).filter(
+      (lox) => lox.type === 'open' && !lox.hidden
+    );
   }
 
   /** @internal returns the open lox buffer with all open loxes or undefined. used for the boxlayout in the BoxFactory */

@@ -102,8 +102,8 @@ trace.ORDER
   });
 ```
 
-Choose a module, highlight a lifecycle side, capture arguments/results, control printed props, and
-use templates or callbacks for names and messages. The [tracing guide](https://github.com/pcprinz/loxer/blob/master/documentation/tracing.md)
+Choose a module, highlight a lifecycle side, open a column-free box, capture arguments/results,
+control printed props, and use templates or callbacks for names and messages. The [tracing guide](https://github.com/pcprinz/loxer/blob/master/documentation/tracing.md)
 covers the complete set of marker forms and behavior.
 
 ### Add contextual trace points

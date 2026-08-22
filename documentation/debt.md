@@ -29,6 +29,7 @@ and judge the fix on its own:
 | [D-2](#d-2--vite-adapter-skips-single-file-component-script-blocks) | Vite adapter skips single-file-component script blocks | Vite adapter · source filtering | Medium — markers in component blocks reach no transform | 2026-08-14 |
 | [D-3](#d-3--non-vite-non-babel-hosts-have-no-shipped-adapter) | Non-Vite, non-Babel hosts have no shipped adapter | Trace integrations | Medium — consumers must write transform hooks | 2026-08-14 |
 | [D-4](#d-4--swc-only-pipelines-have-no-native-transform) | SWC-only pipelines have no native transform | Trace compiler | High — several framework paths cannot use markers | 2026-08-14 |
+| [D-5](#d-5--the-built-in-dev-console-splits-ordinary-logs-across-stdout-and-stderr-on-node) | Built-in dev console splits ordinary logs across stdout and stderr on Node | `src/core/output/OutputStreams.ts` · default destination | Low — Node only, built-in output only; a `warn` row leaves stdout | 2026-08-20 |
 
 ---
 
@@ -170,6 +171,37 @@ failures, and source maps. This is a separate compiler project rather than an ad
 **Found.** 2026-08-14, Implementation pass for
 [trace-first documentation](plans/2026-08-14-trace_first_documentation/plan.md), while removing
 unverified framework recipes from the user guide.
+
+### D-5 — The built-in dev console splits ordinary logs across stdout and stderr on Node
+
+**Where:** `devLogOut` in
+[`src/core/output/OutputStreams.ts`](../src/core/output/OutputStreams.ts) dispatches with
+`console[outputLox.level]`.
+
+**Symptom.** On Node, an ordinary `warn` log is written to **stderr**, not stdout. A consumer of the
+built-in output that pipes stdout to a file or a log collector loses every `warn` row, and picks up
+box lines from error-level ordinary logs on stderr as well.
+
+**Cause.** `console.warn` is an alias of `console.error` on Node and writes to stderr, while
+`console.log` / `console.info` / `console.debug` write to stdout. The level-named dispatch exists so
+a Chromium devtools console can apply its own level filter, error grouping, and stack capture — a
+destination where the stream distinction does not exist. Routing only `'error'` to `console.error`
+would keep every ordinary log on stdout, but gives up the devtools level filter the dispatch was
+added for.
+
+**Impact.** Node-only. The stream split is invisible in a browser or Electron renderer, and it does
+not reach a registered `output` callback — only the built-in fallback destination. It contradicts the
+level contract in [`AGENTS.md`](../AGENTS.md), where a `warn` is an ordinary log on the
+`devLog`/`prodLog` stream and only `error()` reaches `devError`/`prodError`.
+
+**Proposed fix.** Pick one stream policy per environment rather than one globally: keep the
+level-named dispatch where a devtools console consumes it, and route ordinary logs to stdout on
+Node. Failing that, document the split where a Node reader meets the built-in output, so a consumer
+knows to register an `output` callback when it needs a single stream.
+
+**Found.** 2026-08-20, Reviewing pass 1 for
+[column-free boxes](plans/2026-08-19-columnfreeboxes/review.md) (`CODE-node-stderr-routing`), while
+reviewing the level-named console dispatch.
 
 ## Resolved
 

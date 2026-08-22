@@ -7,19 +7,23 @@ import {
   resetLoxer,
   type LoxerOutputEvent,
 } from '../src';
+import { ColoredOutputLoxRenderer } from '../src/core/output/OutputRenderer';
 import { Loxes } from '../src/core/runtime/Loxes';
 import { Modules } from '../src/core/runtime/Modules';
 import { ErrorLox, OutputLox } from '../src/loxes';
 import { OutputStreams } from '../src/core/output/OutputStreams';
 import { Lox } from '../src/loxes/Lox';
 import { LoxHistory } from '../src/core/runtime/LoxHistory';
+import { __openTrace } from '../src/Loxer';
 
 // mock console
 global.console.log = vi.fn();
 global.console.error = vi.fn();
-// the pre-init queue reports itself through console.warn - the only channel that exists before
-// init() registers any callback
+// the built-in console writes each level with the console method its name matches
+// (`src/core/output/OutputStreams.ts`), so every one of the four needs its own mock
 global.console.warn = vi.fn();
+global.console.info = vi.fn();
+global.console.debug = vi.fn();
 
 /** mirrors `PENDING_QUEUE_CAP` in `src/core/runtime/Loxes.ts`, which is deliberately not exported: the
  * pre-init queue takes no configuration, because `init()`'s config is by construction too late */
@@ -59,6 +63,9 @@ afterEach(() => {
   resetLoxer();
   vi.useRealTimers();
   (console.warn as Mock).mockClear();
+  (console.info as Mock).mockClear();
+  (console.debug as Mock).mockClear();
+  (console.error as Mock).mockClear();
 });
 
 afterAll(() => {
@@ -347,29 +354,137 @@ test('an overflowing queue keeps the opening log at its head, so a pre-init .of(
 test('public structured renderers reproduce the default development console output', () => {
   resetLoxer();
   Loxer.init({ dev: true });
-  (console.log as Mock).mockClear();
+  (console.info as Mock).mockClear();
+  (console.error as Mock).mockClear();
 
   // the default console leads with `time`, the 8-character time of day, so the props indentation it
-  // passes is that width plus the separator before the module text
+  // passes is that width plus the separator before the module text - plus the two-space pad an
+  // icon-less level's row starts with, which is part of that width too
   Loxer.pp().log('log', 'prop');
   const outputLox = Loxer.history[0] as OutputLox;
-  const outputTemplate = OutputLoxRenderer(outputLox, 8 + 1 + outputLox.module.slicedName.length);
+  const outputTemplate = OutputLoxRenderer(
+    outputLox,
+    2 + 8 + 1 + outputLox.module.slicedName.length
+  );
   expect(outputTemplate.message).toBe('log');
   expect(outputTemplate.time).toBe(outputTemplate.timeStamp.slice(11));
   expect(outputTemplate.time).toHaveLength(8);
   expect(outputTemplate.props).toContain("'prop'");
   expect(outputTemplate.props).not.toContain('\x1b[');
   expect(outputTemplate.colored.props).toContain('\x1b[');
-  expect((console.log as Mock).mock.calls[0][0]).toBe(
-    `${outputTemplate.colored.time} ${outputTemplate.colored.module}${outputTemplate.colored.box}${outputTemplate.colored.message}  ${outputTemplate.colored.timeConsumption}${outputTemplate.colored.props}`
+  // `Loxer.log()` writes at `'info'`, which draws no console icon in Chromium - two leading spaces
+  // keep its timestamp at the same column a `warn`/`error` row's icon pushes theirs to
+  expect((console.info as Mock).mock.calls[0][0]).toBe(
+    `  ${outputTemplate.colored.time} ${outputTemplate.colored.module}${outputTemplate.colored.box}${outputTemplate.colored.message}  ${outputTemplate.colored.timeConsumption}${outputTemplate.colored.props}`
   );
 
   Loxer.h().error(new Error('errorText'));
   const errorLox = Loxer.history[0] as ErrorLox;
   const errorTemplate = ErrorLoxRenderer(errorLox, 8 + 1 + errorLox.module.slicedName.length);
   expect(errorTemplate.stack).not.toBe('');
-  expect((console.log as Mock).mock.calls[1][0]).toBe(
+  // an error is always written with `console.error`, whatever level it carries
+  expect((console.error as Mock).mock.calls[0][0]).toBe(
     `${errorTemplate.colored.time} ${errorTemplate.colored.module}${errorTemplate.colored.box}${errorTemplate.colored.message}\t${errorTemplate.colored.timeConsumption}${errorTemplate.colored.props}${errorTemplate.colored.stack}${errorTemplate.colored.openLogs}`
+  );
+});
+
+test('devErrorOut shares getLevelIndentation with devLogOut: an error starts at the same column as a warn row, and its rendered props hang from the column its own message starts at', () => {
+  resetLoxer();
+  Loxer.init({ dev: true });
+  (console.warn as Mock).mockClear();
+  (console.error as Mock).mockClear();
+
+  // a 'warn' row draws its own console icon, so nothing pads its timestamp
+  Loxer.warn('warn message');
+  const warnCall = (console.warn as Mock).mock.calls[0][0] as string;
+  const warnLox = Loxer.history[0] as OutputLox;
+  const warnTemplate = ColoredOutputLoxRenderer(warnLox, 0);
+  expect(warnCall.startsWith(warnTemplate.time)).toBe(true);
+
+  // an error's own level is always 'error', which draws a console icon exactly like 'warn' - it
+  // must start at that same unpadded column, never the two-space pad an icon-less level gets
+  Loxer.h().pp().error(new Error('boom'), 'a prop');
+  const errorLox = Loxer.history[0] as ErrorLox;
+  const errorCall = (console.error as Mock).mock.calls[0][0] as string;
+  // measured independently of the internal constant: the plain (unescaped) fields say exactly how
+  // many characters the console line prints before the message, with the level pad included -
+  // that width is what rendered props have to hang their connector under
+  const unindented = ErrorLoxRenderer(errorLox, 0);
+  const prefixWidth = unindented.time.length + 1 + unindented.module.length + unindented.box.length;
+  expect(errorCall.startsWith(unindented.colored.time)).toBe(true); // no leading pad before the time
+
+  const errorTemplate = ErrorLoxRenderer(errorLox, prefixWidth);
+  expect(errorCall).toBe(
+    `${errorTemplate.colored.time} ${errorTemplate.colored.module}${errorTemplate.colored.box}${errorTemplate.colored.message}\t${errorTemplate.colored.timeConsumption}${errorTemplate.colored.props}${errorTemplate.colored.stack}${errorTemplate.colored.openLogs}`
+  );
+  const propsConnector = errorTemplate.props.match(/\n( *)┃ props> /);
+  expect(propsConnector).not.toBeNull();
+  expect(propsConnector?.[1]).toHaveLength(prefixWidth);
+});
+
+test.each([
+  ['warn', ''],
+  ['info', '  '],
+  ['debug', '  '],
+] as const)(
+  "a '%s' log reaches console.%s with the padding that keeps its timestamp at the same column as an icon-bearing row",
+  (level, levelIndentation) => {
+    resetLoxer();
+    Loxer.init({ dev: true, defaultLevels: { devLevel: 'debug', prodLevel: 'error' } });
+    (console[level] as unknown as Mock).mockClear();
+
+    Loxer[level]('leveled message');
+
+    const outputLox = Loxer.history[0] as OutputLox;
+    const template = ColoredOutputLoxRenderer(outputLox, 0);
+    expect((console[level] as unknown as Mock).mock.calls[0][0]).toBe(
+      `${levelIndentation}${template.time} ${template.module}${template.box}${template.message}  ${template.timeConsumption}${template.props}`
+    );
+    // the change is confined to the highlighted path - an unchained log carries no highlight
+    expect((console[level] as unknown as Mock).mock.calls[0][0]).not.toContain('48;2;70;70;70');
+  }
+);
+
+// `console.error` draws an icon just like `console.warn`, so an ordinary log carrying
+// `level: 'error'` is not padded. The table above cannot reach that case - `Loxer.error()` is
+// the error *method*, which routes to `devErrorOut` instead - so it needs a box opened at level
+// `'error'` through the trace opener.
+test('an ordinary log at level "error" reaches console.error with no pad, opened through the trace opener', () => {
+  resetLoxer();
+  Loxer.init({ dev: true, defaultLevels: { devLevel: 'debug', prodLevel: 'error' } });
+  (console.error as Mock).mockClear();
+
+  const box = __openTrace('error', 'leveled message');
+  Loxer.of(box.id).close();
+
+  // an ordinary (non-error-type) log stays on history/devLogOut, not devErrorOut - only its level
+  // is 'error'
+  const outputLox = Loxer.history[1] as OutputLox;
+  expect(outputLox.type).toBe('open');
+  expect(outputLox.level).toBe('error');
+  const template = ColoredOutputLoxRenderer(outputLox, 0);
+  expect((console.error as Mock).mock.calls[0][0]).toBe(
+    `${template.time} ${template.module}${template.box}${template.message}  ${template.timeConsumption}${template.props}`
+  );
+});
+
+test('a highlighted log marks the time field, not the message, through the built-in console', () => {
+  resetLoxer();
+  Loxer.init({ dev: true });
+  (console.warn as Mock).mockClear();
+
+  Loxer.h().warn('marked');
+
+  const outputLox = Loxer.history[0] as OutputLox;
+  const template = ColoredOutputLoxRenderer(outputLox, 0);
+  // the mark wraps the time text itself, so it is visible on a log carrying no module - which this
+  // one is, since nothing chained `.m(...)` and `NONE` renders as an empty module column
+  const time = outputLox.timestamp.toISOString().replace('T', ' ').slice(11, 19);
+  expect(template.time).toBe(`\x1b[48;2;70;70;70m${time}\x1b[0m`);
+  expect(template.module).not.toContain('\x1b[48;2;70;70;70m');
+  expect(template.message).not.toContain('\x1b[48;2;70;70;70m');
+  expect((console.warn as Mock).mock.calls[0][0]).toBe(
+    `${template.time} ${template.module}${template.box}${template.message}  ${template.timeConsumption}${template.props}`
   );
 });
 

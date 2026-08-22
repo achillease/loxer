@@ -414,6 +414,122 @@ test('renderer box styles use its fallback unless the module explicitly override
   expect(OutputLoxRenderer(twoLox, 0, { boxLayoutStyle: 'heavy' }).box).toBe('┃╓← ');
 });
 
+// column-free boxes ##########################################################
+
+test('a column-free box reserves no column: its open, member, and close lines render only the verticals of boxes that do hold one', () => {
+  const id = Loxer.nc().open('span');
+  Loxer.of(id).add('add');
+  Loxer.of(id).close('close');
+
+  checkBoxes(['open.DEFAULT.<-span', 'single.DEFAULT.-add', 'close.DEFAULT.>-close']);
+  // a column-free close line still carries its time consumption, exactly like a column-reserving one
+  const close = devLogs[devLogs.length - 1];
+  expect(close.timeConsumption).toBeDefined();
+  expect(close.timeText).toMatch(/^\[\d+ms\]$/);
+});
+
+test('a box opened inside a column-free box reserves its column at the depth it would have reached had the enclosing box never opened', () => {
+  const outer = Loxer.nc().open('outer');
+  const inner = Loxer.open('inner');
+  Loxer.of(inner).add('add');
+  Loxer.of(inner).close('close inner');
+  Loxer.of(outer).close('close outer');
+
+  checkBoxes([
+    'open.DEFAULT.<-outer',
+    'open.DEFAULT.<-inner',
+    'single.DEFAULT.T-add',
+    'close.DEFAULT.>-close inner',
+    'close.DEFAULT.>-close outer',
+  ]);
+});
+
+test('a level-hidden box outputs nothing whether or not nc() was chained, and a log that outranks it renders the same unmarked line either way', () => {
+  // module ONE is at devLevel 'info', so a 'debug' box - column-free or not - never reaches output
+  const plainHidden = Loxer.m('ONE').debug.open('hidden plain');
+  Loxer.of(plainHidden).close('close hidden plain');
+  const ncHidden = Loxer.m('ONE').nc().debug.open('hidden nc');
+  // a log that outranks its hidden box is still written, without a marker of its own - the same
+  // rendering whether the box reserved a column or not, because a hidden box never reserves one
+  Loxer.of(ncHidden).warn('warn inside a hidden nc box');
+  Loxer.of(ncHidden).close('close hidden nc');
+
+  expect(devLogs.length).toBe(2); // the init log, plus the one piercing warn
+  expect(devLogs[1].level).toBe('warn');
+  expect(devLogs[1].hidden).toBe(false);
+  expect(devLogs[1].columnFree).toBe(true);
+  checkBoxes(['single.ONE.-warn inside a hidden nc box']);
+});
+
+test('a mixed run: a normal box keeps its column while a column-free box beside it reserves none', () => {
+  const col = Loxer.open('column');
+  const free = Loxer.nc().open('free');
+  Loxer.of(col).add('add col');
+  Loxer.of(free).add('add free');
+  Loxer.of(free).close('close free');
+  Loxer.of(col).close('close col');
+
+  checkBoxes([
+    'open.DEFAULT.<-column',
+    'open.DEFAULT.|<-free',
+    'single.DEFAULT.T-add col',
+    'single.DEFAULT.|-add free',
+    'close.DEFAULT.|>-close free',
+    'close.DEFAULT.>-close col',
+  ]);
+});
+
+test.each([
+  ['add', (id: number) => Loxer.of(id).add('member')],
+  ['warn', (id: number) => Loxer.of(id).warn('member')],
+  ['info', (id: number) => Loxer.of(id).info('member')],
+  ['debug', (id: number) => Loxer.of(id).debug('member')],
+  ['close', (id: number) => Loxer.of(id).close('member')],
+] as const)(
+  'Loxer.of(id).%s inherits columnFree from the box that opened it - a missed propagation renders byte-identical output, so this must be checked on the flag itself',
+  (_name, call) => {
+    // module TWO logs up to 'debug', so every level below stays visible
+    const id = Loxer.m('TWO').nc().open('open');
+    call(id.id);
+    expect(devLogs[devLogs.length - 1].columnFree).toBe(true);
+  }
+);
+
+test('the opening log itself carries columnFree, and an unchained open reports false', () => {
+  const free = Loxer.nc().open('free open');
+  const column = Loxer.open('column open');
+
+  expect(devLogs.find((l) => l.message === 'free open')?.columnFree).toBe(true);
+  expect(devLogs.find((l) => l.message === 'column open')?.columnFree).toBe(false);
+});
+
+test('errors reached through of(id) inherit columnFree from the box; a box already closed and a direct error both report false', () => {
+  const id = Loxer.m('TWO').nc().open('open');
+  Loxer.of(id).error('boxed error');
+  Loxer.of(id).namedError('Named', 'boxed named error');
+  Loxer.of(id).close('close');
+  Loxer.of(id).error('after close error');
+  Loxer.error('direct error');
+
+  expect(devErrors.map((e) => e.columnFree)).toEqual([true, true, false, false]);
+});
+
+test('ErrorLox.openLoxes includes an in-flight column-free box, excludes a hidden one, and stays chronological', () => {
+  const colFree = Loxer.nc().open('column-free open');
+  // module ONE logs up to 'info', so this box never reaches output - genuinely hidden, not just
+  // column-free
+  Loxer.m('ONE').debug.open('hidden open');
+  const column = Loxer.open('column-reserving open');
+  Loxer.error('boom');
+
+  expect(devErrors).toHaveLength(1);
+  expect(devErrors[0].openLoxes.map((l) => l.message)).toEqual([
+    'column-free open',
+    'column-reserving open',
+  ]);
+  expect(column.id).toBeGreaterThan(colFree.id);
+});
+
 test('module boxing', () => {
   const id1 = Loxer.m('ONE').open('open');
   Loxer.m('ONE').of(id1).add('add');

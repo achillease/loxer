@@ -26,6 +26,10 @@ function initializePointOutput(reset: boolean = true, resetLogs: boolean = true)
     }),
     modules: {
       HIDDEN: { color: '#444', devLevel: 'error', prodLevel: 'error', fullName: 'Hidden' },
+      // 'nc' stays selectable here as a direct module name: the point chain has no `nc`/`noColumn`
+      // modifier (`reservedPointDirectModules` deliberately excludes them, unlike the marker
+      // chain's `reservedDirectModules`), for exactly the reason `props` is excluded there too
+      nc: { color: '#f90', devLevel: 'debug', prodLevel: 'error', fullName: 'Nc' },
       ORDER: { color: '#ffcc00', devLevel: 'debug', prodLevel: 'error', fullName: 'Order' },
       PROJECTS: { color: '#00f', devLevel: 'debug', prodLevel: 'error', fullName: 'Projects' },
       props: { color: '#0ff', devLevel: 'debug', prodLevel: 'error', fullName: 'Props' },
@@ -75,6 +79,48 @@ test('transforms point terminals, selector routing, direct modules, and empty pr
   expect(devLogs[1].messageSpans.map((span) => span.kind)).toEqual(['parent', 'fn']);
   expect(devLogs[3].messageSpans.map((span) => span.kind)).toEqual(['parent', 'fn']);
   expect(devErrors).toEqual([]);
+});
+
+test('trace.point.nc is a direct module selector, not the marker-only nc/noColumn modifier', async () => {
+  initializePointOutput();
+  const traced = await loadTracedModule(`
+    function save(order) {
+      trace.point.nc.info('fn', 'saved', order);
+      return order.id;
+    }
+    export { save };
+  `);
+
+  expect(traced.save({ id: 1 })).toBe(1);
+  expect(devLogs).toHaveLength(1);
+  expect(devLogs[0].moduleId).toBe('nc');
+  // a trace point is a single log, not a box - it carries no `columnFree` selection at all
+  expect(devLogs[0].columnFree).toBe(false);
+});
+
+test('a trace point inherits columnFree from the box it sits in, alongside the module it already shares that lookup with', () => {
+  initializePointOutput();
+
+  // a point inside a column-free box reports columnFree true, and inherits the box's module since
+  // it names none of its own
+  const free = Loxer.m('ORDER').nc().open('free box');
+  __tracePoint({}, 'save', 'Orders', free.id, 'fn', 'saved in a free box');
+  expect(devLogs.at(-1)).toMatchObject({ columnFree: true, moduleId: 'ORDER' });
+  Loxer.of(free.id).close();
+
+  resetTraceLogs();
+  // a point inside a normal (column-reserving) box reports columnFree false, with the same module
+  // inheritance
+  const boxed = Loxer.m('PROJECTS').open('normal box');
+  __tracePoint({}, 'save', 'Orders', boxed.id, 'fn', 'saved in a normal box');
+  expect(devLogs.at(-1)).toMatchObject({ columnFree: false, moduleId: 'PROJECTS' });
+  Loxer.of(boxed.id).close();
+
+  resetTraceLogs();
+  // a point with no containing box at all - `containingBoxId` itself is `undefined` - inherits
+  // nothing: neither a module nor `columnFree`
+  __tracePoint({}, 'save', 'Orders', undefined, 'fn', 'saved standalone');
+  expect(devLogs.at(-1)).toMatchObject({ columnFree: false, moduleId: 'NONE' });
 });
 
 test.each([
@@ -417,6 +463,18 @@ test.each([
   {
     source: "function save(value = trace.point.info('saved')) {}",
     diagnostic: 'trace.point cannot be used in a parameter default',
+  },
+  // the marker chain mirrors `nc`/`noColumn`, but a trace point is a single log rather than a box,
+  // so the point chain never gained the modifier - it stays selectable there as a direct module
+  // name instead (`reservedPointDirectModules` deliberately excludes it, unlike the marker chain's
+  // `reservedDirectModules`)
+  {
+    source: "function save() { trace.point.nc().info('saved'); }",
+    diagnostic: 'trace.point does not support fluent member "nc".',
+  },
+  {
+    source: "function save() { trace.point.noColumn().info('saved'); }",
+    diagnostic: 'trace.point does not support fluent member "noColumn".',
   },
 ] as const)('diagnoses malformed point source: $diagnostic', async ({ source, diagnostic }) => {
   await expect(transformPointCode(source)).rejects.toThrow(diagnostic);

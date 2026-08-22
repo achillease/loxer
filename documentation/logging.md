@@ -126,11 +126,46 @@ the opening level. `warn()`, `info()`, and `debug()` use their named levels. `cl
 level choice. `Loxer.m('PAYMENT').of(box, true)` keeps a currently selected module; otherwise an
 assigned log uses the opening box's module.
 
+A box that only marks an entry and an exit can open without reserving a layout column:
+
+```ts
+const span = Loxer.m('ORDER').nc().open('Validate basket');
+
+Loxer.of(span).add('Basket totals 149.99');
+Loxer.of(span).close('Validated');
+```
+
+`nc()`, and its long form `noColumn()`, open a box that opens, closes, and renders its members the
+same way; it reserves no column in the box layout, so the boxes around it render the prefix they
+would render had it never opened. A box opened inside a column-free box sits at the depth the outer
+box never widened. Reach for it where a box's column would add width without adding information —
+a short-lived or high-frequency flow. Like `h()` and `m()`, `nc()` is one-shot on the chain that
+opens the box, so chaining it twice on one call is a compile error; every later `Loxer.of(id)` call
+on that box inherits the selection without repeating it. A level threshold that hides a box wins
+over the column setting regardless. `OutputLox.columnFree` carries the setting to a custom `output`
+callback, so a destination can render a column-free box its own way without counting box entries.
+
 `Loxer.history` is newest-first and has a default capacity of 50, configurable through
 `config.historyCacheSize`. Hidden normal logs do not enter history. An error output event carries a
 snapshot of history at the moment it is written.
 
 ## Output and data policy
+
+`h()`, and its long form `highlight()`, mark a log by giving its time field a background color:
+grey `rgb(70, 70, 70)` by default, overridable through `highlightColor` in `LoxerColorOptions`. The
+time field carries the mark because every log has one, whatever else the call chained.
+
+Severity keeps the message and highlighting keeps the time field, so the two compose: a highlighted
+warning shows an orange message beside a marked time field, a highlighted close keeps its green, and
+a highlighted error keeps its red badge.
+
+The default development console writes an error with `console.error` and an ordinary log with the
+console method its level names (`console.warn`, `console.info`, `console.debug`); a row written by a
+method that draws no icon carries two leading spaces so every timestamp starts at the same column as
+a `warn` or `error` row. On Node, `console.warn` writes to stderr, so an ordinary `warn` row does not
+share stdout with `info` and `debug` rows — register an `output` callback when one stream matters.
+Chromium hides `console.debug` rows unless the console's Verbose level is enabled, so a `debug` log a
+module's threshold admits can remain invisible there.
 
 Pass one `output` callback to receive every visible event. It replaces development console rendering
 and is the production integration point; production is silent without it.

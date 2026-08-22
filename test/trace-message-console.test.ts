@@ -4,8 +4,9 @@ import { __startTrace } from '../src/trace';
 
 // the built-in development console is only reached when no `devLog`/`devError` callback is
 // registered (`src/core/output/OutputStreams.ts`) - registering one bypasses the console fallback
-// entirely, per `rules/testing.md`
-global.console.log = vi.fn();
+// entirely, per `rules/testing.md`. A trace lifecycle box defaults to level 'info', which the
+// built-in console writes with `console.info`, not `console.log`.
+global.console.info = vi.fn();
 
 beforeEach(() => {
   resetLoxer();
@@ -22,7 +23,7 @@ test("the built-in development console shows a traced call's payload colored", (
       TRACE: { color: '#00ff99', devLevel: 'info', prodLevel: 'error', fullName: 'Trace' },
     },
   });
-  (console.log as Mock).mockClear();
+  (console.info as Mock).mockClear();
 
   const trace = __startTrace(
     'calculate',
@@ -35,7 +36,7 @@ test("the built-in development console shows a traced call's payload colored", (
   );
   trace.success({ total: 59.85 });
 
-  const calls = (console.log as Mock).mock.calls.map((call) => call[0] as string);
+  const calls = (console.info as Mock).mock.calls.map((call) => call[0] as string);
   expect(calls).toHaveLength(2);
   const [openLine, closeLine] = calls;
 
@@ -64,12 +65,12 @@ test('the built-in development console colors the parent and function name with 
       TRACE: { color: '#00ff99', devLevel: 'info', prodLevel: 'error', fullName: 'Trace' },
     },
   });
-  (console.log as Mock).mockClear();
+  (console.info as Mock).mockClear();
 
   const trace = __startTrace('calculate', [19.95, 3], { moduleId: 'TRACE' }, 'Checkout');
   trace.success({ total: 59.85 });
 
-  const calls = (console.log as Mock).mock.calls.map((call) => call[0] as string);
+  const calls = (console.info as Mock).mock.calls.map((call) => call[0] as string);
   // the default parent.fn template colors both the parent and the function name...
   expect(calls[0]).toContain(
     '\x1b[38;2;78;201;176mCheckout\x1b[0m.\x1b[38;2;144;237;32mcalculate\x1b[0m()'

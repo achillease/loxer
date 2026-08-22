@@ -254,6 +254,27 @@ test('one-shot modifiers reset after each log', () => {
   expect(plain.level).toBe('info');
 });
 
+test('nc() is a one-shot modifier: it does not leak into the next log, and every later .of(id) call still inherits its own box', () => {
+  const free = Loxer.nc().open('column-free');
+  expect(devLogs[devLogs.length - 1].columnFree).toBe(true);
+
+  // the very next log must fall back to reserving a column, proving the chain state reset
+  const column = Loxer.open('column-reserving');
+  expect(devLogs[devLogs.length - 1].columnFree).toBe(false);
+
+  // and a later `.of(id)` call keeps reading each box's own selection, not a leaked chain
+  Loxer.of(free).add('member of the free box');
+  expect(devLogs[devLogs.length - 1].columnFree).toBe(true);
+  Loxer.of(column).add('member of the column box');
+  expect(devLogs[devLogs.length - 1].columnFree).toBe(false);
+});
+
+test('nc(false) explicitly reserves a column, exactly like an unchained open', () => {
+  const id = Loxer.nc(false).open('explicit column');
+  expect(devLogs[devLogs.length - 1].columnFree).toBe(false);
+  expect(id).toBeDefined();
+});
+
 test("a module at devLevel 'error' emits only its errors", () => {
   Loxer.m('MUTE').log('hidden 1');
   Loxer.m('MUTE').warn('hidden 2');

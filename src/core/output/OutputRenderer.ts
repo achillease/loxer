@@ -68,7 +68,7 @@ export function ColoredOutputLoxRenderer(
   options: LoxerOutputRendererOptions = {}
 ): OutputLoxTemplateFields {
   const colored = ANSIFormat.colorLox(lox, {
-    moduleOpacity: lox.type === 'close' ? (options.endTitleOpacity ?? 0) : 1,
+    moduleOpacity: lox.type === 'close' ? (options.endTitleOpacity ?? 0.4) : 1,
     colors: options.colors,
   });
 

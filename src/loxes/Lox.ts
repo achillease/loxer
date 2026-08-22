@@ -19,6 +19,7 @@ export interface LoxInit {
   moduleId: string;
   level: LogLevel;
   messageSpans?: MessageSpan[];
+  columnFree?: boolean;
 }
 
 /** The basic log that every {@link OutputLox} and {@link ErrorLox} extends */
@@ -69,6 +70,16 @@ export class Lox {
    * keeps a destination, the history, and an error's open-log context plain by construction.
    */
   messageSpans: MessageSpan[];
+  /** determines if the log belongs to a box that reserves no column in the box layout, opened with
+   * `Loxer.noColumn()` / `Loxer.nc()`
+   * - `true` on the opening log, and on every log reached through `Loxer.of(id)` for that box -
+   *   `add` / `warn` / `info` / `debug` / `close` / `error` / `namedError`
+   * - the box keeps its id, module, timing, `.of(id)` reachability, history entry and level
+   *   semantics; only the column is absent
+   * - an output stream reads this to render such a box its own way, instead of inferring it from
+   *   the length of {@link OutputLox.box}
+   */
+  columnFree: boolean;
 
   /** @internal */
   constructor(init: LoxInit) {
@@ -81,6 +92,7 @@ export class Lox {
     this.moduleId = init.moduleId;
     this.level = init.level;
     this.messageSpans = init.messageSpans ?? [];
+    this.columnFree = init.columnFree ?? false;
     this.timestamp = new Date();
   }
 

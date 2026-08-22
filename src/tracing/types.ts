@@ -216,6 +216,7 @@ export interface TraceRuntimeOptions {
   level?: LogLevel;
   propsTarget?: TracePropsTarget;
   printProps?: TracePropsTarget | TracePrintOptions;
+  columnFree?: boolean;
 }
 
 /** A contextual selector accepted by a {@link TracePoint} terminal call.

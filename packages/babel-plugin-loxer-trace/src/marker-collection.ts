@@ -3,7 +3,7 @@ import type * as BabelTypes from '@babel/types';
 import type { EnclosingMarker, Marker, MarkerTarget, PointMarker } from './marker-types.js';
 
 type TraceTerminal = 'error' | 'warn' | 'info' | 'debug';
-type TraceModifier = 'm' | 'module' | 'h' | 'highlight' | 'props' | 'pp';
+type TraceModifier = 'm' | 'module' | 'h' | 'highlight' | 'props' | 'pp' | 'nc' | 'noColumn';
 const reservedDirectModules = new Set([
   'apply',
   'arguments',
@@ -20,6 +20,8 @@ const reservedDirectModules = new Set([
   'm',
   'module',
   'name',
+  'nc',
+  'noColumn',
   'pp',
   'props',
   'prototype',
@@ -27,8 +29,13 @@ const reservedDirectModules = new Set([
   'toString',
   'warn',
 ]);
+// the point chain's own modifier set: it has no `props` and no `nc` / `noColumn` - a trace point is
+// a single log, not a box - so those three stay selectable there as direct module names, the way
+// `printProps` is reserved there and not on the marker chain.
 const reservedPointDirectModules = new Set(
-  [...reservedDirectModules].filter((name) => name !== 'props').concat('printProps')
+  [...reservedDirectModules]
+    .filter((name) => name !== 'props' && name !== 'nc' && name !== 'noColumn')
+    .concat('printProps')
 );
 
 interface FluentMarkerCall {
@@ -272,7 +279,7 @@ function collectFluentMarkerCall(
         name,
         value:
           cursor.arguments[0] ??
-          (name === 'h' || name === 'highlight'
+          (name === 'h' || name === 'highlight' || name === 'nc' || name === 'noColumn'
             ? t.booleanLiteral(true)
             : t.identifier('undefined')),
       });
@@ -636,7 +643,9 @@ function isModifier(name: string): name is TraceModifier {
     name === 'h' ||
     name === 'highlight' ||
     name === 'props' ||
-    name === 'pp'
+    name === 'pp' ||
+    name === 'nc' ||
+    name === 'noColumn'
   );
 }
 
@@ -645,7 +654,9 @@ function modifierFamily(name: TraceModifier): string {
     ? 'module'
     : name === 'h' || name === 'highlight'
       ? 'highlight'
-      : name;
+      : name === 'nc' || name === 'noColumn'
+        ? 'noColumn'
+        : name;
 }
 
 function assertModifierArguments(callPath: NodePath<any>, name: TraceModifier, args: any[]): void {
@@ -697,6 +708,9 @@ function modifierKey(name: TraceModifier): string {
   }
   if (name === 'h' || name === 'highlight') {
     return 'highlight';
+  }
+  if (name === 'nc' || name === 'noColumn') {
+    return 'columnFree';
   }
 
   return name === 'props' ? 'propsTarget' : 'printProps';

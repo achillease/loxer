@@ -32,6 +32,13 @@ small and behavior-preserving; most public contracts are asserted from `test/box
   Both thresholds are constants with no configuration knob: `init()`'s config is by construction too
   late to configure the pre-init queue, and a setter would be public surface for a fire-once
   diagnostic. `dequeue()` (via `init()`) and the instance reset both disarm the report timer.
+- `Loxes._loxes` holds only genuinely open boxes: `removeCorrespondingOpenLox` deletes the key on close
+  rather than leaving an `undefined` tombstone, because `getOpenLoxes()` walks
+  `Object.values(this._loxes)` to build `ErrorLox.openLoxes`, and a tombstone would make that walk cost
+  every id the instance ever issued instead of the boxes actually open. Nothing depends on the key's
+  presence — `findOpenLox` reads `this._loxes[id]` and gets `undefined` either way — while
+  `getOpenLoxes` depends on its absence for both that cost and its ascending-id (chronological)
+  ordering claim. A change here must keep `getOpenLoxes` excluding hidden boxes.
 - `Realm.ts` anchors the values that must be shared by every copy of Loxer's modules in one
   JavaScript realm; `realmSlot(name, create)` reads or creates a slot on `globalThis`, and
   `clearRealmSlot(name)` exists for tests only. It must stay import-free: `Loxer.ts` imports
@@ -52,11 +59,24 @@ small and behavior-preserving; most public contracts are asserted from `test/box
 - `OutputStreams` must forward raw `OutputLox` / `ErrorLox` objects unchanged to callbacks; default
   console rendering is only the fallback path.
 - `OutputStreams`'s props indentation must equal the width of what its console line prints before the
-  module text — the time field it chose plus its separator — because that number is what rendered
-  props are indented by to line up under the message. Both console lines (log and error) pass the one
-  `TIMESTAMP_INDENTATION` constant, so a separator changed on one line alone silently misaligns that
-  line's props. The templates carry `time` (8 columns) and `timeStamp` (19); the constant names which
-  one the console prints.
+  module text — the level pad plus the time field it chose plus its separator — because that number
+  is what rendered props are indented by to line up under the message. `getLevelIndentation` returns
+  `''` for `'warn'`/`'error'` (the two devtools methods that draw their own icon and shift the row)
+  and `'  '` otherwise, and it prints before the time field, so it counts toward that width.
+  `devLogOut` and `devErrorOut` each derive their pad from that one predicate and pass the same value
+  into both the printed line and `getPropsIndentation`, so a future change to the predicate cannot
+  desynchronize one line's pad from its indentation — today's error line always gets `''` only
+  because an `ErrorLox`'s level is always `'error'`, and it is derived, not assumed. Both lines also
+  pass the one `TIMESTAMP_INDENTATION` constant, so a separator changed on one line alone silently
+  misaligns that line's props. The templates carry `time` (8 columns) and `timeStamp` (19); the
+  constant names which one the console prints.
+- `devLogOut` dispatches through `console[outputLox.level]`, so the built-in console fallback requires
+  the host `console` to expose all four `LogLevel` names (`'debug'`/`'info'`/`'warn'`/`'error'`) —
+  `LogLevel` is exactly those four, so the index is total. A host missing one of them is not a
+  supported destination for the fallback; a caller on such a host registers an `output` callback
+  instead, which never touches `console` at all. Which stream a level lands on is the host's business,
+  not Loxer's (on Node, `console.warn`/`console.error` go to stderr and the rest to stdout) — an
+  `output` callback is how a caller puts every level on one stream.
 - `LoxHistory` is newest-first. A configured size of `1` currently disables stored history.
 - `PropsPrinter` handles arbitrary runtime values; it must tolerate hostile property access, avoid
   loops on class graphs or cyclic structures, and bound pathological recursion before it overflows.

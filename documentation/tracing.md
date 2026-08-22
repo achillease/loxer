@@ -52,7 +52,7 @@ its options for each invocation.
 ## Shape a lifecycle
 
 Modifiers describe one marker operation and are one-shot. Long and short forms are available for
-`module`/`m`, `highlight`/`h`, and `printProps`/`pp` where supported.
+`module`/`m`, `highlight`/`h`, `noColumn`/`nc`, and `printProps`/`pp` where supported.
 
 ```ts
 trace.ORDER
@@ -65,6 +65,11 @@ trace.ORDER
 `h()` or `h(true)` highlights both sides; `h('open')`, `h('close')`, and `h('all')` select a side.
 `props('args')`, `props('result')`, and `props('argsResult')` retain original values for output
 callbacks. `pp()` requests development rendering of selected props.
+
+The marker chain mirrors the logging chain's `nc()` modifier: `trace.ORDER.nc().info(submitOrder)`
+opens the lifecycle box without reserving a column, the way `Loxer.m('ORDER').nc().open(...)` does
+for a manual box (see [manual boxes](./logging.md#manual-boxes-and-history)). Chaining it twice on
+one marker is a compile error.
 
 Opening templates are `fn`, `parent.fn`, `fn(types)`, `parent.fn(types)`, `fn(args)`, and
 `parent.fn(args)`. Closing templates are `fn`, `parent.fn`, `fn(result)`, and `parent.fn(result)`.

@@ -78,6 +78,50 @@ test('a transformed function preserves sync result, modifier chains, and its box
   expect(devLogs[2].printProps).toBeUndefined();
 });
 
+test('a bare trace.nc() defaults its argument to true, and the traced call opens a column-free box', async () => {
+  const traced = await loadTracedModule(`
+    function calculate(value) {
+      return value * 2;
+    }
+    trace.nc().info(calculate);
+    export { calculate };
+  `);
+
+  expect(traced.calculate(4)).toBe(8);
+  expect(devLogs.map((log) => log.type)).toEqual(['open', 'close']);
+  // if the transform's default landed on `undefined` instead of `true`, both would read `false` -
+  // the same failure shape `Lox`'s `columnFree ?? false` produces either way
+  expect(devLogs[0].columnFree).toBe(true);
+  expect(devLogs[1].columnFree).toBe(true);
+});
+
+test('trace.nc(false) explicitly reserves a column for the traced call', async () => {
+  const traced = await loadTracedModule(`
+    function calculate(value) {
+      return value * 2;
+    }
+    trace.nc(false).info(calculate);
+    export { calculate };
+  `);
+
+  expect(traced.calculate(4)).toBe(8);
+  expect(devLogs[0].columnFree).toBe(false);
+  expect(devLogs[1].columnFree).toBe(false);
+});
+
+test('trace.noColumn() is the long-form alias of trace.nc()', async () => {
+  const traced = await loadTracedModule(`
+    function calculate(value) {
+      return value * 2;
+    }
+    trace.noColumn().info(calculate);
+    export { calculate };
+  `);
+
+  expect(traced.calculate(4)).toBe(8);
+  expect(devLogs[0].columnFree).toBe(true);
+});
+
 test('a transformed declaration preserves this and rethrows the original synchronous value', async () => {
   const traced = await loadTracedModule(`
     const original = new Error('no-stock');
@@ -1947,6 +1991,14 @@ test('the transform validates fluent marker chains and removes them as one expre
   await rejects('function one() {} trace.verbose(one);').toThrow(
     'trace() does not support fluent member "verbose".'
   );
+  // `nc` and `noColumn` are two aliases of one modifier family - without a `modifierFamily` arm
+  // for them, double-chaining would compile despite the types forbidding it
+  await rejects('function one() {} trace.nc().noColumn().info(one);').toThrow(
+    'trace() modifier "noColumn" may appear only once.'
+  );
+  await rejects('function one() {} trace.noColumn().nc().info(one);').toThrow(
+    'trace() modifier "noColumn" may appear only once.'
+  );
 });
 
 test.each([
@@ -1969,6 +2021,16 @@ test.each([
     name: 'a reserved static-bracket module',
     source: "function one() {} trace['call'].info(one);",
     diagnostic: 'trace() direct module "call" is reserved; use trace.m("call") instead.',
+  },
+  {
+    name: 'a reserved nc module',
+    source: 'function one() {} trace.nc.info(one);',
+    diagnostic: 'trace() direct module "nc" is reserved; use trace.m("nc") instead.',
+  },
+  {
+    name: 'a reserved noColumn module',
+    source: 'function one() {} trace.noColumn.info(one);',
+    diagnostic: 'trace() direct module "noColumn" is reserved; use trace.m("noColumn") instead.',
   },
   {
     name: 'a computed terminal',

@@ -69,6 +69,8 @@ type TraceMarkerReservedMember =
   | 'highlight'
   | 'props'
   | 'pp'
+  | 'nc'
+  | 'noColumn'
   | 'point'
   | 'apply'
   | 'arguments'
@@ -86,6 +88,7 @@ export type TraceModuleId = Exclude<RegisteredModuleId, TraceMarkerReservedMembe
 
 type DeleteModule<Delete extends string> = Delete | 'm' | 'module';
 type DeleteHighlight<Delete extends string> = Delete | 'h' | 'highlight';
+type DeleteNoColumn<Delete extends string> = Delete | 'nc' | 'noColumn';
 
 type TraceMarkerChain<Delete extends string> = TraceMarkerTerminals &
   Omit<TraceMarkerModifiers<Delete>, Delete> &
@@ -102,6 +105,13 @@ interface TraceMarkerModifiers<Delete extends string> {
   highlight(doit?: boolean | TraceHighlight): TraceMarkerChain<DeleteHighlight<Delete>>;
   props(target: TracePropsTarget): TraceMarkerChain<Delete | 'props'>;
   pp(target: TracePropsTarget | TracePrintOptions): TraceMarkerChain<Delete | 'pp'>;
+  /** opens the traced call's box without reserving a column, the shortcut for `noColumn` below. */
+  nc(doit?: boolean): TraceMarkerChain<DeleteNoColumn<Delete>>;
+  /** opens the traced call's box without reserving a column, the way `Loxer.noColumn()` does for a
+   * manual box: the frame keeps its own open and close lines but costs no other log a column. A
+   * traced call stack is where columns grow deepest, so a frame that only marks entry and exit is
+   * paid for by every log inside it. */
+  noColumn(doit?: boolean): TraceMarkerChain<DeleteNoColumn<Delete>>;
 }
 
 /** Fluent build-time function marker. See the
@@ -225,7 +235,7 @@ const markerIntrospectionProperties = new Set([
   'then',
   'toString',
 ]);
-for (const name of ['m', 'module', 'h', 'highlight', 'props', 'pp']) {
+for (const name of ['m', 'module', 'h', 'highlight', 'props', 'pp', 'nc', 'noColumn']) {
   Object.defineProperty(marker, name, { value: () => traceMarker });
 }
 const pointMarker = Object.create(null) as Record<PropertyKey, unknown>;
@@ -325,6 +335,9 @@ export function __startTrace(
   const highlightOpen = isHighlighted(options.highlight, 'open');
   if (printArgs !== undefined) {
     Loxer.pp(printArgs);
+  }
+  if (options.columnFree === true) {
+    Loxer.nc();
   }
   Loxer.h(highlightOpen).m(moduleId);
   const id = __openTrace(level, openMessage, ...openProps).id;

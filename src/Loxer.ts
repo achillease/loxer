@@ -176,6 +176,7 @@ class LoxerInstance implements LoxerType {
     this._isHighlighted = false;
     this._moduleId = 'NONE';
     this._printProps = undefined;
+    this._columnFree = false;
   }
 
   // id #####################################################################
@@ -214,6 +215,21 @@ class LoxerInstance implements LoxerType {
   }
   pp(options: PropsPrinterOptions = {}) {
     this._printProps = options;
+
+    return this;
+  }
+
+  // noColumn ###############################################################
+
+  /** whether the box the current chain is about to open reserves a column in the box layout. Read in
+   * `openAtLevel` and stamped onto the `Lox`, so every later `.of(id)` call inherits it from the box
+   * instead of re-reading a chain that has long since reset. */
+  private _columnFree: boolean = false;
+  noColumn(doit: boolean = true) {
+    return this.nc(doit);
+  }
+  nc(doit: boolean = true) {
+    this._columnFree = doit;
 
     return this;
   }
@@ -291,13 +307,13 @@ class LoxerInstance implements LoxerType {
 
       return;
     }
-    const containingModule =
-      !options.hasModule && containingBoxId !== undefined
-        ? this._loxes.findOpenLox(containingBoxId)?.moduleId
-        : undefined;
+    // resolved once for both things a point inherits from the box it sits in: the module it was
+    // opened with, and whether that box reserved a column
+    const containing =
+      containingBoxId === undefined ? undefined : this._loxes.findOpenLox(containingBoxId);
     const moduleId = options.hasModule
       ? this.resolveModuleId(options.moduleId)
-      : (containingModule ?? 'NONE');
+      : (containing?.moduleId ?? 'NONE');
     const isHidden = this._isInitialized && this._modules.isHiddenAt(level, moduleId);
     const message = isHidden ? '' : resolveMessage();
     const trace = isHidden ? undefined : traceMessageData(message);
@@ -307,6 +323,7 @@ class LoxerInstance implements LoxerType {
         highlighted: options.highlight === true,
         props,
         printProps: options.printProps,
+        columnFree: containing?.columnFree ?? false,
         level,
         message: trace?.text ?? (isHidden ? '' : stringifyMessage(message)),
         messageSpans: trace?.spans ?? [],
@@ -371,7 +388,11 @@ class LoxerInstance implements LoxerType {
     logId: number | undefined,
     moduleId: string = this._moduleId,
     messagePrefix: string = '',
-    props: unknown[] = []
+    props: unknown[] = [],
+    /** the containing box's column setting, passed by the `of()` closures that already hold the open
+     * lox. Every other route has no box to inherit from: a direct `error()` opens none, and a call on
+     * a box that is gone finds none. */
+    columnFree: boolean = false
   ) {
     const sureError = castError(error);
     this.switchOutput(
@@ -380,6 +401,7 @@ class LoxerInstance implements LoxerType {
         highlighted: this._isHighlighted,
         props,
         printProps: this._printProps,
+        columnFree,
         // errors are output whatever the module allows, so this records the log's level rather than
         // a threshold the error has to pass
         level: 'error',
@@ -415,6 +437,10 @@ class LoxerInstance implements LoxerType {
       ...this.outputMessage(message, level, moduleId),
       moduleId,
       type: 'open',
+      // written as a literal rather than folded into `outputMessage`'s `Pick<>`: a spread into a
+      // typed literal skips excess-property checking, which is the hazard that keeps that producer
+      // narrow. Read here, ahead of the `resetState()` inside `switchOutput`.
+      columnFree: this._columnFree,
     });
     this.switchOutput(lox);
 
@@ -490,10 +516,17 @@ class LoxerInstance implements LoxerType {
         this.appendToOpenLox('close', openLox, openLox.moduleId, message, undefined, props);
       },
       error: (error: ErrorType, ...props: unknown[]) => {
-        this.internalError(error, openLox.id, moduleId, undefined, props);
+        this.internalError(error, openLox.id, moduleId, undefined, props, openLox.columnFree);
       },
       namedError: (name: string, message: string, ...props: unknown[]) => {
-        this.internalError(new NamedError(name, message), openLox.id, moduleId, undefined, props);
+        this.internalError(
+          new NamedError(name, message),
+          openLox.id,
+          moduleId,
+          undefined,
+          props,
+          openLox.columnFree
+        );
       },
     };
   }
@@ -506,7 +539,7 @@ class LoxerInstance implements LoxerType {
     requestedLevel: BoxLevel | undefined,
     props: unknown[]
   ) {
-    const { id, level: openLevel } = openLox;
+    const { id, level: openLevel, columnFree } = openLox;
     // An added log keeps the level its caller named. A level says how severe the log *is*, and it
     // travels on to `devLog` / `prodLog`, the history and the coloring, so a box must not overwrite
     // it. Staying inside the box is a matter of visibility instead: `toOutputLox` hides a log whose
@@ -524,6 +557,8 @@ class LoxerInstance implements LoxerType {
         ...this.outputMessage(message, level, moduleId),
         moduleId,
         type,
+        // inherited from the box, never from the chain: the chain reset when the box opened
+        columnFree,
       })
     );
   }
@@ -560,6 +595,9 @@ class LoxerInstance implements LoxerType {
   }
 
   private toErrorLox(lox: Lox, error: Error): ErrorLox {
+    // `columnFree` needs no resolving here: `internalError` stamps it on the incoming `Lox` from the
+    // open lox its caller already held, and `super(lox)` carries it in. It is set before the box is
+    // built either way, which is what the box reads.
     const errorLox = new ErrorLox(lox, error);
     errorLox.setTime(this.getTimeConsumption(errorLox));
     const { loxModule } = this._modules.getModule(errorLox);

@@ -31,6 +31,11 @@ export class BoxFactory {
     const box: Box = [];
     // print the depth before the start
     for (const bufferLox of loxes.getBuffer()) {
+      // unreachable for a fresh open, and deliberately kept: `switchOutput` builds the box in
+      // `toOutputLox` before `proceedOpenLox` adds the lox to the buffer, so an opening lox is never
+      // in the buffer while its own box renders. Removing this, or building the box after the buffer
+      // is filled, changes every open line - the column-free ones included, which reach this loop
+      // for the enclosing verticals alone.
       if (lox.id === bufferLox?.id) {
         break;
       }
@@ -81,6 +86,12 @@ export class BoxFactory {
             : { box: 'horizontal', color, boxLayout }
         );
       }
+    }
+    // A column-free box owns no buffer slot, so the loop above never finds it and never emits its
+    // edge. Its close still marks where the flow ends, so the edge is pushed here instead, taking
+    // the layout off the module because there is no buffer entry to read one from.
+    if (lox.columnFree && !found && lox.type === 'close') {
+      box.push({ box: 'closeEdge', color, boxLayout: lox.module.boxLayoutStyle });
     }
     // print line end
     box.push({

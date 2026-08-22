@@ -44,10 +44,16 @@
 - To exercise `PropsPrinter` (rich props printing) in a test, init `Loxer` without `devLog` /
   `devError` callbacks — or call `PropsPrinter.of(lox).print(...)` directly. A registered
   `devLog`/`devError` callback receives the raw lox and bypasses the console fallback in
-  `src/core/OutputStreams.ts`, which is the only path that calls `PropsPrinter.print`; registering
-  it makes a suite assert nothing about rendered props. Use `config: { disableColors: true }` for
-  plain output and mock `global.console.log` to capture it — see `test/props.test.ts`. Falsy props
-  (`false`, `0`, `''`, `null`, `undefined`) render when the call chained `printProps` / `pp`.
+  `src/core/output/OutputStreams.ts`, which is the only path that calls `PropsPrinter.print`;
+  registering it makes a suite assert nothing about rendered props. The console fallback dispatches
+  through `console[lox.level]`, not `console.log` — mock `console.info`/`console.debug`/
+  `console.warn`/`console.error` (or all four) to capture it, matching the level under test; see the
+  `test.each` table in `test/initialization.test.ts` that pins each of `warn`/`info`/`debug` to its
+  own console method and alignment padding, and `test/dist-consumer.test.ts` for the same dispatch
+  through the built `dist/` tree. For plain (uncolored) output, pass `false` as `print`'s first
+  `colored` argument, or read a renderer's plain fields instead of its `colored` field set — see how
+  `test/props.test.ts` and `test/format.test.ts` obtain uncolored text. Falsy props (`false`, `0`,
+  `''`, `null`, `undefined`) render when the call chained `printProps` / `pp`.
 - When reshaping public logging signatures, use a table of observable calls that covers the direct,
   open-box, and `.of(id)` entry points at every log level, including a visible `debug` module.
 - When a rule must exist in two copies because the packages holding them cannot import each

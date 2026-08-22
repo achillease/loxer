@@ -18,8 +18,20 @@ export class OutputStreams {
     this._output = props?.output;
   }
 
-  private getPropsIndentation(lox: OutputLox): number {
-    return TIMESTAMP_INDENTATION + lox.module.slicedName.length;
+  /** the pad that aligns a row the console draws no icon for with the rows it does.
+   *
+   * `console.warn` and `console.error` are the two methods a devtools console prefixes with an icon,
+   * which shifts their rows right on its own. Every other level pays for that shift here. The
+   * predicate is one place on purpose: the pad is part of what the line prints before the module
+   * text, so {@link getLevelIndentation} and {@link getPropsIndentation} have to agree or the
+   * rendered props of exactly the padded rows drift two columns left of the message they branch
+   * from. */
+  private getLevelIndentation(lox: OutputLox): string {
+    return lox.level === 'warn' || lox.level === 'error' ? '' : '  ';
+  }
+
+  private getPropsIndentation(lox: OutputLox, levelIndentation: string = ''): number {
+    return levelIndentation.length + TIMESTAMP_INDENTATION + lox.module.slicedName.length;
   }
 
   private getErrorEvent(environment: 'dev' | 'prod', lox: ErrorLox, history: LoxHistory) {
@@ -31,9 +43,13 @@ export class OutputStreams {
     if (this._output) {
       this._output(this.getErrorEvent('dev', errorLox, history));
     } else {
-      const lox = ColoredErrorLoxRenderer(errorLox, this.getPropsIndentation(errorLox));
-      console.log(
-        `${lox.time} ${lox.module}${lox.box}${lox.message}\t${lox.timeConsumption}${lox.props}${lox.stack}${lox.openLogs}`
+      const levelIndentation = this.getLevelIndentation(errorLox);
+      const lox = ColoredErrorLoxRenderer(
+        errorLox,
+        this.getPropsIndentation(errorLox, levelIndentation)
+      );
+      console.error(
+        `${levelIndentation}${lox.time} ${lox.module}${lox.box}${lox.message}\t${lox.timeConsumption}${lox.props}${lox.stack}${lox.openLogs}`
       );
     }
   }
@@ -48,9 +64,13 @@ export class OutputStreams {
     if (this._output) {
       this._output({ environment: 'dev', kind: 'log', lox: outputLox });
     } else {
-      const lox = ColoredOutputLoxRenderer(outputLox, this.getPropsIndentation(outputLox));
-      console.log(
-        `${lox.time} ${lox.module}${lox.box}${lox.message}  ${lox.timeConsumption}${lox.props}`
+      const levelIndentation = this.getLevelIndentation(outputLox);
+      const lox = ColoredOutputLoxRenderer(
+        outputLox,
+        this.getPropsIndentation(outputLox, levelIndentation)
+      );
+      console[outputLox.level](
+        `${levelIndentation}${lox.time} ${lox.module}${lox.box}${lox.message}  ${lox.timeConsumption}${lox.props}`
       );
     }
   }

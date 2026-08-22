@@ -364,6 +364,25 @@ Loxer.pp({ depths: 1 }).log('typo');
 const printerOptions: PropsPrinterOptions = { depth: 2, shortenClasses: false };
 void printerOptions;
 
+// --- nc / noColumn on the modifier surface -----------------------------------------------------
+Loxer.nc().log('ok');
+Loxer.noColumn().log('ok');
+Loxer.nc(false).open('ok');
+Loxer.noColumn(true).open('ok');
+// composes with `h`/`m`/`pp` in any order
+Loxer.nc().m('PERS').h().pp().open('ok');
+Loxer.h().pp().m('PERS').nc().open('ok');
+Loxer.pp().nc().h().m('PERS').open('ok');
+Loxer.m('PERS').nc().log('ok');
+// @ts-expect-error a modifier can not be chained twice - the same rule every modifier follows
+Loxer.nc().nc();
+// @ts-expect-error `noColumn` is the same modifier as `nc`
+Loxer.nc().noColumn();
+// @ts-expect-error `nc` is the same modifier as `noColumn`
+Loxer.noColumn().nc();
+// @ts-expect-error a modifier can not be chained twice, whichever alias comes first
+Loxer.noColumn().noColumn();
+
 // --- the public printer -----------------------------------------------------------------------
 Loxer.init({
   modules,

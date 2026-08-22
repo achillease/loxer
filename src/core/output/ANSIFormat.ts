@@ -1,5 +1,5 @@
 import { Color } from './color/index.js';
-import { safeNumber } from '../../Helpers.js';
+import { isNES, safeNumber } from '../../Helpers.js';
 import { ErrorLox } from '../../loxes/ErrorLox.js';
 import { OutputLox } from '../../loxes/OutputLox.js';
 import type { MessageSpanKind } from '../../tracing/TraceMessage.js';
@@ -9,6 +9,8 @@ import type { LoxColorOptions } from '../../types.js';
 const DEFAULT_WARN_COLOR = '#ffa50f';
 /** the red an error's message is rendered in where the configuration names no other */
 const DEFAULT_ERROR_COLOR = '#f00';
+/** the grey a highlighted log's time field is marked with where the configuration names no other */
+const DEFAULT_HIGHLIGHT_COLOR = '#464646';
 
 export class ANSIFormat {
   /** @internal */
@@ -55,24 +57,22 @@ export class ANSIFormat {
     );
   }
 
-  /** returns a string with the highlighted text */
+  /** returns a string with the highlighted text, marked with `color`'s background — grey
+   * `rgb(70, 70, 70)` where the caller names none, which is what a `keys`-selected props key is
+   * marked with, since `PropsPrinter` passes no color of its own */
   static colorHighlight(text: string, color?: string): string {
     return this.highlightPrefix(color) + text + this.CODE.Reset;
   }
 
   /** @internal the codes {@link colorHighlight} opens with */
   private static highlightPrefix(color?: string): string {
-    if (color) {
-      const rgb = Color(color);
+    const rgb = Color(isNES(color) ? color : DEFAULT_HIGHLIGHT_COLOR);
 
-      return this.colorBackground(
-        Math.round(rgb.red()),
-        Math.round(rgb.green()),
-        Math.round(rgb.blue())
-      );
-    }
-
-    return this.CODE.Reverse;
+    return this.colorBackground(
+      Math.round(rgb.red()),
+      Math.round(rgb.green()),
+      Math.round(rgb.blue())
+    );
   }
 
   /** returns a string to color the following text's background red */
@@ -211,9 +211,7 @@ export class ANSIFormat {
     // what the message as a whole is colored in, kept as its opening codes rather than as a
     // finished string, because a value span inside it has to re-emit them after its own reset
     let prefix = '';
-    if (lox.highlighted) {
-      prefix = this.highlightPrefix(options.colors?.highlightColor);
-    } else if (lox.type === 'close') {
+    if (lox.type === 'close') {
       prefix = this.closeLogPrefix();
     }
     if (lox.level === 'error') {
@@ -234,12 +232,29 @@ export class ANSIFormat {
       )}: ${errorPrefix}${this.colorMessageSpans(lox, errorPrefix)}${this.CODE.Reset}`;
     }
 
+    const moduleText = this.colorize(
+      lox.module.slicedName,
+      lox.module.color,
+      options.moduleOpacity
+    );
+
+    // the highlight marks the time field, the one field every log carries. The module column cannot
+    // hold it: `NONE` renders as an empty string, so a log written without `.m(...)` - `init()`'s own
+    // line included - would wrap zero characters and show no mark at all. A highlighted time drops
+    // `fgTime` rather than composing with it, because `fgTime`'s grey is the very grey the highlight
+    // defaults to, and grey text on its own grey background is invisible.
+    const stamp = lox.timestamp.toISOString().replace('T', ' ').slice(0, 19);
+    const markTime = (text: string) =>
+      lox.highlighted
+        ? this.colorHighlight(text, options.colors?.highlightColor)
+        : this.fgTime(text);
+
     return {
       message,
-      moduleText: this.colorize(lox.module.slicedName, lox.module.color, options.moduleOpacity),
+      moduleText,
       timeConsumption: this.fgTime(lox.timeText),
-      timestamp: this.fgTime(lox.timestamp.toISOString().replace('T', ' ').slice(0, 19)),
-      time: this.fgTime(lox.timestamp.toISOString().replace('T', ' ').slice(11, 19)),
+      timestamp: markTime(stamp),
+      time: markTime(stamp.slice(11)),
     };
   }
 

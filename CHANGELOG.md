@@ -9,6 +9,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/), and this
 
 ### Added
 
+- Add `Loxer.nc()` and `Loxer.noColumn()` as one-shot modifiers that open a box without reserving a
+  layout column, so short spans keep their open and close markers without pushing every nested log
+  to the right. The box keeps its id, module, timing, history, level behavior, and `.of(id)` methods,
+  while output streams can read `lox.columnFree`.
 - Add `OutputLoxRenderer` and `ErrorLoxRenderer` to build reusable plain and ANSI-colored output
   templates from a log or error. Custom destinations can compose module, message, timing, box,
   props, stack, and open-log context for their own transport, while the development console uses the
@@ -37,9 +41,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/), and this
 - Add fluent configuration for the plain-function marker: `.m()` / `.module()` select the module,
   `.h()` / `.highlight()` highlight both the open and the close message — or one side with
   `.h('open')` / `.h('close')`, where a failed call highlights as a close — `.props(target)` attaches
-  the captured arguments and result and `.pp(target | options)` asks the built-in output to render
-  them — each routed to the `'args'`, `'result'` or `'argsResult'` side — and a level terminal (`error()`, `warn()`, `log()`, `info()`
-  or `debug()`) both names the box level and marks the target:
+  the captured arguments and result, `.pp(target | options)` asks the built-in output to render
+  them, and `.nc()` / `.noColumn()` keeps the traced call's open and close box without reserving a
+  layout column. Props are routed to the `'args'`, `'result'` or `'argsResult'` side, and a level
+  terminal (`error()`, `warn()`, `log()`, `info()` or `debug()`) both names the box level and marks
+  the target:
   `trace.m('ORD').props('args').pp({ target: 'args', depth: 1 }).debug(placeOrder)`. The marker's
   option object carries what the build reads: `name`, `openMessage` and `closeMessage`.
 - Add tracing of several functions from one marker: `trace.m('ORD').info([placeOrder, ship])`
@@ -98,6 +104,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/), and this
 
 ### Changed
 
+- **Breaking:** Send each built-in development row through the console method named by its log
+  level, so browser level filters and error grouping work. On Node, warning and error rows therefore
+  move to stderr; register an `output` callback when all levels must share one stream.
 - Reorganize internal runtime, output, and tracing modules while preserving the public package API.
 
 - **Breaking:** Replace `Loxer.init({ callbacks: { devLog, prodLog, devError, prodError } })` with
@@ -107,10 +116,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/), and this
   needs Loxer's plain or colored presentation.
 - **Breaking:** Move console color, close-title opacity, and default box-layout preferences from
   `LoxerConfig` to renderer options. Output destinations choose their own plain or ANSI
-  presentation and fallback box layout without changing event data. `ANSIFormat.colorLox` takes those
-  as one options object (`colorLox(lox, { moduleOpacity, colors })`) in place of its `opacity` and
-  `highlightColor` parameters, and returns the box time consumption as `timeConsumption` rather than
-  `timeText` — the name the output templates use — alongside the added `timestamp` and `time` fields.
+  presentation and fallback box layout without changing event data. `endTitleOpacity` defaults to
+  `0.4`, so a close line keeps a darkened shade of its module color; set it explicitly to keep
+  another value. `ANSIFormat.colorLox` takes those settings as one options object
+  (`colorLox(lox, { moduleOpacity, colors })`) in place of its `opacity` and `highlightColor`
+  parameters, and returns the box time consumption as `timeConsumption` rather than `timeText` — the
+  name the output templates use — alongside the added `timestamp` and `time` fields.
 - **Breaking:** Replace the positional `item` / `itemOptions` parameters with **props**. Every
   logging entry point — `Loxer.log`, `warn`, `info`, `debug`, their `.open()` forms, `Loxer.open`,
   `Loxer.error`, `Loxer.namedError` and every member of `Loxer.of(id)` — takes
@@ -196,6 +207,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/), and this
 
 ### Fixed
 
+- Fix highlights that were invisible in Chromium consoles or replaced warning, error, and close
+  colors by marking each log's time field with a configurable background. The time field is present
+  even when the log has no module, and its message keeps the color from its level.
 - Fix props rendering of malformed or hostile runtime values so a null-prototype object, throwing
   accessor, proxy, or invalid date cannot interrupt logging or inject terminal controls.
 - Fix logs from duplicate same-major Loxer module copies becoming stuck before initialization, so

@@ -406,6 +406,69 @@ describe('the built dist/ tree a consumer executes', () => {
     ]);
   });
 
+  test('dist.Loxer.nc() opens a box that reserves no column, and a normal box nested inside it reserves one at the depth it would have had alone', () => {
+    const { index } = dist;
+
+    const outer = index.Loxer.nc().open('outer');
+    const inner = index.Loxer.open('inner');
+    index.Loxer.of(inner).add('add');
+    index.Loxer.of(inner).close('close inner');
+    index.Loxer.of(outer).close('close outer');
+
+    expect(devLogs.map((lox) => [lox.columnFree, lox.box.length])).toEqual([
+      [true, 2], // outer open: openEdge + openEnd, no column reserved
+      [false, 2], // inner open: openEdge + openEnd at the same depth the outer box never widened
+      [false, 2], // add: single + horizontal
+      [false, 2], // close inner: closeEdge + closeEnd
+      [true, 2], // close outer: closeEdge + closeEnd, from the close-side branch alone
+    ]);
+  });
+
+  test('the built console fallback marks the time field and routes each level to its own console method', () => {
+    const { index } = dist;
+    index.resetLoxer();
+    const info = vi.spyOn(console, 'info').mockImplementation(() => undefined);
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
+    const debugSpy = vi.spyOn(console, 'debug').mockImplementation(() => undefined);
+    const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+
+    try {
+      index.Loxer.init({
+        dev: true,
+        modules: {
+          TRACE: { fullName: 'Trace', color: '#00ff99', devLevel: 'debug', prodLevel: 'error' },
+        },
+      });
+      info.mockClear();
+
+      index.Loxer.h().m('TRACE').warn('marked warning');
+      index.Loxer.m('TRACE').info('plain info');
+      index.Loxer.m('TRACE').debug('plain debug');
+      index.Loxer.error(new Error('boom'));
+
+      const warnLine = warn.mock.calls[0][0] as string;
+      const infoLine = info.mock.calls[0][0] as string;
+      // the highlight opens the line, marking the time field with the default grey background and
+      // no `fgTime` grey inside it - the two greys are the same value, so composing them would
+      // render the timestamp invisible against its own mark
+      expect(warnLine.startsWith('\x1b[48;2;70;70;70m')).toBe(true);
+      expect(warnLine).not.toContain('\x1b[48;2;70;70;70m\x1b[38;2;70;70;70m');
+      // the module column is left unmarked, keeping only its own module color
+      expect(warnLine).toContain('\x1b[38;2;0;255;153m');
+      // `warn` draws its own console icon in a devtools console, so it gets no extra padding ...
+      expect(warnLine.startsWith('\x1b[')).toBe(true);
+      // ... while `info` does, to keep every timestamp at the same column
+      expect(infoLine.startsWith('  ')).toBe(true);
+      expect(debugSpy).toHaveBeenCalledTimes(1);
+      expect(errorSpy).toHaveBeenCalledTimes(1);
+    } finally {
+      info.mockRestore();
+      warn.mockRestore();
+      debugSpy.mockRestore();
+      errorSpy.mockRestore();
+    }
+  });
+
   test('dist exports the trace printer type surface from both entry points', () => {
     const { index, trace } = dist;
 

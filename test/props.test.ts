@@ -766,6 +766,40 @@ test('a callback author reproduces the built-in block from the exported printer 
   expect(lastOutput().endsWith(reproduced)).toBe(true);
 });
 
+test('printProps on a log inside a column-free box connects one column shallower than the same log inside a column-reserving box', () => {
+  // two normal boxes nest a column each, so a plain log inside the inner one connects at depth 2 -
+  // the deeper case this test contrasts against
+  Loxer.m('IT').open('outer');
+  Loxer.m('IT').open('inner without nc');
+  Loxer.pp().m('IT').log('member', { id: 'p1' });
+  const widenedLox = lastLox();
+  const widenedDepth = BoxFactory.getMarkerDepth(widenedLox.box);
+  expect(widenedDepth).toBe(2);
+
+  resetLoxer();
+  initProps(false);
+
+  // the same nesting, but the inner box is column-free: it reserves no column of its own, so a
+  // log inside it connects one column shallower - widened only by the outer box, never by itself
+  Loxer.m('IT').open('outer');
+  Loxer.m('IT').nc().open('inner with nc');
+  Loxer.pp().m('IT').log('member', { id: 'p1' });
+  const unwidenedLox = lastLox();
+  const unwidenedDepth = BoxFactory.getMarkerDepth(unwidenedLox.box);
+  expect(unwidenedDepth).toBe(1);
+  expect(unwidenedDepth).toBeLessThan(widenedDepth);
+
+  // the same call the built-in output makes, reachable from the package's own exports - proof the
+  // shallower depth is what the props block actually connects at, not just what getMarkerDepth
+  // reports in isolation
+  const reproduced = PropsPrinter.of(unwidenedLox).print(false, {
+    depth: unwidenedLox.module.slicedName.length + unwidenedDepth,
+    color: unwidenedLox.module.color,
+  });
+  expect(lastOutput().endsWith(reproduced)).toBe(true);
+  expect(lastOutput()).toContain('props> ');
+});
+
 test('the printer reads its configuration off the lox', () => {
   render([{ a: { b: 1 } }], { depth: 1 });
   expect(PropsPrinter.of(lastLox()).print(false)).toContain('{ a: {1 entries} }');

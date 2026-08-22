@@ -247,7 +247,7 @@ export type LoxerOutputStream = (event: LoxerOutputEvent) => void;
 
 /** Colors used by `ANSIFormat.colorLox` and the public output renderers. */
 export interface LoxerColorOptions {
-  /** Background color for highlighted ordinary log messages. Omit it to invert foreground/background. */
+  /** Background color marking the time field of a highlighted log. Defaults to grey `rgb(70, 70, 70)`. */
   highlightColor?: string;
   /** Foreground color for warning messages. */
   warnColor?: string;
@@ -261,7 +261,9 @@ export interface LoxerColorOptions {
 
 /** Presentation options accepted by `OutputLoxRenderer` and `ErrorLoxRenderer`. */
 export interface LoxerOutputRendererOptions {
-  /** Opacity for the module title on a close log. Defaults to `0`. */
+  /** Brightness of the module title on a close log, as a multiplier on the module color's channels:
+   * `0` renders the title black, `1` renders it at the module's full color. Defaults to `0.4`, a
+   * darkened shade of the module's own color. */
   endTitleOpacity?: number;
   /** Default box glyph collection for segments without a module-specific override. Defaults to `'round'`. */
   boxLayoutStyle?: BoxLayoutStyle;
@@ -304,7 +306,8 @@ export interface ErrorLoxTemplate extends OutputLoxTemplate {
 
 /** Options accepted by `ANSIFormat.colorLox`. */
 export interface LoxColorOptions {
-  /** Opacity for the module title. Defaults to `1`. */
+  /** Brightness of the module title, as a multiplier on the module color's channels: `0` renders the
+   * title black, `1` renders it at the module's full color. Defaults to `1`. */
   moduleOpacity?: number;
   /** Colors used for this lox. */
   colors?: LoxerColorOptions;
@@ -624,7 +627,54 @@ export interface OpenedLox extends OfLoxes {
 type h = 'h' | 'highlight';
 type m = 'm' | 'module';
 type pp = 'pp' | 'printProps';
+type nc = 'nc' | 'noColumn';
 export interface Modifiers<Delete extends string> {
+  /** ## Open a box without a column (shortcut)
+   * #### Is a shortcut for {@link Modifiers.noColumn Loxer.noColumn()}.
+   *
+   * ---
+   * @param doit should the box reserve no column
+   */
+  nc(doit?: boolean): LogMethods & Omit<Modifiers<Delete | nc>, Delete | nc>;
+  /** ## Open a box without a column
+   *
+   * ```typescript
+   *     const request = Loxer.m('HTTP').open('handleCheckout()'); // reserves a column
+   *     const span = Loxer.m('SVC').noColumn().open('submit()');  // reserves none
+   *
+   *     Loxer.of(span).add('total = 149.99');
+   *     Loxer.of(span).close('done');
+   * ```
+   *
+   * #### Opens a box that costs no other log a column.
+   *
+   * Every open box reserves a vertical column in the box layout, and that column widens the box
+   * prefix of every other log for as long as the box stays open. That is the right trade for a box a
+   * reader follows - a request, a transaction, an async flow whose interleaving is the point. For a
+   * box that only marks an entry and an exit - a short wrapper span, one frame of a traced call
+   * stack - the columns carry nothing the open and close lines do not already say, and four nested
+   * spans push every log inside them four columns right.
+   *
+   * A box opened with this reserves no column, so the logs around it render the prefix they would
+   * render had it never been opened. It keeps everything else: its id, its module, its timing, its
+   * `Loxer.of(id)` reachability, its history entry and its level semantics. Its own open and close
+   * lines still carry their glyphs, so the flow's beginning and end stay visible.
+   *
+   * - the selection is captured on the box when it opens: every later `Loxer.of(id)` call on that box
+   *   inherits it without chaining this again
+   * - it is a one-shot modifier like {@link Modifiers.highlight} and {@link Modifiers.module}: the
+   *   next box reserves a column unless it chains this itself
+   * - a box opened *inside* one reserves its column at the depth it would have reached had the
+   *   enclosing box never been opened
+   * - a module's threshold decides visibility exactly as it does for any other box - this drops,
+   *   hides and re-levels nothing
+   * - `boxLayoutStyle: 'off'` is the opposite trade: it keeps the column's width and drops the glyphs
+   * - an output stream reads `lox.columnFree` to render such a box its own way
+   *
+   * ---
+   * @param doit should the box reserve no column
+   */
+  noColumn(doit?: boolean): LogMethods & Omit<Modifiers<Delete | nc>, Delete | nc>;
   /** ## Render a log's props (shortcut)
    * #### Is a shortcut for {@link Modifiers.printProps Loxer.printProps()}.
    *
@@ -678,7 +728,8 @@ export interface Modifiers<Delete extends string> {
    *
    * #### Highlights logs to make them more visible.
    *
-   * - by default the `foregroundColor` and `backgroundColor` of the log will be inverted.
+   * - the log's time field is marked with a background color — grey `rgb(70, 70, 70)` by default.
+   *   The message keeps the color its severity gives it, so the two compose.
    * - an output renderer can select a highlight color with {@link LoxerOutputRendererOptions.colors}
    * - the parameter `doit?: boolean` can conditionally highlight the log with `true`
    * - this function can be chained with any other chaining function like `.module(...)`

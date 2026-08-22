@@ -66,6 +66,10 @@ app.innerHTML = `
         Each action below calls a normal TypeScript function marked with
         <code>trace.MODULE.info(functionName, options)</code>. The panel shows the real Loxer output events.
       </p>
+      <p class="intro">
+        Open <a href="?console">this page as <code>?console</code></a> to init without an
+        <code>output</code> callback and read Loxer's built-in rendering in the devtools console.
+      </p>
     </header>
 
     <section class="controls" aria-label="Demo actions">
@@ -109,11 +113,39 @@ const status = getElement<HTMLParagraphElement>('status');
 const maximumRecords = 200;
 const records: TraceRecord[] = [];
 
+// Opening the page as `?console` inits without an `output` callback. That is the one route to
+// Loxer's own console rendering: a registered callback receives the raw lox instead, and the
+// built-in destination never runs. Use it to read what the built-in output draws in a browser's
+// devtools console — the ANSI marks and the column alignment a terminal cannot speak for.
+const consoleMode = new URLSearchParams(window.location.search).has('console');
+
 Loxer.init({
   dev: true,
   modules,
-  output: record,
+  output: consoleMode ? undefined : record,
 });
+
+if (consoleMode) {
+  emptyOutput.textContent = 'Console mode: open the devtools console — Loxer renders there.';
+  writeConsolePreview();
+}
+
+/** One row per level plus the marks that compose with them, so the devtools console shows the whole
+ * built-in destination on a single page load. */
+function writeConsolePreview(): void {
+  Loxer.m('ORDER').debug('debug row');
+  Loxer.m('ORDER').log('info row');
+  Loxer.m('ORDER').warn('warn row');
+  Loxer.h().m('ORDER').log('highlighted row — the time field carries the mark');
+  Loxer.h().m('ORDER').warn('highlighted warn — orange message beside a marked time field');
+  Loxer.h().log('highlighted row without a module');
+  const box = Loxer.m('PAYMENT').open('a box that reserves a column');
+  const span = Loxer.m('PAYMENT').nc().open('a column-free box');
+  Loxer.of(span).add('a member of it');
+  Loxer.of(span).close('closed');
+  Loxer.h().of(box).close('highlighted close — green message, marked time field');
+  Loxer.m('ORDER').error('error row');
+}
 
 function calculateTotal(unitPrice: number, quantity: number): number {
   Loxer.log('Validating basket', { quantity, unitPrice });

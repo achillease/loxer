@@ -7,6 +7,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/), and this
 
 ## [Unreleased]
 
+## [3.0.0] - 2026-09-15
+
 ### Added
 
 - Add `Loxer.nc()` and `Loxer.noColumn()` as one-shot modifiers that open a box without reserving a
